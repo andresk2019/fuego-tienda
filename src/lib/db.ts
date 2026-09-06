@@ -12,6 +12,7 @@
 import 'server-only';
 import { Pool } from 'pg';
 import { categoriaDeProducto, type CategoriaSlug } from './categorias';
+import { descripcionDeProducto } from './descripciones';
 
 let pool: Pool | undefined;
 
@@ -42,28 +43,60 @@ export type ProductoCatalogo = {
   disponible: boolean;
   pocasUnidades: boolean;
   categoria: CategoriaSlug;
+  descripcion: string;
 };
+
+const CAMPOS_PRODUCTO = `i.id, i.nombre, i.precio_venta, i.unidad, i.cantidad, i.stock_minimo`;
+
+function filaAProducto(r: {
+  id: number;
+  nombre: string;
+  precio_venta: string | number;
+  unidad: string | null;
+  cantidad: string | number;
+  stock_minimo: string | number;
+}): ProductoCatalogo {
+  const cantidad = Number(r.cantidad);
+  const stockMinimo = Number(r.stock_minimo);
+  const categoria = categoriaDeProducto(r.id);
+  return {
+    id: r.id,
+    nombre: r.nombre,
+    precioVenta: Number(r.precio_venta),
+    unidad: r.unidad,
+    disponible: cantidad > 0,
+    pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
+    categoria,
+    descripcion: descripcionDeProducto(r.id, categoria),
+  };
+}
 
 export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
   const { rows } = await getPool().query(
-    `SELECT i.id, i.nombre, i.precio_venta, i.unidad, i.cantidad, i.stock_minimo
+    `SELECT ${CAMPOS_PRODUCTO}
      FROM inventario i
      JOIN empresas e ON e.id = i.empresa_id
      WHERE e.nombre = 'Fuego' AND i.es_informativo = false
      ORDER BY i.nombre`
   );
 
-  return rows.map((r) => {
-    const cantidad = Number(r.cantidad);
-    const stockMinimo = Number(r.stock_minimo);
-    return {
-      id: r.id,
-      nombre: r.nombre,
-      precioVenta: Number(r.precio_venta),
-      unidad: r.unidad,
-      disponible: cantidad > 0,
-      pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
-      categoria: categoriaDeProducto(r.id),
-    };
-  });
+  return rows.map(filaAProducto);
+}
+
+// Para la página de detalle de un producto. Filtra también por
+// empresa = Fuego (no solo por id) para que no se pueda llegar, con
+// un id cualquiera en la URL, a un producto de otra marca (LadySoul,
+// Suave Capricho) que esta tienda no debe mostrar.
+export async function obtenerProductoFuego(
+  id: number
+): Promise<ProductoCatalogo | null> {
+  const { rows } = await getPool().query(
+    `SELECT ${CAMPOS_PRODUCTO}
+     FROM inventario i
+     JOIN empresas e ON e.id = i.empresa_id
+     WHERE e.nombre = 'Fuego' AND i.es_informativo = false AND i.id = $1`,
+    [id]
+  );
+
+  return rows[0] ? filaAProducto(rows[0]) : null;
 }

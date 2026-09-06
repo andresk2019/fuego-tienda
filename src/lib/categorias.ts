@@ -63,3 +63,7 @@ const CATEGORIA_POR_ID: Record<number, CategoriaSlug> = {
 export function categoriaDeProducto(id: number): CategoriaSlug {
   return CATEGORIA_POR_ID[id] ?? "sin-categoria";
 }
+
+export function nombreCategoria(slug: CategoriaSlug): string {
+  return CATEGORIAS.find((c) => c.slug === slug)?.nombre ?? slug;
+}
