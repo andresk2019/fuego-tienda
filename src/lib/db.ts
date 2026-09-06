@@ -11,6 +11,7 @@
 // error en el bundle que se manda al navegador.
 import 'server-only';
 import { Pool } from 'pg';
+import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 
 let pool: Pool | undefined;
 
@@ -40,6 +41,7 @@ export type ProductoCatalogo = {
   unidad: string | null;
   disponible: boolean;
   pocasUnidades: boolean;
+  categoria: CategoriaSlug;
 };
 
 export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
@@ -61,6 +63,7 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
       unidad: r.unidad,
       disponible: cantidad > 0,
       pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
+      categoria: categoriaDeProducto(r.id),
     };
   });
 }
