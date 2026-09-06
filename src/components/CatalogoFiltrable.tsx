@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { CATEGORIAS, type CategoriaSlug } from "@/lib/categorias";
 import type { ProductoCatalogo } from "@/lib/db";
+import FlameIcon from "@/components/FlameIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -36,7 +37,7 @@ export default function CatalogoFiltrable({
     <div>
       <nav
         aria-label="Categorías"
-        className="mb-8 flex flex-wrap justify-center gap-2"
+        className="mb-10 flex flex-wrap justify-center gap-2"
       >
         <Chip
           activo={categoriaActiva === "todas"}
@@ -56,29 +57,30 @@ export default function CatalogoFiltrable({
       </nav>
 
       {productosFiltrados.length === 0 ? (
-        <p className="text-center text-neutral-500 dark:text-neutral-400">
+        <p className="text-center text-muted">
           No hay productos en esta categoría todavía.
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {productosFiltrados.map((producto) => (
             <li
               key={producto.id}
-              className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-4 dark:border-neutral-800"
+              className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
             >
-              <h2 className="font-medium text-neutral-900 dark:text-neutral-50">
+              <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
+              <h2 className="font-serif text-lg text-foreground">
                 {producto.nombre}
               </h2>
-              <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+              <p className="text-lg font-semibold text-foreground">
                 {formatoCOP.format(producto.precioVenta)}
               </p>
               {!producto.disponible && (
-                <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                <span className="inline-flex w-fit rounded-full bg-danger/10 px-2.5 py-0.5 text-xs font-medium text-danger">
                   Agotado
                 </span>
               )}
               {producto.disponible && producto.pocasUnidades && (
-                <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                <span className="inline-flex w-fit rounded-full bg-gold/10 px-2.5 py-0.5 text-xs font-medium text-gold">
                   ¡Últimas unidades!
                 </span>
               )}
@@ -106,8 +108,8 @@ function Chip({
       aria-pressed={activo}
       className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
         activo
-          ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-50 dark:bg-neutral-50 dark:text-neutral-900"
-          : "border-neutral-300 text-neutral-700 hover:border-neutral-500 dark:border-neutral-700 dark:text-neutral-300 dark:hover:border-neutral-500"
+          ? "border-ember bg-ember text-foreground"
+          : "border-border text-muted hover:border-ember/60 hover:text-foreground"
       }`}
     >
       {children}

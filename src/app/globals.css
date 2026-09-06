@@ -1,26 +1,38 @@
 @import "tailwindcss";
 
+/* Identidad visual de Fuego: un solo ambiente cálido ("vela encendida"),
+   sin alternar según el modo claro/oscuro del sistema — es una decisión
+   de marca a propósito, no un descuido. Reemplazar estos valores cuando
+   haya logo/paleta oficial de la marca. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #17120f;
+  --surface: #221a15;
+  --surface-hover: #2a2019;
+  --border: #3a2c22;
+  --foreground: #f3e8d8;
+  --muted: #b6a595;
+  --ember: #e2572b;
+  --ember-hover: #c94b23;
+  --gold: #dba53f;
+  --danger: #e2564a;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-ember: var(--ember);
+  --color-ember-hover: var(--ember-hover);
+  --color-gold: var(--gold);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-serif: var(--font-display);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
