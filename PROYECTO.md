@@ -38,36 +38,41 @@ pasarelas candidatas — ver abajo).
   independientes), no una continuación de la sesión de Contabilidad
   Lady.
 
-## Decisiones pendientes (a definir en la próxima sesión)
+## Decisiones ya tomadas (actualización 2026-09-06)
 
-1. **¿La tienda se conecta al inventario real de Fuego (mismo Postgres
-   que usa Contabilidad Lady, solo lectura) o maneja su propio catálogo
-   independiente?** Se recomendó la primera opción (no duplicar
-   mantenimiento) pero el usuario no la confirmó todavía — retomar esta
-   pregunta antes de diseñar el modelo de datos.
-2. **Pasarela de pago** — se compararon varias opciones para Colombia,
-   sin decidir cuál usar todavía:
-   - **Bold** — más simple/rápida de arrancar, comisiones bajas, muy
-     usada hoy por negocios pequeños en Colombia.
-   - **Wompi** — respaldada por Bancolombia, PSE nativo.
-   - **PlacetoPay** (de Evertec) — la más institucional/confiable,
-     usada por gobierno, universidades, aerolíneas; onboarding más
-     formal que Bold/Wompi.
-   - **Stripe** — mejor experiencia de desarrollador, soporta Colombia,
-     útil si algún día se quiere vender también fuera del país.
-   - Otras mencionadas pero de menor prioridad para arrancar: PayU,
-     ePayco, Mercado Pago, Movii, RappiPay, Kushki, Adyen, EBANX,
-     Checkout.com, Braintree, Addi (compra ahora paga después), Nequi/
-     Daviplata (cobro directo sin gateway).
-   - También sin definir: ¿pago en línea real desde el día uno, o
-     pedido armado en la tienda + coordinación manual de pago/envío
-     (ej. por WhatsApp), agregando pagos en línea más adelante?
-3. **Hosting/despliegue** — probablemente Vercel (mismo que
-   Contabilidad Lady), como proyecto nuevo y separado ahí. No
-   confirmado formalmente todavía.
-4. **Alcance de esta fase 1 de la tienda** — solo Fuego por ahora
-   (Contabilidad Lady maneja 3 marcas: Fuego, LadySoul, Suave Capricho;
-   esta tienda es únicamente para Fuego).
+1. **Inventario compartido, confirmado.** La tienda lee el mismo
+   Postgres/tabla `inventario` que usa Contabilidad Lady (solo lectura
+   desde la tienda). Restricción importante que esto implica:
+   - Cuando se registra una venta a un cliente **desde Contabilidad
+     Lady** (venta presencial/manual, no desde la tienda online), esa
+     venta ya descuenta `cantidad` en `inventario` — y ese descuento
+     debe reflejarse de inmediato en el stock que ve/usa la tienda.
+     Como es la misma tabla, no hay que "sincronizar" nada aparte,
+     pero sí hay que **diseñar el checkout de la tienda asumiendo que
+     el stock puede cambiar por fuera** (venta de mostrador concurrente
+     con un pedido online): validar/descontar stock en el momento de
+     confirmar el pedido (no solo al cargar la página del producto),
+     para evitar vender algo que ya se agotó por una venta presencial.
+   - Pendiente para cuando se diseñe el modelo de datos: decidir si el
+     descuento de stock por pedido online lo hace la tienda directamente
+     sobre `inventario` (requeriría credenciales de escritura, aunque
+     acotadas) o si pasa por una función/endpoint que ya use
+     Contabilidad Lady, para mantener una sola ruta de escritura sobre
+     el inventario.
+2. **Pasarela de pago:** probablemente **Wompi** a futuro, pero
+   **no se integra pasarela en esta fase**. Por ahora la tienda es solo
+   catálogo/pedido — sin cobro en línea todavía (pedido armado en la
+   tienda + coordinación manual de pago/envío, ej. WhatsApp, como punto
+   de partida). Integrar Wompi queda para una fase posterior.
+3. **Hosting/despliegue: Vercel, confirmado.** Proyecto nuevo y
+   separado del proyecto `contabilidad-lady` que ya está en Vercel.
+4. **Alcance de esta fase 1 de la tienda: solo Fuego, confirmado.**
+   Contabilidad Lady maneja 3 marcas (Fuego, LadySoul, Suave Capricho);
+   esta tienda es únicamente para Fuego. Si en el futuro se quiere
+   vender otra marca en línea, se evalúa como proyecto/decisión aparte.
+
+No quedan decisiones pendientes de las 4 iniciales — el proyecto ya
+puede pasar a diseño/implementación.
 
 ## Estado actual del proyecto
 
@@ -78,14 +83,15 @@ pasarelas candidatas — ver abajo).
 
 ## Próximos pasos sugeridos al retomar
 
-1. Definir las 4 decisiones pendientes de arriba.
-2. Revisar `node_modules/next/dist/docs/` para confirmar los patrones
+1. Revisar `node_modules/next/dist/docs/` para confirmar los patrones
    correctos de Next.js 16 antes de escribir páginas/rutas.
-3. Si se conecta al Postgres existente: revisar `lib/db.js` en
-   `C:\Contabilidad Lady` como referencia del esquema de `inventario`
-   (columnas: `nombre`, `cantidad`, `precio_venta`, `costo_unitario`,
-   `unidad`, `stock_minimo`, `es_informativo`) y decidir cómo exponerlo
-   de forma segura a una app pública (probablemente una API de solo
-   lectura, nunca exponer credenciales de escritura al cliente).
-4. Crear un repositorio remoto (GitHub) y un proyecto nuevo en Vercel,
+2. Diseñar cómo se expone `inventario` a la tienda: revisar `lib/db.js`
+   en `C:\Contabilidad Lady` como referencia del esquema (columnas:
+   `nombre`, `cantidad`, `precio_venta`, `costo_unitario`, `unidad`,
+   `stock_minimo`, `es_informativo`); API de solo lectura para el
+   catálogo, nunca exponer credenciales de escritura al cliente, y
+   validar/descontar stock en el momento de confirmar un pedido (ver
+   nota de inventario compartido arriba) para no vender sobre una
+   venta de mostrador concurrente.
+3. Crear un repositorio remoto (GitHub) y un proyecto nuevo en Vercel,
    separado del proyecto `contabilidad-lady`.
