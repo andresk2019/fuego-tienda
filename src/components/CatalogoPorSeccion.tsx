@@ -64,11 +64,10 @@ export default function CatalogoPorSeccion({
 
       {/* Nivel 2: Subcategoría, dentro de la sección activa —
           píldoras sólidas, más protagonistas que el filtro de
-          categoría de más abajo. */}
-      <div className="mb-10 flex flex-col items-center gap-2">
-        <span className="text-xs font-medium tracking-wide text-muted uppercase">
-          Subcategoría
-        </span>
+          categoría de más abajo. Sin etiqueta visible: "subcategoría"
+          es un término de organización interna, no algo para mostrar
+          al cliente. */}
+      <div className="mb-10 flex justify-center">
         <nav
           aria-label="Subcategorías"
           className="flex flex-wrap justify-center gap-2"
