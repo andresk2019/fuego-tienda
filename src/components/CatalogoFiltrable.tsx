@@ -65,13 +65,10 @@ export default function CatalogoFiltrable({
       ) : (
         <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {productosFiltrados.map((producto) => (
-            <li
-              key={producto.id}
-              className="group flex flex-col rounded-2xl border border-border bg-surface transition-colors hover:border-ember/60 hover:bg-surface-hover"
-            >
+            <li key={producto.id}>
               <Link
                 href={`/productos/${producto.id}`}
-                className="flex flex-1 flex-col gap-3 p-5"
+                className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
               >
                 <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
                 <h2 className="font-serif text-lg text-foreground">
@@ -90,18 +87,15 @@ export default function CatalogoFiltrable({
                     ¡Últimas unidades!
                   </span>
                 )}
+                {esPersonalizable(producto.id) && (
+                  <span className="inline-flex w-fit rounded-full border border-ember/40 px-2.5 py-0.5 text-xs font-medium text-ember">
+                    Personalizable
+                  </span>
+                )}
                 <span className="mt-auto text-xs text-muted transition-colors group-hover:text-ember">
                   Ver más →
                 </span>
               </Link>
-              {esPersonalizable(producto.id) && (
-                <Link
-                  href={`/productos/${producto.id}#personalizar`}
-                  className="mx-5 mb-5 rounded-lg bg-ember px-4 py-2 text-center text-sm font-semibold text-foreground transition-colors hover:bg-ember-hover"
-                >
-                  Personaliza tu vela
-                </Link>
-              )}
             </li>
           ))}
         </ul>
