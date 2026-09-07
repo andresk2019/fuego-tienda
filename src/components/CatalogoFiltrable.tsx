@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CATEGORIAS, type CategoriaSlug } from "@/lib/categorias";
+import { esPersonalizable } from "@/lib/personalizacion";
 import type { ProductoCatalogo } from "@/lib/db";
 import FlameIcon from "@/components/FlameIcon";
 
@@ -84,6 +85,11 @@ export default function CatalogoFiltrable({
                 {producto.disponible && producto.pocasUnidades && (
                   <span className="inline-flex w-fit rounded-full bg-gold/10 px-2.5 py-0.5 text-xs font-medium text-gold">
                     ¡Últimas unidades!
+                  </span>
+                )}
+                {esPersonalizable(producto.id) && (
+                  <span className="inline-flex w-fit rounded-full border border-ember/40 px-2.5 py-0.5 text-xs font-medium text-ember">
+                    Personaliza tu vela
                   </span>
                 )}
                 <span className="mt-auto text-xs text-muted transition-colors group-hover:text-ember">
