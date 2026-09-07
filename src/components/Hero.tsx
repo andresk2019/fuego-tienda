@@ -14,9 +14,9 @@ export default function Hero({ logoUrl }: { logoUrl: string | null }) {
         <Image
           src={logoUrl}
           alt="Fuego"
-          width={96}
-          height={96}
-          className="mx-auto h-20 w-20 rounded-full object-cover shadow-sm sm:h-24 sm:w-24"
+          width={175}
+          height={224}
+          className="mx-auto h-32 w-auto sm:h-40"
           priority
         />
       ) : (
