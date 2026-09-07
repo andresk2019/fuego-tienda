@@ -1,20 +1,23 @@
 @import "tailwindcss";
 
-/* Identidad visual de Fuego: un solo ambiente cálido ("vela encendida"),
-   sin alternar según el modo claro/oscuro del sistema — es una decisión
-   de marca a propósito, no un descuido. Reemplazar estos valores cuando
+/* Identidad visual de Fuego: un solo ambiente cálido tipo boutique
+   (crema/marfil, acento terracota), sin alternar según el modo claro/
+   oscuro del sistema — es una decisión de marca a propósito, no un
+   descuido. Antes era un tema oscuro; se cambió a claro porque el
+   negro opacaba demasiado la página. Reemplazar estos valores cuando
    haya logo/paleta oficial de la marca. */
 :root {
-  --background: #17120f;
-  --surface: #221a15;
-  --surface-hover: #2a2019;
-  --border: #3a2c22;
-  --foreground: #f3e8d8;
-  --muted: #b6a595;
-  --ember: #e2572b;
-  --ember-hover: #c94b23;
-  --gold: #dba53f;
-  --danger: #e2564a;
+  --background: #faf3e8;
+  --surface: #fffcf7;
+  --surface-hover: #f3e8d8;
+  --border: #e8dac4;
+  --foreground: #2e2118;
+  --muted: #8c7a67;
+  --ember: #d9662e;
+  --ember-hover: #c15522;
+  --on-ember: #fff8ef;
+  --gold: #a2731f;
+  --danger: #c0392b;
 }
 
 @theme inline {
@@ -26,6 +29,7 @@
   --color-muted: var(--muted);
   --color-ember: var(--ember);
   --color-ember-hover: var(--ember-hover);
+  --color-on-ember: var(--on-ember);
   --color-gold: var(--gold);
   --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);

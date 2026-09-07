@@ -104,7 +104,7 @@ function OpcionBoton({
       aria-pressed={activo}
       className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
         activo
-          ? "border-ember bg-ember text-foreground"
+          ? "border-ember bg-ember text-on-ember"
           : "border-border text-muted hover:border-ember/60 hover:text-foreground"
       }`}
     >

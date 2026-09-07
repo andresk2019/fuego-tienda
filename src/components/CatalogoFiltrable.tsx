@@ -120,7 +120,7 @@ function Chip({
       aria-pressed={activo}
       className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
         activo
-          ? "border-ember bg-ember text-foreground"
+          ? "border-ember bg-ember text-on-ember"
           : "border-border text-muted hover:border-ember/60 hover:text-foreground"
       }`}
     >
