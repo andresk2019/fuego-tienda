@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { obtenerProductoFuego, obtenerAromasDisponiblesFuego } from "@/lib/db";
 import { nombreCategoria } from "@/lib/categorias";
@@ -40,11 +41,22 @@ export default async function ProductoPage(
       </Link>
 
       <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-2">
-        {/* Espacio reservado para la foto del producto — todavía no
-            hay fotos reales de las velas, así que por ahora se
-            muestra el ícono de marca a modo de marcador. */}
-        <div className="flex aspect-square items-center justify-center rounded-2xl border border-border bg-surface">
-          <FlameIcon className="h-16 w-16 text-ember/30" />
+        {/* Foto del producto — si todavía no se ha subido una desde
+            el panel de administración, se muestra el ícono de marca
+            a modo de marcador. */}
+        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface">
+          {producto.fotoUrl ? (
+            <Image
+              src={producto.fotoUrl}
+              alt={producto.nombre}
+              width={600}
+              height={600}
+              className="h-full w-full object-cover"
+              priority
+            />
+          ) : (
+            <FlameIcon className="h-16 w-16 text-ember/30" />
+          )}
         </div>
 
         <div className="flex flex-col gap-4">

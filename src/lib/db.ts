@@ -4,7 +4,10 @@
 // descuenta stock sigue siendo Contabilidad Lady (ver
 // `C:\Contabilidad Lady\api\clientes.js`, que resta `cantidad` al
 // registrar una venta a un cliente). Aquí solo leemos, para mostrar
-// el catálogo público de la marca Fuego.
+// el catálogo público de la marca Fuego. La foto de cada producto SÍ
+// se lee de una tabla propia de la tienda (`admin-db.ts`), separada
+// de las de Contabilidad Lady — ver ese archivo para el único lugar
+// donde la tienda escribe algo.
 //
 // `import 'server-only'` evita que este módulo (y por lo tanto la
 // cadena de conexión a la base de datos) pueda terminar incluido por
@@ -14,6 +17,7 @@ import { Pool } from 'pg';
 import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
 import { lineaDeProducto, type LineaSlug } from './lineas';
+import { obtenerFotosDeProductos } from './admin-db';
 
 let pool: Pool | undefined;
 
@@ -46,18 +50,22 @@ export type ProductoCatalogo = {
   categoria: CategoriaSlug;
   descripcion: string;
   linea: LineaSlug;
+  fotoUrl: string | null;
 };
 
 const CAMPOS_PRODUCTO = `i.id, i.nombre, i.precio_venta, i.unidad, i.cantidad, i.stock_minimo`;
 
-function filaAProducto(r: {
-  id: number;
-  nombre: string;
-  precio_venta: string | number;
-  unidad: string | null;
-  cantidad: string | number;
-  stock_minimo: string | number;
-}): ProductoCatalogo {
+function filaAProducto(
+  r: {
+    id: number;
+    nombre: string;
+    precio_venta: string | number;
+    unidad: string | null;
+    cantidad: string | number;
+    stock_minimo: string | number;
+  },
+  fotos: Record<number, string>
+): ProductoCatalogo {
   const cantidad = Number(r.cantidad);
   const stockMinimo = Number(r.stock_minimo);
   const categoria = categoriaDeProducto(r.id);
@@ -71,19 +79,23 @@ function filaAProducto(r: {
     categoria,
     descripcion: descripcionDeProducto(r.id, categoria),
     linea: lineaDeProducto(),
+    fotoUrl: fotos[r.id] ?? null,
   };
 }
 
 export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
-  const { rows } = await getPool().query(
-    `SELECT ${CAMPOS_PRODUCTO}
-     FROM inventario i
-     JOIN empresas e ON e.id = i.empresa_id
-     WHERE e.nombre = 'Fuego' AND i.es_informativo = false
-     ORDER BY i.nombre`
-  );
+  const [resultado, fotos] = await Promise.all([
+    getPool().query(
+      `SELECT ${CAMPOS_PRODUCTO}
+       FROM inventario i
+       JOIN empresas e ON e.id = i.empresa_id
+       WHERE e.nombre = 'Fuego' AND i.es_informativo = false
+       ORDER BY i.nombre`
+    ),
+    obtenerFotosDeProductos(),
+  ]);
 
-  return rows.map(filaAProducto);
+  return resultado.rows.map((r) => filaAProducto(r, fotos));
 }
 
 // Para la página de detalle de un producto. Filtra también por
@@ -93,15 +105,20 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
 export async function obtenerProductoFuego(
   id: number
 ): Promise<ProductoCatalogo | null> {
-  const { rows } = await getPool().query(
-    `SELECT ${CAMPOS_PRODUCTO}
-     FROM inventario i
-     JOIN empresas e ON e.id = i.empresa_id
-     WHERE e.nombre = 'Fuego' AND i.es_informativo = false AND i.id = $1`,
-    [id]
-  );
+  // Trae todas las fotos aunque solo haga falta una — son pocos
+  // productos hoy, no vale la pena una consulta separada solo para eso.
+  const [resultado, fotos] = await Promise.all([
+    getPool().query(
+      `SELECT ${CAMPOS_PRODUCTO}
+       FROM inventario i
+       JOIN empresas e ON e.id = i.empresa_id
+       WHERE e.nombre = 'Fuego' AND i.es_informativo = false AND i.id = $1`,
+      [id]
+    ),
+    obtenerFotosDeProductos(),
+  ]);
 
-  return rows[0] ? filaAProducto(rows[0]) : null;
+  return resultado.rows[0] ? filaAProducto(resultado.rows[0], fotos) : null;
 }
 
 // Aromas disponibles para personalizar una vela. Los aromas no son un

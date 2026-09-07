@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { CATEGORIAS, type CategoriaSlug } from "@/lib/categorias";
 import { esPersonalizable } from "@/lib/personalizacion";
 import type { ProductoCatalogo } from "@/lib/db";
@@ -71,7 +72,17 @@ export default function CatalogoFiltrable({
                 href={`/productos/${producto.id}`}
                 className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
               >
-                <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
+                {producto.fotoUrl ? (
+                  <Image
+                    src={producto.fotoUrl}
+                    alt={producto.nombre}
+                    width={200}
+                    height={200}
+                    className="h-32 w-full rounded-xl object-cover"
+                  />
+                ) : (
+                  <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
+                )}
                 <h2 className="font-serif text-lg text-foreground">
                   {producto.nombre}
                 </h2>
