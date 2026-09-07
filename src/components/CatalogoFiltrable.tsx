@@ -6,6 +6,7 @@ import { CATEGORIAS, type CategoriaSlug } from "@/lib/categorias";
 import { esPersonalizable } from "@/lib/personalizacion";
 import type { ProductoCatalogo } from "@/lib/db";
 import FlameIcon from "@/components/FlameIcon";
+import Chip from "@/components/Chip";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -101,30 +102,5 @@ export default function CatalogoFiltrable({
         </ul>
       )}
     </div>
-  );
-}
-
-function Chip({
-  activo,
-  onClick,
-  children,
-}: {
-  activo: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={activo}
-      className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-        activo
-          ? "border-ember bg-ember text-on-ember"
-          : "border-border text-muted hover:border-ember/60 hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
   );
 }

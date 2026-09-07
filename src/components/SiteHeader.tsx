@@ -19,16 +19,16 @@ export default function SiteHeader() {
         className="mt-6 flex flex-wrap justify-center gap-6 text-sm font-medium text-muted"
       >
         <Link
-          href="/"
-          className="transition-colors hover:text-foreground"
-        >
-          Catálogo
-        </Link>
-        <Link
           href="/quienes-somos"
           className="transition-colors hover:text-foreground"
         >
           Quiénes somos
+        </Link>
+        <Link
+          href="/"
+          className="transition-colors hover:text-foreground"
+        >
+          Catálogo
         </Link>
       </nav>
     </header>

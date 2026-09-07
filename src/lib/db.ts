@@ -13,6 +13,7 @@ import 'server-only';
 import { Pool } from 'pg';
 import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
+import { lineaDeProducto, type LineaSlug } from './lineas';
 
 let pool: Pool | undefined;
 
@@ -44,6 +45,7 @@ export type ProductoCatalogo = {
   pocasUnidades: boolean;
   categoria: CategoriaSlug;
   descripcion: string;
+  linea: LineaSlug;
 };
 
 const CAMPOS_PRODUCTO = `i.id, i.nombre, i.precio_venta, i.unidad, i.cantidad, i.stock_minimo`;
@@ -68,6 +70,7 @@ function filaAProducto(r: {
     pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
     categoria,
     descripcion: descripcionDeProducto(r.id, categoria),
+    linea: lineaDeProducto(),
   };
 }
 

@@ -1,5 +1,5 @@
 import { obtenerCatalogoFuego } from "@/lib/db";
-import CatalogoFiltrable from "@/components/CatalogoFiltrable";
+import CatalogoPorLinea from "@/components/CatalogoPorLinea";
 
 // El stock puede cambiar en cualquier momento por una venta de mostrador
 // registrada desde Contabilidad Lady (no solo por pedidos de esta tienda),
@@ -17,7 +17,7 @@ export default async function Home() {
           Todavía no hay productos publicados.
         </p>
       ) : (
-        <CatalogoFiltrable productos={productos} />
+        <CatalogoPorLinea productos={productos} />
       )}
     </main>
   );
