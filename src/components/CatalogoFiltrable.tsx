@@ -39,26 +39,35 @@ export default function CatalogoFiltrable({
 
   return (
     <div>
-      <nav
-        aria-label="Categorías"
-        className="mb-10 flex flex-wrap justify-center gap-2"
-      >
-        <Chip
-          activo={categoriaActiva === "todas"}
-          onClick={() => setCategoriaActiva("todas")}
+      <div className="mb-10 flex flex-col items-center gap-2">
+        <span className="text-xs font-medium tracking-wide text-muted uppercase">
+          Filtrar por categoría
+        </span>
+        <nav
+          aria-label="Categorías"
+          className="flex flex-wrap justify-center gap-2"
         >
-          Todas
-        </Chip>
-        {categoriasConProductos.map((c) => (
           <Chip
-            key={c.slug}
-            activo={categoriaActiva === c.slug}
-            onClick={() => setCategoriaActiva(c.slug)}
+            variant="contorno"
+            size="sm"
+            activo={categoriaActiva === "todas"}
+            onClick={() => setCategoriaActiva("todas")}
           >
-            {c.nombre}
+            Todas
           </Chip>
-        ))}
-      </nav>
+          {categoriasConProductos.map((c) => (
+            <Chip
+              key={c.slug}
+              variant="contorno"
+              size="sm"
+              activo={categoriaActiva === c.slug}
+              onClick={() => setCategoriaActiva(c.slug)}
+            >
+              {c.nombre}
+            </Chip>
+          ))}
+        </nav>
+      </div>
 
       {productosFiltrados.length === 0 ? (
         <p className="text-center text-muted">
