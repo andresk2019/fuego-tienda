@@ -12,7 +12,7 @@ export default function NotFound() {
         El producto que buscas no existe o ya no está publicado.
       </p>
       <Link
-        href="/"
+        href="/catalogo"
         className="mt-2 text-sm font-medium text-ember transition-colors hover:text-ember-hover"
       >
         ← Volver al catálogo

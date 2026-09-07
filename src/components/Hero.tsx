@@ -6,7 +6,7 @@ import FlameIcon from "@/components/FlameIcon";
 // atención al entrar: fondo con un resplandor cálido (distinto del
 // resto de la página), el logo en grande (o el ícono de marca
 // mientras no se suba uno real desde el panel de administración), y
-// un botón que lleva directo al catálogo de abajo.
+// un botón que lleva a la página del catálogo completo (/catalogo).
 export default function Hero({ logoUrl }: { logoUrl: string | null }) {
   return (
     <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-ember/15 via-background to-background px-6 py-20 text-center">
@@ -31,7 +31,7 @@ export default function Hero({ logoUrl }: { logoUrl: string | null }) {
       </p>
 
       <Link
-        href="#catalogo"
+        href="/catalogo"
         className="mt-8 inline-block rounded-lg bg-ember px-6 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover"
       >
         Ver catálogo

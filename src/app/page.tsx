@@ -1,12 +1,12 @@
 import { obtenerCatalogoFuego } from "@/lib/db";
 import { obtenerLogoUrl } from "@/lib/admin-db";
-import CatalogoPorSeccion from "@/components/CatalogoPorSeccion";
 import Hero from "@/components/Hero";
+import BadgesConfianza from "@/components/BadgesConfianza";
+import CarruselDestacados from "@/components/CarruselDestacados";
 
-// El stock puede cambiar en cualquier momento por una venta de mostrador
-// registrada desde Contabilidad Lady (no solo por pedidos de esta tienda),
-// así que esta página nunca se sirve cacheada: cada visita lee el
-// inventario real en ese instante.
+// Ver el catálogo real puede cambiar en cualquier momento (venta de
+// mostrador en Contabilidad Lady), así que esta página nunca se sirve
+// cacheada.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -15,22 +15,13 @@ export default async function Home() {
     obtenerLogoUrl(),
   ]);
 
+  const destacados = productos.filter((p) => p.destacado);
+
   return (
     <>
       <Hero logoUrl={logoUrl} />
-
-      <main
-        id="catalogo"
-        className="mx-auto w-full max-w-5xl flex-1 scroll-mt-6 px-6 py-12"
-      >
-        {productos.length === 0 ? (
-          <p className="text-center text-muted">
-            Todavía no hay productos publicados.
-          </p>
-        ) : (
-          <CatalogoPorSeccion productos={productos} />
-        )}
-      </main>
+      <BadgesConfianza />
+      <CarruselDestacados productos={destacados} />
     </>
   );
 }

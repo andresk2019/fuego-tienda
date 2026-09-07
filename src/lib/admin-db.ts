@@ -57,6 +57,15 @@ function asegurarEsquema(): Promise<void> {
            )`
         )
       )
+      // "Destacado" = aparece en el carrusel de "Las más vendidas" de
+      // la portada. No hay datos reales de ventas todavía (la tienda
+      // no ha vendido nada en línea), así que es el dueño quien elige
+      // manualmente cuáles mostrar ahí, desde el panel.
+      .then(() =>
+        obtenerPool().query(
+          `ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS destacado BOOLEAN NOT NULL DEFAULT false`
+        )
+      )
       .then(() => undefined);
   }
   return esquemaListo;
@@ -127,5 +136,28 @@ export async function guardarDescripcionProducto(
      VALUES ($1, NULLIF($2, ''), now())
      ON CONFLICT (producto_id) DO UPDATE SET descripcion = NULLIF($2, ''), actualizado_en = now()`,
     [productoId, descripcion]
+  );
+}
+
+// ids de los productos marcados como "destacado" (carrusel de "Las
+// más vendidas" en la portada).
+export async function obtenerDestacadosDeProductos(): Promise<Set<number>> {
+  await asegurarEsquema();
+  const { rows } = await obtenerPool().query(
+    'SELECT producto_id FROM tienda_producto_meta WHERE destacado = true'
+  );
+  return new Set(rows.map((fila) => fila.producto_id));
+}
+
+export async function guardarDestacadoProducto(
+  productoId: number,
+  destacado: boolean
+): Promise<void> {
+  await asegurarEsquema();
+  await obtenerPool().query(
+    `INSERT INTO tienda_producto_meta (producto_id, destacado, actualizado_en)
+     VALUES ($1, $2, now())
+     ON CONFLICT (producto_id) DO UPDATE SET destacado = $2, actualizado_en = now()`,
+    [productoId, destacado]
   );
 }

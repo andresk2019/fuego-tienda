@@ -8,6 +8,7 @@ import {
   guardarFotoProducto,
   guardarDescripcionProducto,
   guardarLogoUrl,
+  guardarDestacadoProducto,
 } from '@/lib/admin-db';
 
 export async function cerrarSesion() {
@@ -119,6 +120,35 @@ export async function subirLogo(
     await guardarLogoUrl(url);
   } catch {
     return { error: 'No se pudo subir el logo. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/');
+
+  return { ok: true };
+}
+
+export type EstadoDestacado = { error?: string; ok?: boolean } | undefined;
+
+export async function guardarDestacado(
+  _estado: EstadoDestacado,
+  formData: FormData
+): Promise<EstadoDestacado> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  const destacado = formData.get('destacado') === 'on';
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+
+  try {
+    await guardarDestacadoProducto(productoId, destacado);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
   }
 
   revalidatePath('/admin');

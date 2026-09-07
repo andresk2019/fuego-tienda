@@ -52,6 +52,7 @@ export default async function AdminPage() {
             nombre={producto.nombre}
             fotoUrl={producto.fotoUrl}
             descripcion={producto.descripcion}
+            destacado={producto.destacado}
           />
         ))}
       </ul>

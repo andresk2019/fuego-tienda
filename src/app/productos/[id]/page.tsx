@@ -35,7 +35,7 @@ export default async function ProductoPage(
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <Link
-        href="/"
+        href="/catalogo"
         className="text-sm text-muted transition-colors hover:text-foreground"
       >
         ← Volver al catálogo

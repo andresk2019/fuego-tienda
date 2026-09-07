@@ -20,6 +20,7 @@ import { subcategoriaDeProducto, type SubcategoriaSlug } from './secciones';
 import {
   obtenerFotosDeProductos,
   obtenerDescripcionesDeProductos,
+  obtenerDestacadosDeProductos,
 } from './admin-db';
 
 let pool: Pool | undefined;
@@ -54,6 +55,7 @@ export type ProductoCatalogo = {
   descripcion: string;
   subcategoria: SubcategoriaSlug;
   fotoUrl: string | null;
+  destacado: boolean;
 };
 
 const CAMPOS_PRODUCTO = `i.id, i.nombre, i.precio_venta, i.unidad, i.cantidad, i.stock_minimo`;
@@ -68,7 +70,8 @@ function filaAProducto(
     stock_minimo: string | number;
   },
   fotos: Record<number, string>,
-  descripciones: Record<number, string>
+  descripciones: Record<number, string>,
+  destacados: Set<number>
 ): ProductoCatalogo {
   const cantidad = Number(r.cantidad);
   const stockMinimo = Number(r.stock_minimo);
@@ -88,11 +91,12 @@ function filaAProducto(
     descripcion,
     subcategoria: subcategoriaDeProducto(),
     fotoUrl: fotos[r.id] ?? null,
+    destacado: destacados.has(r.id),
   };
 }
 
 export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
-  const [resultado, fotos, descripciones] = await Promise.all([
+  const [resultado, fotos, descripciones, destacados] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -102,9 +106,10 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
     ),
     obtenerFotosDeProductos(),
     obtenerDescripcionesDeProductos(),
+    obtenerDestacadosDeProductos(),
   ]);
 
-  return resultado.rows.map((r) => filaAProducto(r, fotos, descripciones));
+  return resultado.rows.map((r) => filaAProducto(r, fotos, descripciones, destacados));
 }
 
 // Para la página de detalle de un producto. Filtra también por
@@ -114,10 +119,10 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
 export async function obtenerProductoFuego(
   id: number
 ): Promise<ProductoCatalogo | null> {
-  // Trae todas las fotos/descripciones aunque solo haga falta una —
-  // son pocos productos hoy, no vale la pena una consulta separada
-  // solo para eso.
-  const [resultado, fotos, descripciones] = await Promise.all([
+  // Trae todas las fotos/descripciones/destacados aunque solo haga
+  // falta uno — son pocos productos hoy, no vale la pena una consulta
+  // separada solo para eso.
+  const [resultado, fotos, descripciones, destacados] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -127,10 +132,11 @@ export async function obtenerProductoFuego(
     ),
     obtenerFotosDeProductos(),
     obtenerDescripcionesDeProductos(),
+    obtenerDestacadosDeProductos(),
   ]);
 
   return resultado.rows[0]
-    ? filaAProducto(resultado.rows[0], fotos, descripciones)
+    ? filaAProducto(resultado.rows[0], fotos, descripciones, destacados)
     : null;
 }
 

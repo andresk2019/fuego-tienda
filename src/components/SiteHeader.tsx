@@ -19,6 +19,9 @@ export default function SiteHeader() {
         aria-label="Principal"
         className="mt-6 flex flex-wrap justify-center gap-6 text-sm font-medium text-muted"
       >
+        <Link href="/" className="transition-colors hover:text-foreground">
+          Inicio
+        </Link>
         <Link
           href="/quienes-somos"
           className="transition-colors hover:text-foreground"
@@ -26,7 +29,7 @@ export default function SiteHeader() {
           Quiénes somos
         </Link>
         <Link
-          href="/"
+          href="/catalogo"
           className="transition-colors hover:text-foreground"
         >
           Catálogo

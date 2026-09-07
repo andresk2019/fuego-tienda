@@ -2,7 +2,11 @@
 
 import { useActionState } from 'react';
 import Image from 'next/image';
-import { subirFotoProducto, guardarDescripcion } from '@/app/admin/actions';
+import {
+  subirFotoProducto,
+  guardarDescripcion,
+  guardarDestacado,
+} from '@/app/admin/actions';
 import FlameIcon from '@/components/FlameIcon';
 
 export default function SubirFotoForm({
@@ -10,11 +14,13 @@ export default function SubirFotoForm({
   nombre,
   fotoUrl,
   descripcion,
+  destacado,
 }: {
   productoId: number;
   nombre: string;
   fotoUrl: string | null;
   descripcion: string;
+  destacado: boolean;
 }) {
   const [estadoFoto, accionFoto, subiendoFoto] = useActionState(
     subirFotoProducto,
@@ -22,6 +28,10 @@ export default function SubirFotoForm({
   );
   const [estadoDescripcion, accionDescripcion, guardandoDescripcion] =
     useActionState(guardarDescripcion, undefined);
+  const [estadoDestacado, accionDestacado] = useActionState(
+    guardarDestacado,
+    undefined
+  );
 
   return (
     <li className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4">
@@ -93,6 +103,27 @@ export default function SubirFotoForm({
         )}
         {estadoDescripcion?.ok && (
           <p className="text-xs text-ember">¡Descripción guardada!</p>
+        )}
+      </form>
+
+      <form action={accionDestacado} className="flex items-center gap-2 border-t border-border pt-3">
+        <input type="hidden" name="productoId" value={productoId} />
+        <input
+          type="checkbox"
+          id={`destacado-${productoId}`}
+          name="destacado"
+          defaultChecked={destacado}
+          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+          className="h-4 w-4 rounded border-border accent-ember"
+        />
+        <label
+          htmlFor={`destacado-${productoId}`}
+          className="text-xs font-medium text-foreground"
+        >
+          Destacar (carrusel de &ldquo;Las más vendidas&rdquo; en la portada)
+        </label>
+        {estadoDestacado?.error && (
+          <p className="text-xs text-danger">{estadoDestacado.error}</p>
         )}
       </form>
     </li>

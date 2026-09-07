@@ -42,7 +42,7 @@ export default function CarritoPage() {
           Tu carrito está vacío
         </h1>
         <Link
-          href="/"
+          href="/catalogo"
           className="text-sm font-medium text-ember transition-colors hover:text-ember-hover"
         >
           ← Ver el catálogo
