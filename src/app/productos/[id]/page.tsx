@@ -70,7 +70,10 @@ export default async function ProductoPage(
         <p className="leading-relaxed text-muted">{producto.descripcion}</p>
 
         {personalizable && (
-          <div className="mt-2 flex flex-col gap-4 border-t border-border pt-6">
+          <div
+            id="personalizar"
+            className="mt-2 flex flex-col gap-4 border-t border-border pt-6 scroll-mt-6"
+          >
             <h2 className="font-serif text-xl text-foreground">
               Personaliza tu vela
             </h2>
