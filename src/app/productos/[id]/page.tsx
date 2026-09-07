@@ -6,6 +6,7 @@ import { nombreCategoria } from "@/lib/categorias";
 import { esPersonalizable } from "@/lib/personalizacion";
 import FlameIcon from "@/components/FlameIcon";
 import PersonalizarVela from "@/components/PersonalizarVela";
+import AgregarAlCarrito from "@/components/AgregarAlCarrito";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -85,7 +86,30 @@ export default async function ProductoPage(
 
           <p className="leading-relaxed text-muted">{producto.descripcion}</p>
 
-          {personalizable && <PersonalizarVela aromas={aromas} />}
+          {personalizable ? (
+            <PersonalizarVela
+              productoId={producto.id}
+              nombre={producto.nombre}
+              precioUnitario={producto.precioVenta}
+              disponible={producto.disponible}
+              aromas={aromas}
+            />
+          ) : (
+            <div className="mt-2 border-t border-border pt-6">
+              {producto.disponible ? (
+                <AgregarAlCarrito
+                  productoId={producto.id}
+                  nombre={producto.nombre}
+                  precioUnitario={producto.precioVenta}
+                  disponible={producto.disponible}
+                />
+              ) : (
+                <p className="text-sm text-danger">
+                  Agotado — no se puede agregar al carrito por ahora.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </main>

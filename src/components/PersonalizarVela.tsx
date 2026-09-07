@@ -2,13 +2,45 @@
 
 import { useState } from "react";
 import { LONGITUD_MAXIMA_NOMBRE_SECRETO } from "@/lib/personalizacion";
+import { useCarrito } from "@/components/CarritoContext";
+import AgregarAlCarrito from "@/components/AgregarAlCarrito";
 
 // Le da al cliente la elección explícita entre comprar la vela tal
 // cual está en el catálogo o personalizarla — el formulario de
 // personalización NO se muestra de una vez, solo aparece si el
-// cliente elige esa opción.
-export default function PersonalizarVela({ aromas }: { aromas: string[] }) {
+// cliente elige esa opción. Cada camino agrega al carrito por su
+// cuenta (con o sin las opciones de personalización).
+export default function PersonalizarVela({
+  productoId,
+  nombre,
+  precioUnitario,
+  disponible,
+  aromas,
+}: {
+  productoId: number;
+  nombre: string;
+  precioUnitario: number;
+  disponible: boolean;
+  aromas: string[];
+}) {
+  const { agregar } = useCarrito();
   const [modo, setModo] = useState<"stock" | "personalizar">("stock");
+  const [aromaElegido, setAromaElegido] = useState(aromas[0] ?? "");
+  const [nombreSecreto, setNombreSecreto] = useState("");
+  const [agregado, setAgregado] = useState(false);
+
+  function agregarPersonalizada() {
+    agregar({
+      productoId,
+      nombre,
+      precioUnitario,
+      cantidad: 1,
+      aroma: aromaElegido || undefined,
+      nombreSecreto: nombreSecreto.trim() || undefined,
+    });
+    setAgregado(true);
+    setTimeout(() => setAgregado(false), 2000);
+  }
 
   return (
     <div
@@ -34,12 +66,25 @@ export default function PersonalizarVela({ aromas }: { aromas: string[] }) {
         </OpcionBoton>
       </div>
 
+      {modo === "stock" && (
+        <AgregarAlCarrito
+          productoId={productoId}
+          nombre={nombre}
+          precioUnitario={precioUnitario}
+          disponible={disponible}
+        />
+      )}
+
       {modo === "personalizar" && (
         <div className="flex flex-col gap-4 rounded-xl border border-border bg-background/40 p-4">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-foreground">Aroma</span>
             {aromas.length > 0 ? (
-              <select className="rounded-lg border border-border bg-background px-3 py-2 text-foreground">
+              <select
+                value={aromaElegido}
+                onChange={(e) => setAromaElegido(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+              >
                 {aromas.map((aroma) => (
                   <option key={aroma} value={aroma}>
                     {aroma}
@@ -69,6 +114,8 @@ export default function PersonalizarVela({ aromas }: { aromas: string[] }) {
             </span>
             <input
               type="text"
+              value={nombreSecreto}
+              onChange={(e) => setNombreSecreto(e.target.value)}
               maxLength={LONGITUD_MAXIMA_NOMBRE_SECRETO}
               placeholder="Ej: Feliz cumpleaños, Andrés, Leidy..."
               className="rounded-lg border border-border bg-background px-3 py-2 text-foreground placeholder:text-muted/60"
@@ -82,7 +129,23 @@ export default function PersonalizarVela({ aromas }: { aromas: string[] }) {
           <p className="text-xs text-muted italic">
             Cuéntanos tu personalización al hacer tu pedido.
           </p>
+
+          {disponible && (
+            <button
+              type="button"
+              onClick={agregarPersonalizada}
+              className="w-fit rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover"
+            >
+              {agregado ? "¡Agregado!" : "Agregar al carrito"}
+            </button>
+          )}
         </div>
+      )}
+
+      {!disponible && (
+        <p className="text-sm text-danger">
+          Agotado — no se puede agregar al carrito por ahora.
+        </p>
       )}
     </div>
   );

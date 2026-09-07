@@ -1,5 +1,6 @@
 import Link from "next/link";
 import FlameIcon from "@/components/FlameIcon";
+import CarritoIndicador from "@/components/CarritoIndicador";
 
 export default function SiteHeader() {
   return (
@@ -30,6 +31,7 @@ export default function SiteHeader() {
         >
           Catálogo
         </Link>
+        <CarritoIndicador />
       </nav>
     </header>
   );
