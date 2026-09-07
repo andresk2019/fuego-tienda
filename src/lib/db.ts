@@ -16,7 +16,7 @@ import 'server-only';
 import { Pool } from 'pg';
 import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
-import { lineaDeProducto, type LineaSlug } from './lineas';
+import { subcategoriaDeProducto, type SubcategoriaSlug } from './secciones';
 import { obtenerFotosDeProductos } from './admin-db';
 
 let pool: Pool | undefined;
@@ -49,7 +49,7 @@ export type ProductoCatalogo = {
   pocasUnidades: boolean;
   categoria: CategoriaSlug;
   descripcion: string;
-  linea: LineaSlug;
+  subcategoria: SubcategoriaSlug;
   fotoUrl: string | null;
 };
 
@@ -78,7 +78,7 @@ function filaAProducto(
     pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
     categoria,
     descripcion: descripcionDeProducto(r.id, categoria),
-    linea: lineaDeProducto(),
+    subcategoria: subcategoriaDeProducto(),
     fotoUrl: fotos[r.id] ?? null,
   };
 }
