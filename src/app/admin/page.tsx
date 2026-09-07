@@ -34,7 +34,7 @@ export default async function AdminPage() {
       </div>
 
       <p className="mt-2 text-sm text-muted">
-        Sube o cambia la foto de cada producto.
+        Sube o cambia la foto y la descripción de cada producto.
       </p>
 
       <ul className="mt-6 flex flex-col gap-3">
@@ -44,6 +44,7 @@ export default async function AdminPage() {
             productoId={producto.id}
             nombre={producto.nombre}
             fotoUrl={producto.fotoUrl}
+            descripcion={producto.descripcion}
           />
         ))}
       </ul>

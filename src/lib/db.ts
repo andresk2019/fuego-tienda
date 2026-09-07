@@ -4,10 +4,10 @@
 // descuenta stock sigue siendo Contabilidad Lady (ver
 // `C:\Contabilidad Lady\api\clientes.js`, que resta `cantidad` al
 // registrar una venta a un cliente). Aquí solo leemos, para mostrar
-// el catálogo público de la marca Fuego. La foto de cada producto SÍ
-// se lee de una tabla propia de la tienda (`admin-db.ts`), separada
-// de las de Contabilidad Lady — ver ese archivo para el único lugar
-// donde la tienda escribe algo.
+// el catálogo público de la marca Fuego. La foto y la descripción de
+// cada producto SÍ se leen de una tabla propia de la tienda
+// (`admin-db.ts`), separada de las de Contabilidad Lady — ver ese
+// archivo para el único lugar donde la tienda escribe algo.
 //
 // `import 'server-only'` evita que este módulo (y por lo tanto la
 // cadena de conexión a la base de datos) pueda terminar incluido por
@@ -17,7 +17,10 @@ import { Pool } from 'pg';
 import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
 import { subcategoriaDeProducto, type SubcategoriaSlug } from './secciones';
-import { obtenerFotosDeProductos } from './admin-db';
+import {
+  obtenerFotosDeProductos,
+  obtenerDescripcionesDeProductos,
+} from './admin-db';
 
 let pool: Pool | undefined;
 
@@ -64,11 +67,16 @@ function filaAProducto(
     cantidad: string | number;
     stock_minimo: string | number;
   },
-  fotos: Record<number, string>
+  fotos: Record<number, string>,
+  descripciones: Record<number, string>
 ): ProductoCatalogo {
   const cantidad = Number(r.cantidad);
   const stockMinimo = Number(r.stock_minimo);
   const categoria = categoriaDeProducto(r.id);
+  // La descripción escrita desde el panel de administración tiene
+  // prioridad; si no hay ninguna, se usa el texto genérico por
+  // categoría (ver descripciones.ts).
+  const descripcion = descripciones[r.id] ?? descripcionDeProducto(r.id, categoria);
   return {
     id: r.id,
     nombre: r.nombre,
@@ -77,14 +85,14 @@ function filaAProducto(
     disponible: cantidad > 0,
     pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
     categoria,
-    descripcion: descripcionDeProducto(r.id, categoria),
+    descripcion,
     subcategoria: subcategoriaDeProducto(),
     fotoUrl: fotos[r.id] ?? null,
   };
 }
 
 export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
-  const [resultado, fotos] = await Promise.all([
+  const [resultado, fotos, descripciones] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -93,9 +101,10 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
        ORDER BY i.nombre`
     ),
     obtenerFotosDeProductos(),
+    obtenerDescripcionesDeProductos(),
   ]);
 
-  return resultado.rows.map((r) => filaAProducto(r, fotos));
+  return resultado.rows.map((r) => filaAProducto(r, fotos, descripciones));
 }
 
 // Para la página de detalle de un producto. Filtra también por
@@ -105,9 +114,10 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
 export async function obtenerProductoFuego(
   id: number
 ): Promise<ProductoCatalogo | null> {
-  // Trae todas las fotos aunque solo haga falta una — son pocos
-  // productos hoy, no vale la pena una consulta separada solo para eso.
-  const [resultado, fotos] = await Promise.all([
+  // Trae todas las fotos/descripciones aunque solo haga falta una —
+  // son pocos productos hoy, no vale la pena una consulta separada
+  // solo para eso.
+  const [resultado, fotos, descripciones] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -116,9 +126,12 @@ export async function obtenerProductoFuego(
       [id]
     ),
     obtenerFotosDeProductos(),
+    obtenerDescripcionesDeProductos(),
   ]);
 
-  return resultado.rows[0] ? filaAProducto(resultado.rows[0], fotos) : null;
+  return resultado.rows[0]
+    ? filaAProducto(resultado.rows[0], fotos, descripciones)
+    : null;
 }
 
 // Aromas disponibles para personalizar una vela. Los aromas no son un

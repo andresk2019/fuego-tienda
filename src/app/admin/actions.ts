@@ -4,7 +4,10 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { eliminarSesion, haySesion } from '@/lib/session';
 import { subirFotoAStorage } from '@/lib/storage';
-import { guardarFotoProducto } from '@/lib/admin-db';
+import {
+  guardarFotoProducto,
+  guardarDescripcionProducto,
+} from '@/lib/admin-db';
 
 export async function cerrarSesion() {
   await eliminarSesion();
@@ -51,6 +54,36 @@ export async function subirFotoProducto(
   // El catálogo, el detalle del producto y el panel muestran la foto
   // nueva de inmediato (aunque el catálogo/detalle ya son
   // force-dynamic, esto no sobra).
+  revalidatePath('/admin');
+  revalidatePath('/');
+  revalidatePath(`/productos/${productoId}`);
+
+  return { ok: true };
+}
+
+export type EstadoDescripcion = { error?: string; ok?: boolean } | undefined;
+
+export async function guardarDescripcion(
+  _estado: EstadoDescripcion,
+  formData: FormData
+): Promise<EstadoDescripcion> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  const descripcion = String(formData.get('descripcion') ?? '');
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+
+  try {
+    await guardarDescripcionProducto(productoId, descripcion);
+  } catch {
+    return { error: 'No se pudo guardar la descripción. Intenta de nuevo.' };
+  }
+
   revalidatePath('/admin');
   revalidatePath('/');
   revalidatePath(`/productos/${productoId}`);
