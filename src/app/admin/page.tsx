@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation';
 import { haySesion } from '@/lib/session';
 import { obtenerCatalogoFuego } from '@/lib/db';
+import { obtenerLogoUrl } from '@/lib/admin-db';
 import { cerrarSesion } from './actions';
 import SubirFotoForm from '@/components/admin/SubirFotoForm';
+import SubirLogoForm from '@/components/admin/SubirLogoForm';
 
 // El proxy (src/proxy.ts) ya protege /admin/*, pero se vuelve a
 // verificar aquí — nunca hay que confiar solo en el proxy (ver la
@@ -15,7 +17,10 @@ export default async function AdminPage() {
     redirect('/admin/login');
   }
 
-  const productos = await obtenerCatalogoFuego();
+  const [productos, logoUrl] = await Promise.all([
+    obtenerCatalogoFuego(),
+    obtenerLogoUrl(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
@@ -32,6 +37,8 @@ export default async function AdminPage() {
           </button>
         </form>
       </div>
+
+      <SubirLogoForm logoUrl={logoUrl} />
 
       <p className="mt-2 text-sm text-muted">
         Sube o cambia la foto y la descripción de cada producto.

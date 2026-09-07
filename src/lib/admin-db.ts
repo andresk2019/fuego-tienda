@@ -46,9 +46,37 @@ function asegurarEsquema(): Promise<void> {
           `ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS descripcion TEXT`
         )
       )
+      // Configuración general del sitio (hoy: el logo). Clave/valor
+      // simple para no tener que crear una tabla nueva cada vez que
+      // se agregue un dato suelto de este tipo.
+      .then(() =>
+        obtenerPool().query(
+          `CREATE TABLE IF NOT EXISTS tienda_config (
+             clave TEXT PRIMARY KEY,
+             valor TEXT
+           )`
+        )
+      )
       .then(() => undefined);
   }
   return esquemaListo;
+}
+
+export async function obtenerLogoUrl(): Promise<string | null> {
+  await asegurarEsquema();
+  const { rows } = await obtenerPool().query(
+    "SELECT valor FROM tienda_config WHERE clave = 'logo_url'"
+  );
+  return rows[0]?.valor ?? null;
+}
+
+export async function guardarLogoUrl(url: string): Promise<void> {
+  await asegurarEsquema();
+  await obtenerPool().query(
+    `INSERT INTO tienda_config (clave, valor) VALUES ('logo_url', $1)
+     ON CONFLICT (clave) DO UPDATE SET valor = $1`,
+    [url]
+  );
 }
 
 // id de producto -> URL de la foto. Trae todas de una vez (son pocos

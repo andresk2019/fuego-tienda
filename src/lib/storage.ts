@@ -1,6 +1,6 @@
-// Sube fotos de producto a Supabase Storage. Solo se usa desde el
-// panel de administración (protegido por sesión) — nunca se llama
-// directamente desde una página pública.
+// Sube archivos (fotos de producto, logo de la tienda) a Supabase
+// Storage. Solo se usa desde el panel de administración (protegido
+// por sesión) — nunca se llama directamente desde una página pública.
 import 'server-only';
 import { createClient } from '@supabase/supabase-js';
 
@@ -24,13 +24,11 @@ function obtenerBucket(): string {
   return bucket;
 }
 
-// Guarda siempre en la misma ruta por producto (productos/{id}.ext) —
-// así una foto nueva reemplaza a la anterior en vez de acumular
-// archivos huérfanos en el bucket. El "?v=" al final de la URL evita
-// que quede una versión vieja cacheada en el navegador o el CDN.
-export async function subirFotoAStorage(productoId: number, archivo: File): Promise<string> {
-  const extension = (archivo.name.split('.').pop() || 'jpg').toLowerCase();
-  const ruta = `productos/${productoId}.${extension}`;
+// Sube siempre a la misma `ruta` (upsert) — así un archivo nuevo
+// reemplaza al anterior en vez de acumular archivos huérfanos en el
+// bucket. El "?v=" al final de la URL evita que quede una versión
+// vieja cacheada en el navegador o el CDN.
+async function subirArchivo(ruta: string, archivo: File): Promise<string> {
   const bytes = new Uint8Array(await archivo.arrayBuffer());
 
   const { error } = await obtenerCliente()
@@ -43,4 +41,14 @@ export async function subirFotoAStorage(productoId: number, archivo: File): Prom
 
   const { data } = obtenerCliente().storage.from(obtenerBucket()).getPublicUrl(ruta);
   return `${data.publicUrl}?v=${Date.now()}`;
+}
+
+export async function subirFotoAStorage(productoId: number, archivo: File): Promise<string> {
+  const extension = (archivo.name.split('.').pop() || 'jpg').toLowerCase();
+  return subirArchivo(`productos/${productoId}.${extension}`, archivo);
+}
+
+export async function subirLogoAStorage(archivo: File): Promise<string> {
+  const extension = (archivo.name.split('.').pop() || 'png').toLowerCase();
+  return subirArchivo(`sitio/logo.${extension}`, archivo);
 }

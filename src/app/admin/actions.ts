@@ -3,10 +3,11 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { eliminarSesion, haySesion } from '@/lib/session';
-import { subirFotoAStorage } from '@/lib/storage';
+import { subirFotoAStorage, subirLogoAStorage } from '@/lib/storage';
 import {
   guardarFotoProducto,
   guardarDescripcionProducto,
+  guardarLogoUrl,
 } from '@/lib/admin-db';
 
 export async function cerrarSesion() {
@@ -87,6 +88,41 @@ export async function guardarDescripcion(
   revalidatePath('/admin');
   revalidatePath('/');
   revalidatePath(`/productos/${productoId}`);
+
+  return { ok: true };
+}
+
+export type EstadoLogo = { error?: string; ok?: boolean } | undefined;
+
+export async function subirLogo(
+  _estado: EstadoLogo,
+  formData: FormData
+): Promise<EstadoLogo> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const archivo = formData.get('logo');
+
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return { error: 'Selecciona una imagen.' };
+  }
+  if (!archivo.type.startsWith('image/')) {
+    return { error: 'El archivo debe ser una imagen.' };
+  }
+  if (archivo.size > LIMITE_MB * 1024 * 1024) {
+    return { error: `La imagen no puede pesar más de ${LIMITE_MB}MB.` };
+  }
+
+  try {
+    const url = await subirLogoAStorage(archivo);
+    await guardarLogoUrl(url);
+  } catch {
+    return { error: 'No se pudo subir el logo. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/');
 
   return { ok: true };
 }
