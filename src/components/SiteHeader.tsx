@@ -13,6 +13,24 @@ export default function SiteHeader() {
           Velas artesanales
         </p>
       </Link>
+
+      <nav
+        aria-label="Principal"
+        className="mt-6 flex flex-wrap justify-center gap-6 text-sm font-medium text-muted"
+      >
+        <Link
+          href="/"
+          className="transition-colors hover:text-foreground"
+        >
+          Catálogo
+        </Link>
+        <Link
+          href="/quienes-somos"
+          className="transition-colors hover:text-foreground"
+        >
+          Quiénes somos
+        </Link>
+      </nav>
     </header>
   );
 }
