@@ -13,31 +13,11 @@
 // cadena de conexión a la base de datos) pueda terminar incluido por
 // error en el bundle que se manda al navegador.
 import 'server-only';
-import { Pool } from 'pg';
+import { getPool } from './pool';
 import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
 import { subcategoriaDeProducto, type SubcategoriaSlug } from './secciones';
-import {
-  obtenerFotosDeProductos,
-  obtenerDescripcionesDeProductos,
-  obtenerDestacadosDeProductos,
-} from './admin-db';
-
-let pool: Pool | undefined;
-
-function getPool(): Pool {
-  if (!pool) {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('Falta la variable de entorno DATABASE_URL con la cadena de conexión de Postgres');
-    }
-    pool = new Pool({
-      connectionString,
-      ssl: /localhost|127\.0\.0\.1/.test(connectionString) ? false : { rejectUnauthorized: false },
-    });
-  }
-  return pool;
-}
+import { obtenerMetaDeProductos, type MetaProductos } from './admin-db';
 
 // DTO (Data Transfer Object): solo los campos seguros para mostrar en
 // público. A propósito NO incluye `costo_unitario` (margen/costo
@@ -69,9 +49,7 @@ function filaAProducto(
     cantidad: string | number;
     stock_minimo: string | number;
   },
-  fotos: Record<number, string>,
-  descripciones: Record<number, string>,
-  destacados: Set<number>
+  meta: MetaProductos
 ): ProductoCatalogo {
   const cantidad = Number(r.cantidad);
   const stockMinimo = Number(r.stock_minimo);
@@ -79,7 +57,7 @@ function filaAProducto(
   // La descripción escrita desde el panel de administración tiene
   // prioridad; si no hay ninguna, se usa el texto genérico por
   // categoría (ver descripciones.ts).
-  const descripcion = descripciones[r.id] ?? descripcionDeProducto(r.id, categoria);
+  const descripcion = meta.descripciones[r.id] ?? descripcionDeProducto(r.id, categoria);
   return {
     id: r.id,
     nombre: r.nombre,
@@ -90,13 +68,13 @@ function filaAProducto(
     categoria,
     descripcion,
     subcategoria: subcategoriaDeProducto(r.id),
-    fotoUrl: fotos[r.id] ?? null,
-    destacado: destacados.has(r.id),
+    fotoUrl: meta.fotos[r.id] ?? null,
+    destacado: meta.destacados.has(r.id),
   };
 }
 
 export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
-  const [resultado, fotos, descripciones, destacados] = await Promise.all([
+  const [resultado, meta] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -104,12 +82,10 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
        WHERE e.nombre = 'Fuego' AND i.es_informativo = false
        ORDER BY i.nombre`
     ),
-    obtenerFotosDeProductos(),
-    obtenerDescripcionesDeProductos(),
-    obtenerDestacadosDeProductos(),
+    obtenerMetaDeProductos(),
   ]);
 
-  return resultado.rows.map((r) => filaAProducto(r, fotos, descripciones, destacados));
+  return resultado.rows.map((r) => filaAProducto(r, meta));
 }
 
 // Para la página de detalle de un producto. Filtra también por
@@ -119,10 +95,10 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
 export async function obtenerProductoFuego(
   id: number
 ): Promise<ProductoCatalogo | null> {
-  // Trae todas las fotos/descripciones/destacados aunque solo haga
-  // falta uno — son pocos productos hoy, no vale la pena una consulta
-  // separada solo para eso.
-  const [resultado, fotos, descripciones, destacados] = await Promise.all([
+  // Trae la meta de todos los productos aunque solo haga falta uno —
+  // son pocos productos hoy, no vale la pena una consulta separada
+  // solo para eso.
+  const [resultado, meta] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -130,14 +106,10 @@ export async function obtenerProductoFuego(
        WHERE e.nombre = 'Fuego' AND i.es_informativo = false AND i.id = $1`,
       [id]
     ),
-    obtenerFotosDeProductos(),
-    obtenerDescripcionesDeProductos(),
-    obtenerDestacadosDeProductos(),
+    obtenerMetaDeProductos(),
   ]);
 
-  return resultado.rows[0]
-    ? filaAProducto(resultado.rows[0], fotos, descripciones, destacados)
-    : null;
+  return resultado.rows[0] ? filaAProducto(resultado.rows[0], meta) : null;
 }
 
 // Aromas disponibles para personalizar una vela. Los aromas no son un
