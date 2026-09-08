@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { haySesion } from '@/lib/session';
 import { obtenerCatalogoFuego } from '@/lib/db';
@@ -43,14 +44,22 @@ export default async function AdminPage() {
         <h1 className="font-serif text-2xl text-foreground">
           Panel de administración
         </h1>
-        <form action={cerrarSesion}>
-          <button
-            type="submit"
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin/pedidos"
             className="text-sm text-muted transition-colors hover:text-foreground"
           >
-            Cerrar sesión
-          </button>
-        </form>
+            Pedidos
+          </Link>
+          <form action={cerrarSesion}>
+            <button
+              type="submit"
+              className="text-sm text-muted transition-colors hover:text-foreground"
+            >
+              Cerrar sesión
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="mt-6">
