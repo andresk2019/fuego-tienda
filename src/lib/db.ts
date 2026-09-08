@@ -89,7 +89,7 @@ function filaAProducto(
     pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
     categoria,
     descripcion,
-    subcategoria: subcategoriaDeProducto(),
+    subcategoria: subcategoriaDeProducto(r.id),
     fotoUrl: fotos[r.id] ?? null,
     destacado: destacados.has(r.id),
   };

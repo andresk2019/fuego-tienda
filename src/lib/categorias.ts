@@ -58,6 +58,8 @@ const CATEGORIA_POR_ID: Record<number, CategoriaSlug> = {
   14: "amor-y-amistad", // Vela Corazon
   21: "clasicas", // Vela duo cemento
   2: "clasicas", // Vela Estrella
+  30: "clasicas", // Sal Relajante
+  31: "clasicas", // Exfoliante Coco
 };
 
 export function categoriaDeProducto(id: number): CategoriaSlug {

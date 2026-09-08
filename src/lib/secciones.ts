@@ -1,8 +1,5 @@
 // Estructura del catálogo en 2 niveles, definida con el dueño
-// (2026-09-07): Sección -> Subcategoría. Hoy todo el inventario es
-// "velas" — Difusores, Sales Relajantes y Exfoliantes todavía no
-// existen como productos en Contabilidad Lady, pero se deja la
-// estructura lista para cuando se agreguen. Igual que categorias.ts,
+// (2026-09-07): Sección -> Subcategoría. Igual que categorias.ts,
 // esto vive solo en la tienda.
 export type SubcategoriaSlug =
   | "velas"
@@ -35,11 +32,15 @@ export const SECCIONES: {
   },
 ];
 
-// Por ahora TODO el inventario de Fuego es de la subcategoría "velas"
-// — no hace falta un mapa por id todavía. El día que se agreguen
-// difusores/sales/exfoliantes en Contabilidad Lady, esta función
-// deberá cambiar a un mapa manual por id (como CATEGORIA_POR_ID en
-// categorias.ts).
-export function subcategoriaDeProducto(): SubcategoriaSlug {
-  return "velas";
+// id de `inventario` -> subcategoría. Los primeros productos reales
+// de Sales Relajantes/Exfoliantes ya aparecieron en Contabilidad
+// Lady — cualquier id que no esté aquí cae por defecto en "velas"
+// (que es lo que ha sido el inventario de Fuego hasta ahora).
+const SUBCATEGORIA_POR_ID: Record<number, SubcategoriaSlug> = {
+  30: "sales-relajantes", // Sal Relajante
+  31: "exfoliantes", // Exfoliante Coco
+};
+
+export function subcategoriaDeProducto(id: number): SubcategoriaSlug {
+  return SUBCATEGORIA_POR_ID[id] ?? "velas";
 }
