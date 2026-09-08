@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
+import type { ProblemaStock } from "@/lib/db";
 import { crearPedidoDesdeCarrito } from "./actions";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 
@@ -53,6 +54,9 @@ export default function CarritoPage() {
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [problemasStock, setProblemasStock] = useState<ProblemaStock[] | null>(
+    null
+  );
 
   if (items.length === 0) {
     return (
@@ -72,14 +76,23 @@ export default function CarritoPage() {
 
   // Registra el pedido (para que quede con número y estado en el
   // panel de administración) y luego abre WhatsApp con el mensaje.
-  // Si el registro falla (ej. la base de datos no responde), NO se le
-  // impide al cliente hacer el pedido por un problema técnico interno
-  // — igual se abre WhatsApp, solo que sin el número de pedido.
+  // Antes de eso, valida el stock real: el catálogo se cargó al
+  // entrar a la tienda, pero mientras el cliente arma el carrito el
+  // stock puede cambiar por una venta de mostrador en Contabilidad
+  // Lady. Si algo ya no alcanza, se detiene aquí — no se le deja
+  // llegar a WhatsApp a pedir algo que no se le puede cumplir.
+  //
+  // Distinto es si el registro del pedido falla por un problema
+  // técnico nuestro (ej. la base de datos no responde): eso NO le
+  // impide al cliente seguir — igual se abre WhatsApp, solo que sin
+  // el número de pedido.
   async function manejarContinuar(e: React.FormEvent) {
     e.preventDefault();
     if (!NUMERO_WHATSAPP || enviando) return;
 
     setEnviando(true);
+    setProblemasStock(null);
+
     let numero: string | null = null;
     try {
       const resultado = await crearPedidoDesdeCarrito({
@@ -88,6 +101,11 @@ export default function CarritoPage() {
         items,
         total,
       });
+      if (resultado.problemasStock && resultado.problemasStock.length > 0) {
+        setEnviando(false);
+        setProblemasStock(resultado.problemasStock);
+        return;
+      }
       numero = resultado.numero ?? null;
     } catch {
       // seguimos sin número — ver comentario arriba
@@ -157,6 +175,26 @@ export default function CarritoPage() {
           {formatoCOP.format(total)}
         </span>
       </div>
+
+      {problemasStock && (
+        <div className="mt-6 rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+          <p className="font-medium">
+            Algo cambió de stock mientras armabas el pedido:
+          </p>
+          <ul className="mt-1 list-inside list-disc">
+            {problemasStock.map((p) => (
+              <li key={p.productoId}>
+                {p.nombre}: quedan {p.cantidadDisponible}, pediste{" "}
+                {p.cantidadPedida}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1">
+            Ajusta la cantidad arriba (o quita el producto) e intenta de
+            nuevo.
+          </p>
+        </div>
+      )}
 
       {NUMERO_WHATSAPP ? (
         <form

@@ -112,6 +112,60 @@ export async function obtenerProductoFuego(
   return resultado.rows[0] ? filaAProducto(resultado.rows[0], meta) : null;
 }
 
+export type ProblemaStock = {
+  productoId: number;
+  nombre: string;
+  cantidadDisponible: number;
+  cantidadPedida: number;
+};
+
+// Se llama justo antes de registrar un pedido (ver
+// (tienda)/carrito/actions.ts) — el catálogo se carga una sola vez al
+// entrar a la tienda, pero el stock puede cambiar en cualquier
+// momento por una venta de mostrador en Contabilidad Lady mientras el
+// cliente arma su carrito. Sin esto, dos personas podrían "pedir" la
+// última unidad de algo casi al mismo tiempo sin que nadie se entere
+// hasta después. Devuelve solo los ítems que YA NO alcanzan; un
+// arreglo vacío significa que todo el carrito sigue disponible.
+export async function validarStockCarrito(
+  items: { productoId: number; cantidad: number }[]
+): Promise<ProblemaStock[]> {
+  if (items.length === 0) return [];
+
+  const { rows } = await getPool().query(
+    `SELECT i.id, i.nombre, i.cantidad
+     FROM inventario i
+     JOIN empresas e ON e.id = i.empresa_id
+     WHERE e.nombre = 'Fuego' AND i.es_informativo = false
+       AND i.id = ANY($1::int[])`,
+    [items.map((item) => item.productoId)]
+  );
+
+  const stockReal = new Map(
+    rows.map((r) => [
+      r.id as number,
+      { nombre: r.nombre as string, cantidad: Number(r.cantidad) },
+    ])
+  );
+
+  const problemas: ProblemaStock[] = [];
+  for (const item of items) {
+    // Si el id ni siquiera aparece (producto borrado, o de otra marca)
+    // se trata como 0 disponibles — nunca como "no importa".
+    const real = stockReal.get(item.productoId);
+    const cantidadDisponible = real?.cantidad ?? 0;
+    if (cantidadDisponible < item.cantidad) {
+      problemas.push({
+        productoId: item.productoId,
+        nombre: real?.nombre ?? `Producto #${item.productoId}`,
+        cantidadDisponible,
+        cantidadPedida: item.cantidad,
+      });
+    }
+  }
+  return problemas;
+}
+
 // Aromas disponibles para personalizar una vela. Los aromas no son un
 // producto del catálogo (tabla `inventario`) sino un insumo interno
 // (tabla `insumos`, con nombres tipo "Aroma Menta") — se listan solo
