@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CATEGORIAS, type CategoriaSlug } from "@/lib/categorias";
 import { esPersonalizable } from "@/lib/personalizacion";
 import type { ProductoCatalogo } from "@/lib/db";
+import { productoHref } from "@/lib/slug";
 import Chip from "@/components/Chip";
 import TarjetaProducto from "@/components/TarjetaProducto";
 
@@ -70,7 +71,7 @@ export default function CatalogoFiltrable({
         <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {productosFiltrados.map((producto) => (
             <li key={producto.id}>
-              <Link href={`/productos/${producto.id}`} className="block h-full">
+              <Link href={productoHref(producto)} className="block h-full">
                 <TarjetaProducto
                   nombre={producto.nombre}
                   precioVenta={producto.precioVenta}

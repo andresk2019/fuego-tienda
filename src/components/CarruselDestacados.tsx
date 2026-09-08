@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { ProductoCatalogo } from "@/lib/db";
+import { productoHref } from "@/lib/slug";
 import FlameIcon from "@/components/FlameIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
@@ -62,7 +63,7 @@ export default function CarruselDestacados({
         {productos.map((producto) => (
           <li key={producto.id} className="w-48 shrink-0 snap-start">
             <Link
-              href={`/productos/${producto.id}`}
+              href={productoHref(producto)}
               className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
             >
               {producto.fotoUrl ? (
