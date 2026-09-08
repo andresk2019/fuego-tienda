@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
 import { crearPedidoDesdeCarrito } from "./actions";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -192,8 +193,9 @@ export default function CarritoPage() {
           <button
             type="submit"
             disabled={enviando}
-            className="mt-1 block rounded-lg bg-ember px-4 py-3 text-center text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover disabled:opacity-60"
+            className="mt-1 flex items-center justify-center gap-2 rounded-lg bg-whatsapp px-4 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-whatsapp-hover disabled:opacity-60"
           >
+            <WhatsAppIcon className="h-4 w-4" />
             {enviando ? "Un momento..." : "Continuar por WhatsApp"}
           </button>
         </form>

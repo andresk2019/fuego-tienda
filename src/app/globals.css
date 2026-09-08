@@ -18,6 +18,13 @@
   --on-ember: #fff8ef;
   --gold: #a2731f;
   --danger: #c0392b;
+  /* Verde para el botón de WhatsApp — a propósito no es el verde
+     saturado de la marca WhatsApp (#25D366), que desentonaría con el
+     resto de la paleta cálida; es un verde salvia más apagado, para
+     que siga leyéndose como "WhatsApp/acción positiva" sin salirse
+     del ambiente boutique del resto del sitio. */
+  --whatsapp: #4f8a5b;
+  --whatsapp-hover: #40734a;
 }
 
 @theme inline {
@@ -32,6 +39,8 @@
   --color-on-ember: var(--on-ember);
   --color-gold: var(--gold);
   --color-danger: var(--danger);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-hover: var(--whatsapp-hover);
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-display);
 }
