@@ -16,9 +16,22 @@ const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
 });
 
+const TITULO = "Fuego | Velas artesanales";
+const DESCRIPCION = "Catálogo de velas artesanales de Fuego.";
+
 export const metadata: Metadata = {
-  title: "Fuego | Velas artesanales",
-  description: "Catálogo de velas artesanales de Fuego.",
+  // Necesario para que el og:image (generado por convención de
+  // archivo en opengraph-image.png) se anuncie con URL absoluta —
+  // WhatsApp/Instagram/Facebook no cargan bien una ruta relativa.
+  metadataBase: new URL("https://fuego-tienda.vercel.app"),
+  title: TITULO,
+  description: DESCRIPCION,
+  openGraph: {
+    title: TITULO,
+    description: DESCRIPCION,
+    type: "website",
+    locale: "es_CO",
+  },
 };
 
 // Header/footer públicos ya NO viven aquí — se movieron al layout del
