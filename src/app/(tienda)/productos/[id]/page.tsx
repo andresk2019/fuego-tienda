@@ -17,7 +17,12 @@ export default async function ProductoPage(
   props: PageProps<"/productos/[id]">
 ) {
   const { id } = await props.params;
-  const idNumero = Number(id);
+  // El segmento de la URL puede venir como "2" (link viejo) o como
+  // "2-vela-estrella" (link nuevo, más profesional) — el nombre es
+  // solo cosmético, el id sigue siendo lo único que de verdad importa
+  // para buscar el producto. parseInt lee los dígitos del inicio y
+  // descarta el resto; si no empieza con un número, es inválido.
+  const idNumero = parseInt(id, 10);
   if (!Number.isInteger(idNumero)) notFound();
 
   const producto = await obtenerProductoFuego(idNumero);
