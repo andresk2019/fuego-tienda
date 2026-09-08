@@ -28,6 +28,7 @@ export default async function AdminPage() {
     nombre: producto.nombre,
     precioVenta: producto.precioVenta,
     categoria: producto.categoria,
+    subcategoria: producto.subcategoria,
     disponible: producto.disponible,
     pocasUnidades: producto.pocasUnidades,
     personalizable: esPersonalizable(producto.id),
