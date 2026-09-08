@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import {
   subirFotoProducto,
@@ -33,20 +33,66 @@ export default function SubirFotoForm({
     undefined
   );
 
+  // Vista previa del archivo elegido, ANTES de subirlo de verdad — así
+  // se puede ver cómo quedaría la imagen sin que el cambio ya esté en
+  // producción. Se genera localmente en el navegador (URL.createObjectURL),
+  // no toca el servidor ni el storage todavía.
+  const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
+  const inputArchivoRef = useRef<HTMLInputElement>(null);
+
+  function manejarSeleccionArchivo(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    setVistaPrevia((anterior) => {
+      if (anterior) URL.revokeObjectURL(anterior);
+      return archivo ? URL.createObjectURL(archivo) : null;
+    });
+  }
+
+  // Al terminar de subir con éxito, la vista previa deja de hacer
+  // falta (la foto "actual" de arriba ya es la nueva).
+  useEffect(() => {
+    if (estadoFoto?.ok) {
+      setVistaPrevia((anterior) => {
+        if (anterior) URL.revokeObjectURL(anterior);
+        return null;
+      });
+      if (inputArchivoRef.current) inputArchivoRef.current.value = '';
+    }
+  }, [estadoFoto]);
+
   return (
     <li className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
-          {fotoUrl ? (
-            <Image
-              src={fotoUrl}
-              alt={nombre}
-              width={64}
-              height={64}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <FlameIcon className="h-6 w-6 text-ember/30" />
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
+              {fotoUrl ? (
+                <Image
+                  src={fotoUrl}
+                  alt={nombre}
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <FlameIcon className="h-6 w-6 text-ember/30" />
+              )}
+            </div>
+            <span className="text-[10px] text-muted">Actual</span>
+          </div>
+
+          {vistaPrevia && (
+            <div className="flex flex-col items-center gap-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={vistaPrevia}
+                alt={`Vista previa de ${nombre}`}
+                className="h-16 w-16 shrink-0 rounded-lg border-2 border-ember object-cover"
+              />
+              <span className="text-[10px] font-medium text-ember">
+                Nueva (sin guardar)
+              </span>
+            </div>
           )}
         </div>
 
@@ -59,18 +105,20 @@ export default function SubirFotoForm({
             {nombre}
           </span>
           <input
+            ref={inputArchivoRef}
             type="file"
             name="foto"
             accept="image/*"
             required
+            onChange={manejarSeleccionArchivo}
             className="text-xs text-muted file:mr-2 file:rounded-lg file:border-0 file:bg-ember file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-on-ember"
           />
           <button
             type="submit"
-            disabled={subiendoFoto}
+            disabled={subiendoFoto || !vistaPrevia}
             className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-ember/60 disabled:opacity-60"
           >
-            {subiendoFoto ? 'Subiendo...' : 'Subir'}
+            {subiendoFoto ? 'Subiendo...' : 'Confirmar y subir'}
           </button>
         </form>
       </div>

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Playfair_Display } from "next/font/google";
-import SiteHeader from "@/components/SiteHeader";
-import SiteFooter from "@/components/SiteFooter";
 import { CarritoProvider } from "@/components/CarritoContext";
 import "./globals.css";
 
@@ -23,6 +21,10 @@ export const metadata: Metadata = {
   description: "Catálogo de velas artesanales de Fuego.",
 };
 
+// Header/footer públicos ya NO viven aquí — se movieron al layout del
+// grupo (tienda), para que /admin no los comparta (ver ese layout).
+// Aquí solo queda lo verdaderamente global: fuentes, el carrito, y el
+// esqueleto html/body.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -30,11 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <CarritoProvider>
-          <SiteHeader />
-          {children}
-          <SiteFooter />
-        </CarritoProvider>
+        <CarritoProvider>{children}</CarritoProvider>
       </body>
     </html>
   );
