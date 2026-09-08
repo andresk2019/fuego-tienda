@@ -4,8 +4,8 @@ import { obtenerCatalogoFuego } from '@/lib/db';
 import { obtenerLogoUrl } from '@/lib/admin-db';
 import { esPersonalizable } from '@/lib/personalizacion';
 import { cerrarSesion } from './actions';
-import SubirFotoForm from '@/components/admin/SubirFotoForm';
 import SubirLogoForm from '@/components/admin/SubirLogoForm';
+import ListaProductosAdmin from '@/components/admin/ListaProductosAdmin';
 
 // El proxy (src/proxy.ts) ya protege /admin/*, pero se vuelve a
 // verificar aquí — nunca hay que confiar solo en el proxy (ver la
@@ -23,6 +23,19 @@ export default async function AdminPage() {
     obtenerLogoUrl(),
   ]);
 
+  const productosParaAdmin = productos.map((producto) => ({
+    id: producto.id,
+    nombre: producto.nombre,
+    precioVenta: producto.precioVenta,
+    categoria: producto.categoria,
+    disponible: producto.disponible,
+    pocasUnidades: producto.pocasUnidades,
+    personalizable: esPersonalizable(producto.id),
+    fotoUrl: producto.fotoUrl,
+    descripcion: producto.descripcion,
+    destacado: producto.destacado,
+  }));
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
       <div className="flex items-center justify-between">
@@ -39,29 +52,15 @@ export default async function AdminPage() {
         </form>
       </div>
 
-      <SubirLogoForm logoUrl={logoUrl} />
+      <div className="mt-6">
+        <SubirLogoForm logoUrl={logoUrl} />
+      </div>
 
-      <p className="mt-2 text-sm text-muted">
+      <p className="mb-2 text-sm text-muted">
         Sube o cambia la foto y la descripción de cada producto.
       </p>
 
-      <ul className="mt-6 flex flex-col gap-3">
-        {productos.map((producto) => (
-          <SubirFotoForm
-            key={producto.id}
-            productoId={producto.id}
-            nombre={producto.nombre}
-            precioVenta={producto.precioVenta}
-            categoria={producto.categoria}
-            disponible={producto.disponible}
-            pocasUnidades={producto.pocasUnidades}
-            personalizable={esPersonalizable(producto.id)}
-            fotoUrl={producto.fotoUrl}
-            descripcion={producto.descripcion}
-            destacado={producto.destacado}
-          />
-        ))}
-      </ul>
+      <ListaProductosAdmin productos={productosParaAdmin} />
     </main>
   );
 }
