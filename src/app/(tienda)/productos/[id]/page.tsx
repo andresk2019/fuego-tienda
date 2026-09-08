@@ -2,17 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { obtenerProductoFuego, obtenerAromasDisponiblesFuego } from "@/lib/db";
-import { nombreCategoria } from "@/lib/categorias";
 import { esPersonalizable } from "@/lib/personalizacion";
 import FlameIcon from "@/components/FlameIcon";
+import FichaProducto from "@/components/FichaProducto";
 import PersonalizarVela from "@/components/PersonalizarVela";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
-
-const formatoCOP = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
 
 // Igual que el catálogo: el stock puede cambiar en cualquier momento
 // por una venta de mostrador en Contabilidad Lady, así que nunca se
@@ -61,30 +55,14 @@ export default async function ProductoPage(
         </div>
 
         <div className="flex flex-col gap-4">
-          <span className="w-fit rounded-full border border-border px-3 py-1 text-xs tracking-wide text-muted uppercase">
-            {nombreCategoria(producto.categoria)}
-          </span>
-
-          <h1 className="font-serif text-3xl text-foreground">
-            {producto.nombre}
-          </h1>
-
-          <p className="text-2xl font-semibold text-foreground">
-            {formatoCOP.format(producto.precioVenta)}
-          </p>
-
-          {!producto.disponible && (
-            <span className="inline-flex w-fit rounded-full bg-danger/10 px-3 py-1 text-sm font-medium text-danger">
-              Agotado
-            </span>
-          )}
-          {producto.disponible && producto.pocasUnidades && (
-            <span className="inline-flex w-fit rounded-full bg-gold/10 px-3 py-1 text-sm font-medium text-gold">
-              ¡Últimas unidades!
-            </span>
-          )}
-
-          <p className="leading-relaxed text-muted">{producto.descripcion}</p>
+          <FichaProducto
+            categoria={producto.categoria}
+            nombre={producto.nombre}
+            precioVenta={producto.precioVenta}
+            disponible={producto.disponible}
+            pocasUnidades={producto.pocasUnidades}
+            descripcion={producto.descripcion}
+          />
 
           {personalizable ? (
             <PersonalizarVela

@@ -1,16 +1,16 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import { subirLogo } from '@/app/admin/actions';
-import FlameIcon from '@/components/FlameIcon';
+import Hero from '@/components/Hero';
 
 export default function SubirLogoForm({ logoUrl }: { logoUrl: string | null }) {
   const [estado, accion, subiendo] = useActionState(subirLogo, undefined);
 
   // Igual que en las fotos de producto: vista previa local del
-  // archivo elegido antes de confirmarlo — permite ver cómo quedaría
-  // el logo sin que el cambio ya esté en producción.
+  // archivo elegido antes de confirmarlo, mostrada dentro del Hero
+  // real de la portada — así se ve exactamente cómo quedaría, sin que
+  // el cambio ya esté en producción.
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
 
@@ -41,62 +41,50 @@ export default function SubirLogoForm({ logoUrl }: { logoUrl: string | null }) {
         Aparece en la portada, en el mensaje de "Bienvenido a Fuego".
       </p>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-background">
-              {logoUrl ? (
-                <Image
-                  src={logoUrl}
-                  alt="Logo de Fuego"
-                  width={64}
-                  height={64}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <FlameIcon className="h-6 w-6 text-ember/30" />
-              )}
-            </div>
-            <span className="text-[10px] text-muted">Actual</span>
+      <div
+        className={`grid grid-cols-1 gap-4 ${vistaPrevia ? 'md:grid-cols-2' : ''}`}
+      >
+        <div className="overflow-hidden rounded-xl border border-border">
+          <p className="border-b border-border bg-background/60 px-3 py-1.5 text-[10px] font-medium tracking-wide text-muted uppercase">
+            Ahora en producción
+          </p>
+          <div className="pointer-events-none">
+            <Hero logoUrl={logoUrl} />
           </div>
-
-          {vistaPrevia && (
-            <div className="flex flex-col items-center gap-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={vistaPrevia}
-                alt="Vista previa del logo"
-                className="h-16 w-16 shrink-0 rounded-lg border-2 border-ember object-cover"
-              />
-              <span className="text-[10px] font-medium text-ember">
-                Nuevo (sin guardar)
-              </span>
-            </div>
-          )}
         </div>
-
-        <form
-          action={accion}
-          className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
-        >
-          <input
-            ref={inputArchivoRef}
-            type="file"
-            name="logo"
-            accept="image/*"
-            required
-            onChange={manejarSeleccionArchivo}
-            className="text-xs text-muted file:mr-2 file:rounded-lg file:border-0 file:bg-ember file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-on-ember"
-          />
-          <button
-            type="submit"
-            disabled={subiendo || !vistaPrevia}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-ember/60 disabled:opacity-60"
-          >
-            {subiendo ? 'Subiendo...' : 'Confirmar y subir'}
-          </button>
-        </form>
+        {vistaPrevia && (
+          <div className="overflow-hidden rounded-xl border border-ember/40">
+            <p className="border-b border-ember/40 bg-background/60 px-3 py-1.5 text-[10px] font-medium tracking-wide text-ember uppercase">
+              Con el cambio (sin guardar)
+            </p>
+            <div className="pointer-events-none">
+            <Hero logoUrl={vistaPrevia} />
+          </div>
+          </div>
+        )}
       </div>
+
+      <form
+        action={accion}
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+      >
+        <input
+          ref={inputArchivoRef}
+          type="file"
+          name="logo"
+          accept="image/*"
+          required
+          onChange={manejarSeleccionArchivo}
+          className="text-xs text-muted file:mr-2 file:rounded-lg file:border-0 file:bg-ember file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-on-ember"
+        />
+        <button
+          type="submit"
+          disabled={subiendo || !vistaPrevia}
+          className="w-fit rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-ember/60 disabled:opacity-60"
+        >
+          {subiendo ? 'Subiendo...' : 'Confirmar y subir'}
+        </button>
+      </form>
 
       {estado?.error && <p className="text-xs text-danger">{estado.error}</p>}
       {estado?.ok && <p className="text-xs text-ember">¡Logo actualizado!</p>}

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { haySesion } from '@/lib/session';
 import { obtenerCatalogoFuego } from '@/lib/db';
 import { obtenerLogoUrl } from '@/lib/admin-db';
+import { esPersonalizable } from '@/lib/personalizacion';
 import { cerrarSesion } from './actions';
 import SubirFotoForm from '@/components/admin/SubirFotoForm';
 import SubirLogoForm from '@/components/admin/SubirLogoForm';
@@ -50,6 +51,11 @@ export default async function AdminPage() {
             key={producto.id}
             productoId={producto.id}
             nombre={producto.nombre}
+            precioVenta={producto.precioVenta}
+            categoria={producto.categoria}
+            disponible={producto.disponible}
+            pocasUnidades={producto.pocasUnidades}
+            personalizable={esPersonalizable(producto.id)}
             fotoUrl={producto.fotoUrl}
             descripcion={producto.descripcion}
             destacado={producto.destacado}
