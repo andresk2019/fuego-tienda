@@ -45,7 +45,7 @@ export default function SubirLogoForm({ logoUrl }: { logoUrl: string | null }) {
         className={`grid grid-cols-1 gap-4 ${vistaPrevia ? 'md:grid-cols-2' : ''}`}
       >
         <div className="overflow-hidden rounded-xl border border-border">
-          <p className="border-b border-border bg-background/60 px-3 py-1.5 text-[10px] font-medium tracking-wide text-muted uppercase">
+          <p className="border-b border-border bg-background/60 px-3 py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap text-muted uppercase">
             Ahora en producción
           </p>
           <div className="pointer-events-none">
@@ -54,12 +54,12 @@ export default function SubirLogoForm({ logoUrl }: { logoUrl: string | null }) {
         </div>
         {vistaPrevia && (
           <div className="overflow-hidden rounded-xl border border-ember/40">
-            <p className="border-b border-ember/40 bg-background/60 px-3 py-1.5 text-[10px] font-medium tracking-wide text-ember uppercase">
+            <p className="border-b border-ember/40 bg-background/60 px-3 py-1.5 text-[10px] font-medium tracking-wide whitespace-nowrap text-ember uppercase">
               Con el cambio (sin guardar)
             </p>
             <div className="pointer-events-none">
-            <Hero logoUrl={vistaPrevia} />
-          </div>
+              <Hero logoUrl={vistaPrevia} />
+            </div>
           </div>
         )}
       </div>

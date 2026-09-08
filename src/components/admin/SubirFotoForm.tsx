@@ -79,12 +79,15 @@ export default function SubirFotoForm({
     <li className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4">
       <span className="text-sm font-semibold text-foreground">{nombre}</span>
 
-      {/* Espejo de la tarjeta del catálogo */}
+      {/* Espejo de la tarjeta del catálogo. Las etiquetas llevan
+          whitespace-nowrap: si una se partiera en 2 líneas y la otra
+          no (tienen largos distintos), las tarjetas de al lado
+          quedarían a alturas distintas y se verían desalineadas. */}
       <div
         className={`grid grid-cols-1 gap-4 ${vistaPrevia ? 'sm:grid-cols-2' : 'sm:max-w-[200px]'}`}
       >
         <div>
-          <p className="mb-2 text-[10px] font-medium tracking-wide text-muted uppercase">
+          <p className="mb-2 text-[10px] font-medium tracking-wide whitespace-nowrap text-muted uppercase">
             Ahora en producción
           </p>
           <TarjetaProducto
@@ -98,7 +101,7 @@ export default function SubirFotoForm({
         </div>
         {vistaPrevia && (
           <div>
-            <p className="mb-2 text-[10px] font-medium tracking-wide text-ember uppercase">
+            <p className="mb-2 text-[10px] font-medium tracking-wide whitespace-nowrap text-ember uppercase">
               Con el cambio (sin guardar)
             </p>
             <TarjetaProducto
@@ -144,7 +147,7 @@ export default function SubirFotoForm({
           className={`grid grid-cols-1 gap-4 ${hayCambioDescripcion ? 'sm:grid-cols-2' : ''}`}
         >
           <div>
-            <p className="mb-2 text-[10px] font-medium tracking-wide text-muted uppercase">
+            <p className="mb-2 text-[10px] font-medium tracking-wide whitespace-nowrap text-muted uppercase">
               Ahora en producción
             </p>
             <div className="rounded-xl border border-border bg-background/40 p-4">
@@ -160,7 +163,7 @@ export default function SubirFotoForm({
           </div>
           {hayCambioDescripcion && (
             <div>
-              <p className="mb-2 text-[10px] font-medium tracking-wide text-ember uppercase">
+              <p className="mb-2 text-[10px] font-medium tracking-wide whitespace-nowrap text-ember uppercase">
                 Con el cambio (sin guardar)
               </p>
               <div className="rounded-xl border border-ember/40 bg-background/40 p-4">
