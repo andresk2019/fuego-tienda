@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { LONGITUD_MAXIMA_NOMBRE_SECRETO } from "@/lib/personalizacion";
+import {
+  COLORES_DISPONIBLES,
+  LONGITUD_MAXIMA_NOMBRE_SECRETO,
+} from "@/lib/personalizacion";
 import { useCarrito } from "@/components/CarritoContext";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
 
@@ -26,6 +29,9 @@ export default function PersonalizarVela({
   const { agregar } = useCarrito();
   const [modo, setModo] = useState<"stock" | "personalizar">("stock");
   const [aromaElegido, setAromaElegido] = useState(aromas[0] ?? "");
+  const [colorElegido, setColorElegido] = useState<string>(
+    COLORES_DISPONIBLES[0]
+  );
   const [nombreSecreto, setNombreSecreto] = useState("");
   const [agregado, setAgregado] = useState(false);
 
@@ -36,6 +42,7 @@ export default function PersonalizarVela({
       precioUnitario,
       cantidad: 1,
       aroma: aromaElegido || undefined,
+      color: colorElegido || undefined,
       nombreSecreto: nombreSecreto.trim() || undefined,
     });
     setAgregado(true);
@@ -101,10 +108,15 @@ export default function PersonalizarVela({
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-foreground">Color</span>
             <select
-              disabled
-              className="rounded-lg border border-border bg-background px-3 py-2 text-muted"
+              value={colorElegido}
+              onChange={(e) => setColorElegido(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
             >
-              <option>Colores: por definir</option>
+              {COLORES_DISPONIBLES.map((color) => (
+                <option key={color} value={color}>
+                  {color}
+                </option>
+              ))}
             </select>
           </label>
 

@@ -8,17 +8,23 @@ export type ItemCarrito = {
   precioUnitario: number;
   cantidad: number;
   aroma?: string;
+  color?: string;
   nombreSecreto?: string;
 };
 
 // Dos líneas del mismo producto con las mismas opciones se combinan
 // en una sola (sumando cantidad); con opciones distintas (otro aroma,
-// otro nombre secreto) quedan como líneas separadas.
+// otro color, otro nombre secreto) quedan como líneas separadas.
 export function claveItem(
   productoId: number,
-  opciones?: { aroma?: string; nombreSecreto?: string }
+  opciones?: { aroma?: string; color?: string; nombreSecreto?: string }
 ): string {
-  return [productoId, opciones?.aroma ?? '', opciones?.nombreSecreto ?? ''].join('|');
+  return [
+    productoId,
+    opciones?.aroma ?? '',
+    opciones?.color ?? '',
+    opciones?.nombreSecreto ?? '',
+  ].join('|');
 }
 
 export function totalCarrito(items: ItemCarrito[]): number {

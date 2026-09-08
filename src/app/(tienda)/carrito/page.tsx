@@ -19,6 +19,7 @@ const NUMERO_WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
 function detallesItem(item: ItemCarrito): string {
   return [
     item.aroma && `Aroma: ${item.aroma}`,
+    item.color && `Color: ${item.color}`,
     item.nombreSecreto && `Nombre secreto: "${item.nombreSecreto}"`,
   ]
     .filter(Boolean)

@@ -77,6 +77,7 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
           <li key={i}>
             {item.cantidad}x {item.nombre}
             {item.aroma && ` · Aroma: ${item.aroma}`}
+            {item.color && ` · Color: ${item.color}`}
             {item.nombreSecreto && ` · Nombre secreto: "${item.nombreSecreto}"`}
           </li>
         ))}
