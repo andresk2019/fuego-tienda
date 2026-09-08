@@ -40,3 +40,36 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Filtro de precio (FiltroPrecio.tsx): dos <input type="range">
+   superpuestos forman un slider de rango con dos perillas. El carril
+   propio de cada input queda invisible/transparente al clic — solo la
+   perilla (thumb) es clickeable — para que se puedan arrastrar por
+   separado aunque estén una encima de la otra. */
+.rango-precio-input {
+  pointer-events: none;
+}
+.rango-precio-input::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.rango-precio-input::-moz-range-track {
+  background: transparent;
+}
+.rango-precio-input::-webkit-slider-thumb {
+  appearance: none;
+  pointer-events: auto;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: var(--ember);
+  cursor: pointer;
+}
+.rango-precio-input::-moz-range-thumb {
+  pointer-events: auto;
+  height: 16px;
+  width: 16px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--ember);
+  cursor: pointer;
+}
