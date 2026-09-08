@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -116,8 +117,9 @@ export default function CarritoPage() {
           href={linkWhatsApp}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-6 block rounded-lg bg-ember px-4 py-3 text-center text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover"
+          className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-whatsapp px-4 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-whatsapp-hover"
         >
+          <WhatsAppIcon className="h-4 w-4" />
           Continuar por WhatsApp
         </a>
       ) : (
