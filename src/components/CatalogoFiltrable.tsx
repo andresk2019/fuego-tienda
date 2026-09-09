@@ -26,6 +26,7 @@ export default function CatalogoFiltrable({
   const [categoriaActiva, setCategoriaActiva] = useState<
     CategoriaSlug | "todas"
   >("todas");
+  const [busqueda, setBusqueda] = useState("");
 
   // Rango de precio "dinámico": el mínimo/máximo del slider no está
   // fijo en el código, se calcula a partir de los productos que de
@@ -42,24 +43,24 @@ export default function CatalogoFiltrable({
     precioMinDisponible,
     precioMaxDisponible,
   ]);
-  // Recuerda para qué límites es válido `rangoPrecio` — cuando cambian
-  // (nueva subcategoría con otros precios) se reinicia el rango para
-  // que vuelva a abarcar todo, ajustando el estado en el mismo render
-  // (patrón de React para esto) en vez de con un useEffect: así nunca
-  // se alcanza a pintar un instante con la lista vacía por un rango
-  // que ya no aplica (ej. "Velas" en $25.000–$48.000 filtrando a cero
-  // productos de "Sales Relajantes" antes de reajustarse).
-  const [limitesRecordados, setLimitesRecordados] = useState([
-    precioMinDisponible,
-    precioMaxDisponible,
-  ]);
-  if (
-    limitesRecordados[0] !== precioMinDisponible ||
-    limitesRecordados[1] !== precioMaxDisponible
-  ) {
-    setLimitesRecordados([precioMinDisponible, precioMaxDisponible]);
+
+  // Cuando `productos` cambia de verdad (nueva sección/subcategoría,
+  // ver CatalogoPorSeccion), los 3 filtros vuelven a su estado inicial
+  // — si no, un filtro elegido para "Velas" (ej. categoría "Navidad",
+  // o un rango de precio angosto) podría dejar vacía a "Sales
+  // Relajantes" sin que se note por qué. Se ajusta el estado en el
+  // mismo render (patrón de React para esto) en vez de con un
+  // useEffect: así nunca se alcanza a pintar un instante con la lista
+  // vacía por un filtro que ya no aplica.
+  const [productosRecordados, setProductosRecordados] = useState(productos);
+  if (productosRecordados !== productos) {
+    setProductosRecordados(productos);
     setRangoPrecio([precioMinDisponible, precioMaxDisponible]);
+    setCategoriaActiva("todas");
+    setBusqueda("");
   }
+
+  const terminoBusqueda = busqueda.trim().toLowerCase();
 
   const productosFiltrados = productos
     .filter((p) =>
@@ -68,50 +69,71 @@ export default function CatalogoFiltrable({
     .filter(
       (p) =>
         p.precioVenta >= rangoPrecio[0] && p.precioVenta <= rangoPrecio[1]
+    )
+    .filter(
+      (p) => !terminoBusqueda || p.nombre.toLowerCase().includes(terminoBusqueda)
     );
 
   return (
     <div>
-      <div className="mb-10 flex flex-col items-center gap-2">
-        <span className="text-xs font-medium tracking-wide text-muted uppercase">
-          Filtrar por categoría
-        </span>
-        <nav
-          aria-label="Categorías"
-          className="flex flex-wrap justify-center gap-2"
-        >
-          <Chip
-            variant="contorno"
-            size="sm"
-            activo={categoriaActiva === "todas"}
-            onClick={() => setCategoriaActiva("todas")}
+      {/* Los 3 filtros viven juntos en un solo recuadro — antes el
+          buscador estaba suelto arriba de todo y se veía más
+          protagonista que el resto del menú. Aquí busca solo dentro
+          de lo que ya se está viendo (misma sección/subcategoría),
+          igual que categoría y precio — no cruza a otras secciones. */}
+      <div className="mb-10 flex flex-col items-center gap-6 rounded-2xl border border-border bg-surface p-6">
+        <div className="flex w-full flex-col items-center gap-2">
+          <span className="text-xs font-medium tracking-wide text-muted uppercase">
+            Buscar producto
+          </span>
+          <input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre..."
+            className="w-full max-w-xs rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-xs font-medium tracking-wide text-muted uppercase">
+            Filtrar por categoría
+          </span>
+          <nav
+            aria-label="Categorías"
+            className="flex flex-wrap justify-center gap-2"
           >
-            Todas
-          </Chip>
-          {categoriasConProductos.map((c) => (
             <Chip
-              key={c.slug}
               variant="contorno"
               size="sm"
-              activo={categoriaActiva === c.slug}
-              onClick={() => setCategoriaActiva(c.slug)}
+              activo={categoriaActiva === "todas"}
+              onClick={() => setCategoriaActiva("todas")}
             >
-              {c.nombre}
+              Todas
             </Chip>
-          ))}
-        </nav>
-      </div>
+            {categoriasConProductos.map((c) => (
+              <Chip
+                key={c.slug}
+                variant="contorno"
+                size="sm"
+                activo={categoriaActiva === c.slug}
+                onClick={() => setCategoriaActiva(c.slug)}
+              >
+                {c.nombre}
+              </Chip>
+            ))}
+          </nav>
+        </div>
 
-      {precioMinDisponible < precioMaxDisponible && (
-        <div className="mb-10 flex justify-center">
+        {precioMinDisponible < precioMaxDisponible && (
           <FiltroPrecio
             minDisponible={precioMinDisponible}
             maxDisponible={precioMaxDisponible}
             valor={rangoPrecio}
             onCambiar={setRangoPrecio}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {productosFiltrados.length === 0 ? (
         <p className="text-center text-muted">
