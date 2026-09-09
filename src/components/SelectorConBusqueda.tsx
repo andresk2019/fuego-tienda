@@ -75,6 +75,12 @@ export default function SelectorConBusqueda({
         value={texto}
         placeholder={placeholder}
         onFocus={() => setAbierto(true)}
+        // `onFocus` no se repite si el campo ya estaba enfocado (ej.
+        // justo después de elegir una opción, el foco se queda en el
+        // input a propósito — ver el onMouseDown de abajo). Sin esto,
+        // un segundo clic sobre un campo ya enfocado no volvía a abrir
+        // la lista y parecía un simple campo de texto trabado.
+        onClick={() => setAbierto(true)}
         onChange={(e) => {
           setTexto(e.target.value);
           setAbierto(true);
@@ -99,22 +105,29 @@ export default function SelectorConBusqueda({
         className="w-full rounded-lg border border-border bg-background py-2 pr-9 pl-3 text-foreground placeholder:text-muted/60"
       />
 
-      {/* Flecha, para que se note que es un desplegable y no un campo
-          de texto cualquiera. */}
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={`pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted transition-transform ${
-          abierto ? "rotate-180" : ""
-        }`}
-        aria-hidden="true"
+      {/* Flecha clickeable (antes solo decorativa) — al hacer clic
+          abre/cierra la lista, como se espera de un desplegable. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label={abierto ? "Cerrar lista de aromas" : "Abrir lista de aromas"}
+        onMouseDown={(e) => e.preventDefault()} // no le quita el foco al input
+        onClick={() => setAbierto((a) => !a)}
+        className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted transition-colors hover:text-foreground"
       >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`h-4 w-4 transition-transform ${abierto ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
 
       {abierto && (
         <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg">
