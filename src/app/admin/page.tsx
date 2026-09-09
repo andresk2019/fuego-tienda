@@ -63,6 +63,12 @@ export default async function AdminPage() {
           >
             Aromas
           </Link>
+          <Link
+            href="/admin/quienes-somos"
+            className="text-sm text-muted transition-colors hover:text-foreground"
+          >
+            Quiénes somos
+          </Link>
           <form action={cerrarSesion}>
             <button
               type="submit"
