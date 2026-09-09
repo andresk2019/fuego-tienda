@@ -143,21 +143,20 @@ export async function obtenerContenidoQuienesSomos(): Promise<ContenidoQuienesSo
   };
 }
 
-export async function guardarContenidoQuienesSomos(
-  contenido: ContenidoQuienesSomos
+export type CampoQuienesSomos = keyof typeof CLAVES_QUIENES_SOMOS;
+
+// Guarda un solo campo a la vez (no los 3 juntos) — así, en el admin,
+// cada campo (historia/misión/contacto) se puede bloquear y editar
+// por separado, sin reenviar los otros dos sin querer.
+export async function guardarCampoQuienesSomos(
+  campo: CampoQuienesSomos,
+  texto: string
 ): Promise<void> {
   await asegurarEsquema();
   await getPool().query(
-    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4), ($5, $6)
-     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
-    [
-      CLAVES_QUIENES_SOMOS.historia,
-      contenido.historia,
-      CLAVES_QUIENES_SOMOS.mision,
-      contenido.mision,
-      CLAVES_QUIENES_SOMOS.contacto,
-      contenido.contacto,
-    ]
+    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2)
+     ON CONFLICT (clave) DO UPDATE SET valor = $2`,
+    [CLAVES_QUIENES_SOMOS[campo], texto]
   );
 }
 

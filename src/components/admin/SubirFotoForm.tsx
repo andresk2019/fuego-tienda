@@ -11,6 +11,7 @@ import type { CategoriaSlug } from '@/lib/categorias';
 import FlameIcon from '@/components/FlameIcon';
 import TarjetaProducto from '@/components/TarjetaProducto';
 import FichaProducto from '@/components/FichaProducto';
+import CampoTextoBloqueable from './CampoTextoBloqueable';
 
 const formatoCOP = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -45,8 +46,6 @@ export default function SubirFotoForm({
     subirFotoProducto,
     undefined
   );
-  const [estadoDescripcion, accionDescripcion, guardandoDescripcion] =
-    useActionState(guardarDescripcion, undefined);
   const [estadoDestacado, accionDestacado] = useActionState(
     guardarDestacado,
     undefined
@@ -234,35 +233,16 @@ export default function SubirFotoForm({
             </div>
           )}
 
-          <form action={accionDescripcion} className="flex flex-col gap-2">
-            <input type="hidden" name="productoId" value={productoId} />
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-foreground">
-                Descripción
-              </span>
-              <textarea
-                name="descripcion"
-                value={descripcionEnVivo}
-                onChange={(e) => setDescripcionEnVivo(e.target.value)}
-                rows={3}
-                placeholder="Descripción para mostrar en la página del producto..."
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={guardandoDescripcion || !hayCambioDescripcion}
-              className="w-fit rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-ember/60 disabled:opacity-60"
-            >
-              {guardandoDescripcion ? 'Guardando...' : 'Guardar descripción'}
-            </button>
-            {estadoDescripcion?.error && (
-              <p className="text-xs text-danger">{estadoDescripcion.error}</p>
-            )}
-            {estadoDescripcion?.ok && (
-              <p className="text-xs text-ember">¡Descripción guardada!</p>
-            )}
-          </form>
+          <CampoTextoBloqueable
+            etiqueta="Descripción"
+            valorInicial={descripcion}
+            accion={guardarDescripcion}
+            nombreCampoTexto="descripcion"
+            camposOcultos={{ productoId }}
+            placeholder="Descripción para mostrar en la página del producto..."
+            rows={3}
+            onCambiaValorEnVivo={setDescripcionEnVivo}
+          />
         </div>
       )}
     </li>
