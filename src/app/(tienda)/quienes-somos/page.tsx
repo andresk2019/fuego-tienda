@@ -1,6 +1,11 @@
 import FlameIcon from "@/components/FlameIcon";
 import BadgesQuienesSomos from "@/components/BadgesQuienesSomos";
-import { obtenerContenidoQuienesSomos } from "@/lib/admin-db";
+import RedesSocialesContacto from "@/components/RedesSocialesContacto";
+import {
+  obtenerContenidoQuienesSomos,
+  obtenerNumeroWhatsApp,
+  obtenerRedesSociales,
+} from "@/lib/admin-db";
 
 export const metadata = {
   title: "Quiénes somos | Fuego",
@@ -13,7 +18,12 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function QuienesSomosPage() {
-  const { historia, mision, contacto } = await obtenerContenidoQuienesSomos();
+  const [{ historia, mision, contacto }, redes, numeroWhatsApp] =
+    await Promise.all([
+      obtenerContenidoQuienesSomos(),
+      obtenerRedesSociales(),
+      obtenerNumeroWhatsApp(),
+    ]);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -50,6 +60,11 @@ export default async function QuienesSomosPage() {
           <p className="leading-relaxed whitespace-pre-line text-muted">
             {contacto}
           </p>
+          <RedesSocialesContacto
+            instagram={redes.instagram}
+            tiktok={redes.tiktok}
+            numeroWhatsApp={numeroWhatsApp}
+          />
         </section>
       </div>
     </main>

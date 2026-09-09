@@ -160,6 +160,56 @@ export async function guardarCampoQuienesSomos(
   );
 }
 
+// Redes sociales que se muestran como íconos en "Quiénes somos"
+// (sección Contacto) — ver src/lib/redes-sociales.ts para cómo se
+// arma el link a partir de lo que el admin escribe aquí. El ícono de
+// WhatsApp de ese mismo bloque reutiliza el número de arriba
+// (obtenerNumeroWhatsApp) en vez de tener su propio campo — así no
+// quedan dos números de WhatsApp que el dueño tenga que mantener
+// sincronizados.
+export type RedesSociales = {
+  instagram: string;
+  tiktok: string;
+};
+
+const CLAVES_REDES_SOCIALES = {
+  instagram: 'contacto_instagram',
+  tiktok: 'contacto_tiktok',
+} as const;
+
+export type RedSocial = keyof typeof CLAVES_REDES_SOCIALES;
+
+export async function obtenerRedesSociales(): Promise<RedesSociales> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    'SELECT clave, valor FROM tienda_config WHERE clave = ANY($1)',
+    [Object.values(CLAVES_REDES_SOCIALES)]
+  );
+  const guardado: Record<string, string> = {};
+  for (const fila of rows) {
+    if (fila.valor) guardado[fila.clave] = fila.valor;
+  }
+  return {
+    instagram: guardado[CLAVES_REDES_SOCIALES.instagram] ?? '',
+    tiktok: guardado[CLAVES_REDES_SOCIALES.tiktok] ?? '',
+  };
+}
+
+// Si `usuario` llega vacío, se guarda como NULL (NULLIF) — así el
+// ícono correspondiente deja de mostrarse en la tienda en vez de
+// quedar apuntando a un link roto.
+export async function guardarRedSocial(
+  red: RedSocial,
+  usuario: string
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_config (clave, valor) VALUES ($1, NULLIF($2, ''))
+     ON CONFLICT (clave) DO UPDATE SET valor = NULLIF($2, '')`,
+    [CLAVES_REDES_SOCIALES[red], usuario]
+  );
+}
+
 export type MetaProductos = {
   fotos: Record<number, string>;
   descripciones: Record<number, string>;
