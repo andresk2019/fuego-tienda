@@ -82,3 +82,22 @@ body {
   background: var(--ember);
   cursor: pointer;
 }
+
+/* Estado de carga de marca (CargandoMarca.tsx, usado en los
+   loading.tsx de las páginas que dependen de la base de datos) — la
+   llama "parpadea" en vez de girar como un spinner genérico, para que
+   se sienta parte de la marca Fuego y no algo pegado de otro lado. */
+@keyframes parpadeo-llama {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+}
+.animar-parpadeo {
+  animation: parpadeo-llama 1.4s ease-in-out infinite;
+}
