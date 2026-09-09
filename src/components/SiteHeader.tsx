@@ -1,12 +1,12 @@
 import Link from "next/link";
-import FlameIcon from "@/components/FlameIcon";
+import AriesIcon from "@/components/AriesIcon";
 import CarritoIndicador from "@/components/CarritoIndicador";
 
 export default function SiteHeader() {
   return (
     <header className="border-b border-border px-6 py-14 text-center">
       <Link href="/" className="mx-auto flex flex-col items-center gap-3">
-        <FlameIcon className="h-8 w-8 text-ember" />
+        <AriesIcon className="h-8 w-8 text-ember" />
         <h1 className="font-serif text-4xl tracking-tight text-foreground">
           Fuego
         </h1>
