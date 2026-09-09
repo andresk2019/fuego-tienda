@@ -91,6 +91,16 @@ export default function CarritoPage() {
     e.preventDefault();
     if (!NUMERO_WHATSAPP || enviando) return;
 
+    // Safari (sobre todo en iPhone) bloquea como "pop-up" cualquier
+    // window.open que no ocurra en el mismo instante del clic. Antes,
+    // la ventana se abría DESPUÉS de esperar la respuesta del
+    // servidor (registrar el pedido) — esa espera de por medio hacía
+    // que Safari lo bloqueara en silencio y WhatsApp nunca se abriera.
+    // Por eso se abre una pestaña en blanco aquí mismo, todavía
+    // dentro del clic, y más abajo solo se le asigna la URL final
+    // cuando ya está lista (eso sí lo permite cualquier navegador).
+    const ventanaWhatsApp = window.open("", "_blank");
+
     setEnviando(true);
     setProblemasStock(null);
 
@@ -105,6 +115,7 @@ export default function CarritoPage() {
       if (resultado.problemasStock && resultado.problemasStock.length > 0) {
         setEnviando(false);
         setProblemasStock(resultado.problemasStock);
+        ventanaWhatsApp?.close();
         return;
       }
       numero = resultado.numero ?? null;
@@ -114,11 +125,15 @@ export default function CarritoPage() {
     setEnviando(false);
 
     const mensaje = construirMensajeWhatsApp(items, total, nombre, numero);
-    window.open(
-      `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    const linkWhatsApp = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+    if (ventanaWhatsApp) {
+      ventanaWhatsApp.location.href = linkWhatsApp;
+    } else {
+      // El navegador bloqueó incluso la pestaña en blanco (poco
+      // común) — se intenta igual, es lo mismo que pasaba antes de
+      // este arreglo.
+      window.open(linkWhatsApp, "_blank", "noopener,noreferrer");
+    }
     vaciar();
   }
 
