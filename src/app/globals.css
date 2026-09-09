@@ -54,9 +54,24 @@ body {
    superpuestos forman un slider de rango con dos perillas. El carril
    propio de cada input queda invisible/transparente al clic — solo la
    perilla (thumb) es clickeable — para que se puedan arrastrar por
-   separado aunque estén una encima de la otra. */
+   separado aunque estén una encima de la otra.
+
+   Dos ajustes para que se pueda usar bien con el dedo (no solo con
+   mouse), sobre todo cuando el rango es angosto y las dos perillas
+   quedan casi pegadas:
+   1. Perilla más grande (22px en vez de 16px) — más área para
+      "agarrar" con el pulgar.
+   2. Al enfocar una perilla (con foco/tocarla) su input pasa a
+      z-index superior — así, una vez que empezaste a arrastrar una,
+      no se te "cuela" la otra por debajo aunque estén en el mismo
+      punto; el anillo de foco además usa el color de la marca en vez
+      del azul por defecto del navegador. */
 .rango-precio-input {
   pointer-events: none;
+  z-index: 1;
+}
+.rango-precio-input:focus {
+  z-index: 2;
 }
 .rango-precio-input::-webkit-slider-runnable-track {
   background: transparent;
@@ -67,20 +82,31 @@ body {
 .rango-precio-input::-webkit-slider-thumb {
   appearance: none;
   pointer-events: auto;
-  height: 16px;
-  width: 16px;
+  height: 22px;
+  width: 22px;
   border-radius: 9999px;
   background: var(--ember);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
   cursor: pointer;
 }
 .rango-precio-input::-moz-range-thumb {
   pointer-events: auto;
-  height: 16px;
-  width: 16px;
-  border: 0;
+  height: 22px;
+  width: 22px;
+  border: 2px solid var(--surface);
   border-radius: 9999px;
   background: var(--ember);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
   cursor: pointer;
+}
+.rango-precio-input:focus::-webkit-slider-thumb {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+.rango-precio-input:focus::-moz-range-thumb {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
 }
 
 /* Estado de carga de marca (CargandoMarca.tsx, usado en los

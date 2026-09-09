@@ -45,7 +45,7 @@ export default function FiltroPrecio({
       <p className="text-sm text-foreground">
         {formatoCOP.format(min)} – {formatoCOP.format(max)}
       </p>
-      <div className="relative h-5 w-full max-w-xs">
+      <div className="relative h-6 w-full max-w-xs">
         <div className="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-border" />
         <div
           className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-ember"
