@@ -23,6 +23,7 @@ export type ItemPedido = {
   precioUnitario: number;
   cantidad: number;
   aroma?: string;
+  color?: string;
   nombreSecreto?: string;
 };
 
