@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCarrito } from '@/components/CarritoContext';
 import SelectorConBusqueda from '@/components/SelectorConBusqueda';
+import DescripcionAroma from '@/components/DescripcionAroma';
 
 export default function AgregarAlCarrito({
   productoId,
@@ -10,6 +11,7 @@ export default function AgregarAlCarrito({
   precioUnitario,
   disponible,
   aromas,
+  descripcionesAromas,
 }: {
   productoId: number;
   nombre: string;
@@ -21,6 +23,10 @@ export default function AgregarAlCarrito({
   // personalización completa (color/nombre secreto, ver
   // PersonalizarVela.tsx). Se omite para productos que no son velas.
   aromas?: readonly string[];
+  // Descripción de cada aroma (la que carga el dueño en
+  // /admin/aromas), para mostrar la del aroma elegido justo debajo
+  // del selector — ver DescripcionAroma.tsx.
+  descripcionesAromas?: Record<string, string>;
 }) {
   const { agregar } = useCarrito();
   const [cantidad, setCantidad] = useState(1);
@@ -54,6 +60,8 @@ export default function AgregarAlCarrito({
           />
         </label>
       )}
+
+      <DescripcionAroma descripcion={descripcionesAromas?.[aromaElegido]} />
 
       <div className="flex items-center gap-3">
         <input

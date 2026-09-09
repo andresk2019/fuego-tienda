@@ -9,6 +9,7 @@ import {
 import { useCarrito } from "@/components/CarritoContext";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
 import SelectorConBusqueda from "@/components/SelectorConBusqueda";
+import DescripcionAroma from "@/components/DescripcionAroma";
 
 // Le da al cliente la elección explícita entre comprar la vela tal
 // cual está en el catálogo o personalizarla — el formulario de
@@ -22,11 +23,15 @@ export default function PersonalizarVela({
   nombre,
   precioUnitario,
   disponible,
+  descripcionesAromas,
 }: {
   productoId: number;
   nombre: string;
   precioUnitario: number;
   disponible: boolean;
+  // Descripción de cada aroma (la carga el dueño en /admin/aromas) —
+  // ver DescripcionAroma.tsx.
+  descripcionesAromas?: Record<string, string>;
 }) {
   const { agregar } = useCarrito();
   const [modo, setModo] = useState<"stock" | "personalizar">("stock");
@@ -84,6 +89,7 @@ export default function PersonalizarVela({
           precioUnitario={precioUnitario}
           disponible={disponible}
           aromas={AROMAS_DISPONIBLES}
+          descripcionesAromas={descripcionesAromas}
         />
       )}
 
@@ -98,6 +104,8 @@ export default function PersonalizarVela({
               placeholder="Buscar aroma..."
             />
           </label>
+
+          <DescripcionAroma descripcion={descripcionesAromas?.[aromaElegido]} />
 
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-foreground">Color</span>

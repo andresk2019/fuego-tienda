@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { obtenerProductoFuego } from "@/lib/db";
 import { AROMAS_DISPONIBLES, esPersonalizable } from "@/lib/personalizacion";
+import { obtenerDescripcionesAromas } from "@/lib/aromas-db";
 import FlameIcon from "@/components/FlameIcon";
 import FichaProducto from "@/components/FichaProducto";
 import PersonalizarVela from "@/components/PersonalizarVela";
@@ -30,6 +31,11 @@ export default async function ProductoPage(
 
   const personalizable = esPersonalizable(producto.id);
   const esVela = producto.subcategoria === "velas";
+  // Solo se necesita para velas — no vale la pena la consulta para
+  // productos que ni siquiera muestran el selector de aroma.
+  const descripcionesAromas = esVela
+    ? await obtenerDescripcionesAromas()
+    : undefined;
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -75,6 +81,7 @@ export default async function ProductoPage(
               nombre={producto.nombre}
               precioUnitario={producto.precioVenta}
               disponible={producto.disponible}
+              descripcionesAromas={descripcionesAromas}
             />
           ) : (
             <div className="mt-2 border-t border-border pt-6">
@@ -85,6 +92,7 @@ export default async function ProductoPage(
                   precioUnitario={producto.precioVenta}
                   disponible={producto.disponible}
                   aromas={esVela ? AROMAS_DISPONIBLES : undefined}
+                  descripcionesAromas={descripcionesAromas}
                 />
               ) : (
                 <p className="text-sm text-danger">
