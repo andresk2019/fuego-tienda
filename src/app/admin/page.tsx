@@ -51,6 +51,12 @@ export default async function AdminPage() {
           >
             Pedidos
           </Link>
+          <Link
+            href="/admin/resenas"
+            className="text-sm text-muted transition-colors hover:text-foreground"
+          >
+            Reseñas
+          </Link>
           <form action={cerrarSesion}>
             <button
               type="submit"
