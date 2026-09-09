@@ -9,6 +9,7 @@ import {
   guardarDescripcionProducto,
   guardarLogoUrl,
   guardarDestacadoProducto,
+  guardarNumeroWhatsApp,
 } from '@/lib/admin-db';
 
 export async function cerrarSesion() {
@@ -124,6 +125,39 @@ export async function subirLogo(
 
   revalidatePath('/admin');
   revalidatePath('/');
+
+  return { ok: true };
+}
+
+export type EstadoWhatsApp = { error?: string; ok?: boolean } | undefined;
+
+export async function guardarWhatsApp(
+  _estado: EstadoWhatsApp,
+  formData: FormData
+): Promise<EstadoWhatsApp> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const numero = String(formData.get('numero') ?? '').trim();
+
+  // Solo dígitos, con el código de país incluido (ej. 573001234567) —
+  // es justo el formato que espera el link de wa.me.
+  if (!/^\d{10,15}$/.test(numero)) {
+    return {
+      error:
+        'Escribe el número con el código de país, solo números (ej. 573001234567).',
+    };
+  }
+
+  try {
+    await guardarNumeroWhatsApp(numero);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/carrito');
 
   return { ok: true };
 }

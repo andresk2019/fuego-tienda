@@ -1,10 +1,19 @@
 // Datos propios de la tienda (NO de Contabilidad Lady) — hoy, la foto
 // y la descripción de cada producto, y configuración del sitio (el
-// logo). Vive en el MISMO Postgres que `inventario`, pero en tablas
-// nuevas y separadas (`tienda_producto_meta`, `tienda_config`), nunca
-// en las tablas de Contabilidad Lady. Esta es la ÚNICA parte de
-// fuego-tienda que escribe en la base de datos — solo se usa desde el
-// panel de administración (/admin), protegido por sesión.
+// logo, el número de WhatsApp). Vive en el MISMO Postgres que
+// `inventario`, pero en tablas nuevas y separadas
+// (`tienda_producto_meta`, `tienda_config`), nunca en las tablas de
+// Contabilidad Lady.
+//
+// Escribir aquí solo pasa desde /admin (protegido por sesión — ver
+// cada Server Action en admin/actions.ts). Leer es distinto: algunas
+// funciones de este archivo (ej. obtenerNumeroWhatsApp) también las
+// usa la tienda pública, porque son configuración que cualquier
+// visitante necesita ver (a dónde manda su pedido), no algo privado.
+//
+// (Pedidos, reseñas y aromas también escriben en su propia tabla —
+// ver pedidos-db.ts/resenas-db.ts/aromas-db.ts — así que este archivo
+// ya no es la única parte que escribe, solo la primera que hubo.)
 import 'server-only';
 import { getPool } from './pool';
 
@@ -52,6 +61,31 @@ export async function guardarLogoUrl(url: string): Promise<void> {
     `INSERT INTO tienda_config (clave, valor) VALUES ('logo_url', $1)
      ON CONFLICT (clave) DO UPDATE SET valor = $1`,
     [url]
+  );
+}
+
+// Número de WhatsApp de la tienda — antes vivía fijo en la variable
+// de entorno NEXT_PUBLIC_WHATSAPP_NUMBER (cambiarlo exigía editarla en
+// Vercel y esperar un nuevo despliegue). Ahora se guarda aquí, para
+// que el dueño lo pueda cambiar él mismo desde /admin en cualquier
+// momento (ej. si pierde el celular y necesita cambiar de número ya).
+// La variable de entorno queda como respaldo, solo por si todavía no
+// se ha guardado nada en esta tabla (ej. justo después de este
+// cambio) — así no se rompe nada mientras el dueño no la haya tocado.
+export async function obtenerNumeroWhatsApp(): Promise<string | null> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    "SELECT valor FROM tienda_config WHERE clave = 'whatsapp_numero'"
+  );
+  return rows[0]?.valor || process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || null;
+}
+
+export async function guardarNumeroWhatsApp(numero: string): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_config (clave, valor) VALUES ('whatsapp_numero', $1)
+     ON CONFLICT (clave) DO UPDATE SET valor = $1`,
+    [numero]
   );
 }
 
