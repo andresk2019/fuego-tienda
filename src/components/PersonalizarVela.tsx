@@ -8,6 +8,7 @@ import {
 } from "@/lib/personalizacion";
 import { useCarrito } from "@/components/CarritoContext";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
+import SelectorConBusqueda from "@/components/SelectorConBusqueda";
 
 // Le da al cliente la elección explícita entre comprar la vela tal
 // cual está en el catálogo o personalizarla — el formulario de
@@ -90,17 +91,12 @@ export default function PersonalizarVela({
         <div className="flex flex-col gap-4 rounded-xl border border-border bg-background/40 p-4">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-foreground">Aroma</span>
-            <select
-              value={aromaElegido}
-              onChange={(e) => setAromaElegido(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-            >
-              {AROMAS_DISPONIBLES.map((aroma) => (
-                <option key={aroma} value={aroma}>
-                  {aroma}
-                </option>
-              ))}
-            </select>
+            <SelectorConBusqueda
+              opciones={AROMAS_DISPONIBLES}
+              valor={aromaElegido}
+              onCambiar={setAromaElegido}
+              placeholder="Buscar aroma..."
+            />
           </label>
 
           <label className="flex flex-col gap-1.5 text-sm">

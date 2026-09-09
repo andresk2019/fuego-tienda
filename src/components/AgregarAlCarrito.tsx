@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useCarrito } from '@/components/CarritoContext';
+import SelectorConBusqueda from '@/components/SelectorConBusqueda';
 
 export default function AgregarAlCarrito({
   productoId,
@@ -43,19 +44,14 @@ export default function AgregarAlCarrito({
   return (
     <div className="flex flex-col gap-3">
       {aromas && aromas.length > 0 && (
-        <label className="flex flex-col gap-1.5 text-sm">
+        <label className="flex max-w-xs flex-col gap-1.5 text-sm">
           <span className="font-medium text-foreground">Aroma</span>
-          <select
-            value={aromaElegido}
-            onChange={(e) => setAromaElegido(e.target.value)}
-            className="w-fit rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-          >
-            {aromas.map((aroma) => (
-              <option key={aroma} value={aroma}>
-                {aroma}
-              </option>
-            ))}
-          </select>
+          <SelectorConBusqueda
+            opciones={aromas}
+            valor={aromaElegido}
+            onCambiar={setAromaElegido}
+            placeholder="Buscar aroma..."
+          />
         </label>
       )}
 
