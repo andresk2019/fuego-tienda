@@ -165,20 +165,3 @@ export async function validarStockCarrito(
   }
   return problemas;
 }
-
-// Aromas disponibles para personalizar una vela. Los aromas no son un
-// producto del catálogo (tabla `inventario`) sino un insumo interno
-// (tabla `insumos`, con nombres tipo "Aroma Menta") — se listan solo
-// los que tienen existencia (cantidad > 0), para no ofrecer un aroma
-// agotado. Se les quita el prefijo "Aroma " para mostrarlos limpios.
-export async function obtenerAromasDisponiblesFuego(): Promise<string[]> {
-  const { rows } = await getPool().query(
-    `SELECT ins.nombre
-     FROM insumos ins
-     JOIN empresas e ON e.id = ins.empresa_id
-     WHERE e.nombre = 'Fuego' AND ins.nombre ILIKE 'Aroma %' AND ins.cantidad > 0
-     ORDER BY ins.nombre`
-  );
-
-  return rows.map((r) => String(r.nombre).replace(/^Aroma\s+/i, ''));
-}

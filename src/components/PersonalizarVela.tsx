@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  AROMAS_DISPONIBLES,
   COLORES_DISPONIBLES,
   LONGITUD_MAXIMA_NOMBRE_SECRETO,
 } from "@/lib/personalizacion";
@@ -12,23 +13,25 @@ import AgregarAlCarrito from "@/components/AgregarAlCarrito";
 // cual está en el catálogo o personalizarla — el formulario de
 // personalización NO se muestra de una vez, solo aparece si el
 // cliente elige esa opción. Cada camino agrega al carrito por su
-// cuenta (con o sin las opciones de personalización).
+// cuenta (con o sin las opciones de personalización). El aroma se
+// puede elegir en los dos caminos (aplica a toda vela); color y
+// nombre secreto solo en el camino de personalizar.
 export default function PersonalizarVela({
   productoId,
   nombre,
   precioUnitario,
   disponible,
-  aromas,
 }: {
   productoId: number;
   nombre: string;
   precioUnitario: number;
   disponible: boolean;
-  aromas: string[];
 }) {
   const { agregar } = useCarrito();
   const [modo, setModo] = useState<"stock" | "personalizar">("stock");
-  const [aromaElegido, setAromaElegido] = useState(aromas[0] ?? "");
+  const [aromaElegido, setAromaElegido] = useState<string>(
+    AROMAS_DISPONIBLES[0]
+  );
   const [colorElegido, setColorElegido] = useState<string>(
     COLORES_DISPONIBLES[0]
   );
@@ -79,6 +82,7 @@ export default function PersonalizarVela({
           nombre={nombre}
           precioUnitario={precioUnitario}
           disponible={disponible}
+          aromas={AROMAS_DISPONIBLES}
         />
       )}
 
@@ -86,23 +90,17 @@ export default function PersonalizarVela({
         <div className="flex flex-col gap-4 rounded-xl border border-border bg-background/40 p-4">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-foreground">Aroma</span>
-            {aromas.length > 0 ? (
-              <select
-                value={aromaElegido}
-                onChange={(e) => setAromaElegido(e.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-              >
-                {aromas.map((aroma) => (
-                  <option key={aroma} value={aroma}>
-                    {aroma}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="text-muted">
-                No hay aromas disponibles por ahora.
-              </span>
-            )}
+            <select
+              value={aromaElegido}
+              onChange={(e) => setAromaElegido(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+            >
+              {AROMAS_DISPONIBLES.map((aroma) => (
+                <option key={aroma} value={aroma}>
+                  {aroma}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="flex flex-col gap-1.5 text-sm">
