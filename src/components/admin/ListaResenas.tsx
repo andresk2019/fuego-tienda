@@ -83,6 +83,11 @@ function FilaResena({ resena }: { resena: Resena }) {
     actualizarVisibilidad,
     undefined
   );
+  // Borrar es irreversible (no hay una tabla de "papelera"), así que
+  // no se dispara con un solo clic — primero hay que confirmar. Se
+  // hace con un segundo paso propio (no window.confirm del navegador)
+  // para que se vea igual de cuidado que el resto del panel.
+  const [confirmandoBorrar, setConfirmandoBorrar] = useState(false);
 
   return (
     <li className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
@@ -117,15 +122,35 @@ function FilaResena({ resena }: { resena: Resena }) {
               Visible en portada
             </label>
           </form>
-          <form action={borrarResena}>
-            <input type="hidden" name="resenaId" value={resena.id} />
+          {confirmandoBorrar ? (
+            <div className="flex items-center gap-2 text-xs whitespace-nowrap">
+              <span className="text-danger">¿Borrar?</span>
+              <form action={borrarResena}>
+                <input type="hidden" name="resenaId" value={resena.id} />
+                <button
+                  type="submit"
+                  className="font-semibold text-danger hover:underline"
+                >
+                  Sí, borrar
+                </button>
+              </form>
+              <button
+                type="button"
+                onClick={() => setConfirmandoBorrar(false)}
+                className="text-muted hover:text-foreground"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
             <button
-              type="submit"
+              type="button"
+              onClick={() => setConfirmandoBorrar(true)}
               className="text-xs text-muted transition-colors hover:text-danger"
             >
               Borrar
             </button>
-          </form>
+          )}
         </div>
       </div>
       {estado?.error && <p className="text-xs text-danger">{estado.error}</p>}
