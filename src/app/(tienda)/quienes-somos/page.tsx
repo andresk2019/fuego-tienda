@@ -1,4 +1,5 @@
 import FlameIcon from "@/components/FlameIcon";
+import BadgesQuienesSomos from "@/components/BadgesQuienesSomos";
 
 export const metadata = {
   title: "Quiénes somos | Fuego",
@@ -23,6 +24,8 @@ export default function QuienesSomosPage() {
             Quiénes somos
           </h1>
         </div>
+
+        <BadgesQuienesSomos />
 
         <section className="flex flex-col gap-3">
           <h2 className="font-serif text-xl text-foreground">
