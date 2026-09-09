@@ -89,6 +89,78 @@ export async function guardarNumeroWhatsApp(numero: string): Promise<void> {
   );
 }
 
+// Texto de "Quiénes somos" (historia, misión, contacto) — antes vivía
+// escrito directo en el archivo de la página, marcado como "contenido
+// de prueba" mientras el dueño definía el texto real. Ahora se guarda
+// en tienda_config (mismo patrón que el logo y el número de
+// WhatsApp), editable desde /admin/quienes-somos.
+//
+// El valor por defecto es el mismo texto de relleno que ya se
+// mostraba antes de este cambio — así la página no se queda vacía
+// justo después del despliegue, mientras el dueño no haya guardado
+// el texto real todavía.
+export type ContenidoQuienesSomos = {
+  historia: string;
+  mision: string;
+  contacto: string;
+};
+
+const CONTENIDO_QUIENES_SOMOS_POR_DEFECTO: ContenidoQuienesSomos = {
+  historia:
+    'Este es un texto de prueba. Aquí va la historia real de Fuego: cómo empezó la marca, quién la hace y qué la hace especial. Reemplazar por el contenido definitivo.',
+  mision:
+    'Otro texto de prueba. Aquí puede ir qué hace únicas a las velas de Fuego: materiales, proceso artesanal, valores de la marca.',
+  contacto:
+    'Texto de prueba también — aquí podría ir el WhatsApp, redes sociales o correo de contacto de Fuego, más adelante.',
+};
+
+const CLAVES_QUIENES_SOMOS = {
+  historia: 'quienes_somos_historia',
+  mision: 'quienes_somos_mision',
+  contacto: 'quienes_somos_contacto',
+} as const;
+
+export async function obtenerContenidoQuienesSomos(): Promise<ContenidoQuienesSomos> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    "SELECT clave, valor FROM tienda_config WHERE clave = ANY($1)",
+    [Object.values(CLAVES_QUIENES_SOMOS)]
+  );
+  const guardado: Record<string, string> = {};
+  for (const fila of rows) {
+    guardado[fila.clave] = fila.valor;
+  }
+  return {
+    historia:
+      guardado[CLAVES_QUIENES_SOMOS.historia] ||
+      CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.historia,
+    mision:
+      guardado[CLAVES_QUIENES_SOMOS.mision] ||
+      CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.mision,
+    contacto:
+      guardado[CLAVES_QUIENES_SOMOS.contacto] ||
+      CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.contacto,
+  };
+}
+
+export async function guardarContenidoQuienesSomos(
+  contenido: ContenidoQuienesSomos
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4), ($5, $6)
+     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+    [
+      CLAVES_QUIENES_SOMOS.historia,
+      contenido.historia,
+      CLAVES_QUIENES_SOMOS.mision,
+      contenido.mision,
+      CLAVES_QUIENES_SOMOS.contacto,
+      contenido.contacto,
+    ]
+  );
+}
+
 export type MetaProductos = {
   fotos: Record<number, string>;
   descripciones: Record<number, string>;
