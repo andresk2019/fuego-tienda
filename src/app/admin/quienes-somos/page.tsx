@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { haySesion } from '@/lib/session';
-import { obtenerContenidoQuienesSomos } from '@/lib/admin-db';
+import {
+  obtenerContenidoQuienesSomos,
+  obtenerNumeroWhatsApp,
+  obtenerRedesSociales,
+} from '@/lib/admin-db';
 import FormularioQuienesSomos from '@/components/admin/FormularioQuienesSomos';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +15,11 @@ export default async function QuienesSomosAdminPage() {
     redirect('/admin/login');
   }
 
-  const contenido = await obtenerContenidoQuienesSomos();
+  const [contenido, redes, numeroWhatsApp] = await Promise.all([
+    obtenerContenidoQuienesSomos(),
+    obtenerRedesSociales(),
+    obtenerNumeroWhatsApp(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -38,7 +46,11 @@ export default async function QuienesSomosAdminPage() {
         .
       </p>
 
-      <FormularioQuienesSomos contenidoInicial={contenido} />
+      <FormularioQuienesSomos
+        contenidoInicial={contenido}
+        redesInicial={redes}
+        numeroWhatsApp={numeroWhatsApp}
+      />
     </main>
   );
 }
