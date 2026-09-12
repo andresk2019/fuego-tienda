@@ -48,18 +48,18 @@ export async function subirFotoAStorage(productoId: number, archivo: File): Prom
   return subirArchivo(`productos/${productoId}.${extension}`, archivo);
 }
 
-// Foto de un color específico de un producto personalizable (ver
-// esPersonalizable en personalizacion.ts) — misma idea que
-// subirFotoAStorage, pero una ruta por producto+color en vez de una
-// sola por producto.
-export async function subirFotoColorAStorage(
+// Foto adicional para la galería de un producto (ver
+// tienda_producto_galeria en admin-db.ts) — a diferencia de
+// subirFotoAStorage (una sola ruta fija por producto, siempre se
+// reemplaza), acá se pueden subir varias fotos para el mismo
+// producto, así que cada una necesita su propia ruta única.
+export async function subirFotoGaleriaAStorage(
   productoId: number,
-  color: string,
   archivo: File
 ): Promise<string> {
   const extension = (archivo.name.split('.').pop() || 'jpg').toLowerCase();
-  const colorSlug = color.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  return subirArchivo(`productos/${productoId}-${colorSlug}.${extension}`, archivo);
+  const sufijo = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  return subirArchivo(`productos/${productoId}-galeria-${sufijo}.${extension}`, archivo);
 }
 
 export async function subirLogoAStorage(archivo: File): Promise<string> {

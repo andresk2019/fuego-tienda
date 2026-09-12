@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { eliminarSesion, haySesion } from '@/lib/session';
 import {
   subirFotoAStorage,
-  subirFotoColorAStorage,
+  subirFotoGaleriaAStorage,
   subirLogoAStorage,
 } from '@/lib/storage';
 import {
@@ -14,10 +14,9 @@ import {
   guardarLogoUrl,
   guardarDestacadoProducto,
   guardarNumeroWhatsApp,
-  guardarFotoColorProducto,
-  eliminarFotoColorProducto,
+  agregarFotoGaleria,
+  eliminarFotoGaleria,
 } from '@/lib/admin-db';
-import { COLORES_DISPONIBLES } from '@/lib/personalizacion';
 
 export async function cerrarSesion() {
   await eliminarSesion();
@@ -169,25 +168,25 @@ export async function guardarWhatsApp(
   return { ok: true };
 }
 
-export type EstadoFotoColor = { error?: string; ok?: boolean } | undefined;
+export type EstadoFotoGaleria = { error?: string; ok?: boolean } | undefined;
 
-export async function subirFotoColorProducto(
-  _estado: EstadoFotoColor,
+// A diferencia de subir la foto principal (que siempre reemplaza a la
+// anterior), esto AGREGA una foto más a la galería del producto —
+// cualquier producto, no solo los personalizables (decisión del
+// dueño, 2026-09-11).
+export async function agregarFotoGaleriaProducto(
+  _estado: EstadoFotoGaleria,
   formData: FormData
-): Promise<EstadoFotoColor> {
+): Promise<EstadoFotoGaleria> {
   if (!(await haySesion())) {
     return { error: 'Tu sesión expiró, vuelve a entrar.' };
   }
 
   const productoId = Number(formData.get('productoId'));
-  const color = String(formData.get('color') ?? '');
   const archivo = formData.get('foto');
 
   if (!Number.isInteger(productoId) || productoId <= 0) {
     return { error: 'Producto inválido.' };
-  }
-  if (!(COLORES_DISPONIBLES as readonly string[]).includes(color)) {
-    return { error: 'Color inválido.' };
   }
   if (!(archivo instanceof File) || archivo.size === 0) {
     return { error: 'Selecciona una imagen.' };
@@ -200,8 +199,8 @@ export async function subirFotoColorProducto(
   }
 
   try {
-    const url = await subirFotoColorAStorage(productoId, color, archivo);
-    await guardarFotoColorProducto(productoId, color, url);
+    const url = await subirFotoGaleriaAStorage(productoId, archivo);
+    await agregarFotoGaleria(productoId, url);
   } catch {
     return { error: 'No se pudo subir la imagen. Intenta de nuevo.' };
   }
@@ -212,30 +211,26 @@ export async function subirFotoColorProducto(
   return { ok: true };
 }
 
-// A diferencia de subir una foto de producto (que siempre queda
-// reemplazada, nunca "sin foto"), aquí sí tiene sentido quitarla del
-// todo: un color puede simplemente no tener foto propia y mostrar la
-// principal, ver obtenerFotosColorProducto.
-export async function quitarFotoColorProducto(
-  _estado: EstadoFotoColor,
+export async function quitarFotoGaleriaProducto(
+  _estado: EstadoFotoGaleria,
   formData: FormData
-): Promise<EstadoFotoColor> {
+): Promise<EstadoFotoGaleria> {
   if (!(await haySesion())) {
     return { error: 'Tu sesión expiró, vuelve a entrar.' };
   }
 
   const productoId = Number(formData.get('productoId'));
-  const color = String(formData.get('color') ?? '');
+  const id = Number(formData.get('id'));
 
   if (!Number.isInteger(productoId) || productoId <= 0) {
     return { error: 'Producto inválido.' };
   }
-  if (!(COLORES_DISPONIBLES as readonly string[]).includes(color)) {
-    return { error: 'Color inválido.' };
+  if (!Number.isInteger(id) || id <= 0) {
+    return { error: 'Foto inválida.' };
   }
 
   try {
-    await eliminarFotoColorProducto(productoId, color);
+    await eliminarFotoGaleria(id, productoId);
   } catch {
     return { error: 'No se pudo quitar la foto. Intenta de nuevo.' };
   }

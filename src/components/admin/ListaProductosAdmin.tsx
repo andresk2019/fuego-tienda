@@ -5,6 +5,7 @@ import SubirFotoForm from '@/components/admin/SubirFotoForm';
 import Chip from '@/components/Chip';
 import { SECCIONES, type SubcategoriaSlug } from '@/lib/secciones';
 import type { CategoriaSlug } from '@/lib/categorias';
+import type { FotoGaleria } from '@/lib/admin-db';
 
 type ProductoParaAdmin = {
   id: number;
@@ -18,7 +19,7 @@ type ProductoParaAdmin = {
   fotoUrl: string | null;
   descripcion: string;
   destacado: boolean;
-  fotosPorColor: Record<string, string>;
+  fotosGaleria: FotoGaleria[];
 };
 
 // Mismo agrupamiento en dos niveles que ya usa la tienda pública
@@ -129,7 +130,7 @@ export default function ListaProductosAdmin({
               fotoUrl={producto.fotoUrl}
               descripcion={producto.descripcion}
               destacado={producto.destacado}
-              fotosPorColor={producto.fotosPorColor}
+              fotosGaleria={producto.fotosGaleria}
             />
           ))}
         </ul>

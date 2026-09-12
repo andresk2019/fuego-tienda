@@ -12,7 +12,8 @@ import FlameIcon from '@/components/FlameIcon';
 import TarjetaProducto from '@/components/TarjetaProducto';
 import FichaProducto from '@/components/FichaProducto';
 import CampoTextoBloqueable from './CampoTextoBloqueable';
-import FotosColorProducto from './FotosColorProducto';
+import GaleriaProductoAdmin from './GaleriaProductoAdmin';
+import type { FotoGaleria } from '@/lib/admin-db';
 
 const formatoCOP = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -31,7 +32,7 @@ export default function SubirFotoForm({
   fotoUrl,
   descripcion,
   destacado,
-  fotosPorColor,
+  fotosGaleria,
 }: {
   productoId: number;
   nombre: string;
@@ -43,7 +44,7 @@ export default function SubirFotoForm({
   fotoUrl: string | null;
   descripcion: string;
   destacado: boolean;
-  fotosPorColor: Record<string, string>;
+  fotosGaleria: FotoGaleria[];
 }) {
   const [estadoFoto, accionFoto, subiendoFoto] = useActionState(
     subirFotoProducto,
@@ -157,9 +158,7 @@ export default function SubirFotoForm({
         >
           {descripcionAbierta
             ? 'Ocultar descripción'
-            : personalizable
-              ? 'Editar descripción y fotos'
-              : 'Editar descripción'}
+            : 'Editar descripción y fotos'}
         </button>
       </div>
 
@@ -251,12 +250,7 @@ export default function SubirFotoForm({
             onCambiaValorEnVivo={setDescripcionEnVivo}
           />
 
-          {personalizable && (
-            <FotosColorProducto
-              productoId={productoId}
-              fotosPorColor={fotosPorColor}
-            />
-          )}
+          <GaleriaProductoAdmin productoId={productoId} fotos={fotosGaleria} />
         </div>
       )}
     </li>

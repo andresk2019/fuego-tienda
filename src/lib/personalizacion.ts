@@ -33,20 +33,6 @@ export const AROMAS_DISPONIBLES = [
   "Lavanda",
 ] as const;
 
-// Colores disponibles para personalizar una vela (decisión del dueño,
-// 2026-09-08) — a diferencia del aroma, el color no se lee de
-// `insumos` (no se maneja como inventario propio), así que vive aquí
-// como una lista fija, igual que categorias.ts/secciones.ts.
-export const COLORES_DISPONIBLES = [
-  "Rojo",
-  "Verde",
-  "Azul",
-  "Rosa",
-  "Morado",
-  "Naranja",
-  "Amarillo",
-] as const;
-
 // El "nombre secreto" es texto libre y corto (un nombre o una frase
 // breve tipo "Feliz cumpleaños"), no una lista de opciones.
 export const LONGITUD_MAXIMA_NOMBRE_SECRETO = 30;

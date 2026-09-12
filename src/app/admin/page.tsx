@@ -5,7 +5,7 @@ import { obtenerCatalogoFuego } from '@/lib/db';
 import {
   obtenerLogoUrl,
   obtenerNumeroWhatsApp,
-  obtenerFotosColorTodosLosProductos,
+  obtenerGaleriaTodosLosProductos,
 } from '@/lib/admin-db';
 import { esPersonalizable } from '@/lib/personalizacion';
 import { cerrarSesion } from './actions';
@@ -24,12 +24,12 @@ export default async function AdminPage() {
     redirect('/admin/login');
   }
 
-  const [productos, logoUrl, numeroWhatsApp, fotosPorColorTodos] =
+  const [productos, logoUrl, numeroWhatsApp, galeriasTodas] =
     await Promise.all([
       obtenerCatalogoFuego(),
       obtenerLogoUrl(),
       obtenerNumeroWhatsApp(),
-      obtenerFotosColorTodosLosProductos(),
+      obtenerGaleriaTodosLosProductos(),
     ]);
 
   const productosParaAdmin = productos.map((producto) => ({
@@ -44,7 +44,7 @@ export default async function AdminPage() {
     fotoUrl: producto.fotoUrl,
     descripcion: producto.descripcion,
     destacado: producto.destacado,
-    fotosPorColor: fotosPorColorTodos[producto.id] ?? {},
+    fotosGaleria: galeriasTodas[producto.id] ?? [],
   }));
 
   return (

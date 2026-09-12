@@ -2,9 +2,9 @@ import Image from "next/image";
 import FlameIcon from "@/components/FlameIcon";
 
 // El recuadro de foto grande de la página de producto — separado en
-// su propio componente para que GaleriaYPersonalizacion.tsx pueda
+// su propio componente para que GaleriaFotosProducto.tsx pueda
 // reusarlo tal cual (mismo recuadro, cambiando solo qué foto muestra
-// según el color elegido).
+// según la miniatura elegida).
 export default function ImagenProducto({
   fotoUrl,
   alt,

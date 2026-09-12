@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   AROMAS_DISPONIBLES,
-  COLORES_DISPONIBLES,
   LONGITUD_MAXIMA_NOMBRE_SECRETO,
 } from "@/lib/personalizacion";
 import { useCarrito } from "@/components/CarritoContext";
@@ -16,15 +15,20 @@ import DescripcionAroma from "@/components/DescripcionAroma";
 // personalización NO se muestra de una vez, solo aparece si el
 // cliente elige esa opción. Cada camino agrega al carrito por su
 // cuenta (con o sin las opciones de personalización). El aroma se
-// puede elegir en los dos caminos (aplica a toda vela); color y
-// nombre secreto solo en el camino de personalizar.
+// puede elegir en los dos caminos (aplica a toda vela); el nombre
+// secreto solo en el camino de personalizar.
+//
+// Ya no hay un desplegable de "Color" acá (decisión del dueño,
+// 2026-09-11): la vista previa de fotos ahora es una galería que el
+// cliente elige haciendo clic en una imagen (ver
+// GaleriaFotosProducto.tsx), no un color de texto para anotar en el
+// pedido.
 export default function PersonalizarVela({
   productoId,
   nombre,
   precioUnitario,
   disponible,
   descripcionesAromas,
-  onCambiarColor,
 }: {
   productoId: number;
   nombre: string;
@@ -33,33 +37,14 @@ export default function PersonalizarVela({
   // Descripción de cada aroma (la carga el dueño en /admin/aromas) —
   // ver DescripcionAroma.tsx.
   descripcionesAromas?: Record<string, string>;
-  // Avisa al padre el color "activo" para la foto grande (ver
-  // GaleriaYPersonalizacion.tsx): el color elegido mientras se está
-  // personalizando, o null si el cliente no está en modo
-  // personalizar (para que la foto vuelva a la principal). El estado
-  // del color sigue viviendo acá (es lo que se manda al carrito);
-  // esto es solo un aviso adicional.
-  onCambiarColor?: (color: string | null) => void;
 }) {
   const { agregar } = useCarrito();
   const [modo, setModo] = useState<"stock" | "personalizar">("stock");
   const [aromaElegido, setAromaElegido] = useState<string>(
     AROMAS_DISPONIBLES[0]
   );
-  const [colorElegido, setColorElegido] = useState<string>(
-    COLORES_DISPONIBLES[0]
-  );
   const [nombreSecreto, setNombreSecreto] = useState("");
   const [agregado, setAgregado] = useState(false);
-
-  // Se sincroniza con el padre en 3 momentos: al entrar a "Personalizar
-  // mi vela" (avisa el color por defecto), al cambiar de color, y al
-  // volver a "Comprar tal cual" (avisa `null` para que la foto grande
-  // vuelva a la principal).
-  useEffect(() => {
-    onCambiarColor?.(modo === "personalizar" ? colorElegido : null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modo, colorElegido]);
 
   function agregarPersonalizada() {
     agregar({
@@ -68,7 +53,6 @@ export default function PersonalizarVela({
       precioUnitario,
       cantidad: 1,
       aroma: aromaElegido || undefined,
-      color: colorElegido || undefined,
       nombreSecreto: nombreSecreto.trim() || undefined,
     });
     setAgregado(true);
@@ -123,21 +107,6 @@ export default function PersonalizarVela({
           </label>
 
           <DescripcionAroma descripcion={descripcionesAromas?.[aromaElegido]} />
-
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-foreground">Color</span>
-            <select
-              value={colorElegido}
-              onChange={(e) => setColorElegido(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-            >
-              {COLORES_DISPONIBLES.map((color) => (
-                <option key={color} value={color}>
-                  {color}
-                </option>
-              ))}
-            </select>
-          </label>
 
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-foreground">

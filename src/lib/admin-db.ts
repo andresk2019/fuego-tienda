@@ -41,13 +41,14 @@ function asegurarEsquema(): Promise<void> {
            clave TEXT PRIMARY KEY,
            valor TEXT
          );
-         CREATE TABLE IF NOT EXISTS tienda_producto_fotos_color (
+         CREATE TABLE IF NOT EXISTS tienda_producto_galeria (
+           id SERIAL PRIMARY KEY,
            producto_id INTEGER NOT NULL,
-           color TEXT NOT NULL,
            foto_url TEXT NOT NULL,
-           actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
-           PRIMARY KEY (producto_id, color)
-         );`
+           creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+         );
+         CREATE INDEX IF NOT EXISTS idx_tienda_producto_galeria_producto
+           ON tienda_producto_galeria (producto_id);`
       )
       .then(() => undefined);
   }
@@ -285,66 +286,74 @@ export async function guardarDestacadoProducto(
   );
 }
 
-// Fotos por color, solo para las velas personalizables (ver
-// esPersonalizable en personalizacion.ts) — cuando el cliente elige un
-// color al personalizar, la página de producto cambia la foto
-// principal por esta si existe (ver GaleriaYPersonalizacion.tsx). Si
-// un color no tiene foto propia, la vela sigue mostrando la foto
-// principal de siempre — nunca queda sin imagen.
-export async function obtenerFotosColorProducto(
+// Galería de fotos adicionales de un producto — CUALQUIER producto,
+// no solo los personalizables (decisión del dueño, 2026-09-11: la
+// vista previa ya no depende de un color elegido, sino de que el
+// cliente haga clic en una foto de la galería, ver
+// GaleriaFotosProducto.tsx). No están asociadas a nada (ni color, ni
+// talla): son solo fotos adicionales, en el orden en que se subieron.
+export type FotoGaleria = {
+  id: number;
+  fotoUrl: string;
+};
+
+export async function obtenerGaleriaProducto(
   productoId: number
-): Promise<Record<string, string>> {
+): Promise<FotoGaleria[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    'SELECT color, foto_url FROM tienda_producto_fotos_color WHERE producto_id = $1',
+    'SELECT id, foto_url FROM tienda_producto_galeria WHERE producto_id = $1 ORDER BY id',
     [productoId]
   );
-  const mapa: Record<string, string> = {};
-  for (const fila of rows) {
-    mapa[fila.color] = fila.foto_url;
-  }
-  return mapa;
+  return rows.map((fila) => ({ id: fila.id, fotoUrl: fila.foto_url }));
 }
 
-// Trae las fotos por color de TODOS los productos en una sola
-// consulta (para el panel de administración, que lista todos los
-// productos de una vez) — en la práctica hoy solo tienen filas los 2
-// productos personalizables, pero no hace falta filtrar por eso aquí.
-export async function obtenerFotosColorTodosLosProductos(): Promise<
-  Record<number, Record<string, string>>
+// Trae la galería de TODOS los productos en una sola consulta (para
+// el panel de administración, que lista todos los productos de una
+// vez) — la mayoría de productos hoy no tienen ninguna fila todavía.
+export async function obtenerGaleriaTodosLosProductos(): Promise<
+  Record<number, FotoGaleria[]>
 > {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    'SELECT producto_id, color, foto_url FROM tienda_producto_fotos_color'
+    'SELECT id, producto_id, foto_url FROM tienda_producto_galeria ORDER BY id'
   );
-  const mapa: Record<number, Record<string, string>> = {};
+  const mapa: Record<number, FotoGaleria[]> = {};
   for (const fila of rows) {
-    (mapa[fila.producto_id] ??= {})[fila.color] = fila.foto_url;
+    (mapa[fila.producto_id] ??= []).push({
+      id: fila.id,
+      fotoUrl: fila.foto_url,
+    });
   }
   return mapa;
 }
 
-export async function guardarFotoColorProducto(
+// Agrega una foto nueva a la galería (no reemplaza ninguna — a
+// diferencia de guardarFotoProducto, aquí se pueden ir acumulando
+// varias). Devuelve el id de la fila nueva, aunque hoy no se use
+// (por si hace falta más adelante).
+export async function agregarFotoGaleria(
   productoId: number,
-  color: string,
   fotoUrl: string
-): Promise<void> {
+): Promise<number> {
   await asegurarEsquema();
-  await getPool().query(
-    `INSERT INTO tienda_producto_fotos_color (producto_id, color, foto_url, actualizado_en)
-     VALUES ($1, $2, $3, now())
-     ON CONFLICT (producto_id, color) DO UPDATE SET foto_url = $3, actualizado_en = now()`,
-    [productoId, color, fotoUrl]
+  const { rows } = await getPool().query(
+    'INSERT INTO tienda_producto_galeria (producto_id, foto_url) VALUES ($1, $2) RETURNING id',
+    [productoId, fotoUrl]
   );
+  return rows[0].id;
 }
 
-export async function eliminarFotoColorProducto(
-  productoId: number,
-  color: string
+// Se filtra también por `productoId` (no solo por `id`) como defensa
+// extra: así un id de foto "adivinado" o de otro producto nunca puede
+// borrar la foto de un producto distinto.
+export async function eliminarFotoGaleria(
+  id: number,
+  productoId: number
 ): Promise<void> {
   await asegurarEsquema();
   await getPool().query(
-    'DELETE FROM tienda_producto_fotos_color WHERE producto_id = $1 AND color = $2',
-    [productoId, color]
+    'DELETE FROM tienda_producto_galeria WHERE id = $1 AND producto_id = $2',
+    [id, productoId]
   );
 }
