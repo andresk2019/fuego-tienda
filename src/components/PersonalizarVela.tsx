@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AROMAS_DISPONIBLES,
   COLORES_DISPONIBLES,
@@ -24,6 +24,7 @@ export default function PersonalizarVela({
   precioUnitario,
   disponible,
   descripcionesAromas,
+  onCambiarColor,
 }: {
   productoId: number;
   nombre: string;
@@ -32,6 +33,13 @@ export default function PersonalizarVela({
   // Descripción de cada aroma (la carga el dueño en /admin/aromas) —
   // ver DescripcionAroma.tsx.
   descripcionesAromas?: Record<string, string>;
+  // Avisa al padre el color "activo" para la foto grande (ver
+  // GaleriaYPersonalizacion.tsx): el color elegido mientras se está
+  // personalizando, o null si el cliente no está en modo
+  // personalizar (para que la foto vuelva a la principal). El estado
+  // del color sigue viviendo acá (es lo que se manda al carrito);
+  // esto es solo un aviso adicional.
+  onCambiarColor?: (color: string | null) => void;
 }) {
   const { agregar } = useCarrito();
   const [modo, setModo] = useState<"stock" | "personalizar">("stock");
@@ -43,6 +51,15 @@ export default function PersonalizarVela({
   );
   const [nombreSecreto, setNombreSecreto] = useState("");
   const [agregado, setAgregado] = useState(false);
+
+  // Se sincroniza con el padre en 3 momentos: al entrar a "Personalizar
+  // mi vela" (avisa el color por defecto), al cambiar de color, y al
+  // volver a "Comprar tal cual" (avisa `null` para que la foto grande
+  // vuelva a la principal).
+  useEffect(() => {
+    onCambiarColor?.(modo === "personalizar" ? colorElegido : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo, colorElegido]);
 
   function agregarPersonalizada() {
     agregar({

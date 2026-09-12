@@ -1,12 +1,12 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { obtenerProductoFuego } from "@/lib/db";
+import { obtenerFotosColorProducto } from "@/lib/admin-db";
 import { AROMAS_DISPONIBLES, esPersonalizable } from "@/lib/personalizacion";
 import { obtenerDescripcionesAromas } from "@/lib/aromas-db";
-import FlameIcon from "@/components/FlameIcon";
+import ImagenProducto from "@/components/ImagenProducto";
 import FichaProducto from "@/components/FichaProducto";
-import PersonalizarVela from "@/components/PersonalizarVela";
+import GaleriaYPersonalizacion from "@/components/GaleriaYPersonalizacion";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
 
 // Igual que el catálogo: el stock puede cambiar en cualquier momento
@@ -32,10 +32,14 @@ export default async function ProductoPage(
   const personalizable = esPersonalizable(producto.id);
   const esVela = producto.subcategoria === "velas";
   // Solo se necesita para velas — no vale la pena la consulta para
-  // productos que ni siquiera muestran el selector de aroma.
-  const descripcionesAromas = esVela
-    ? await obtenerDescripcionesAromas()
-    : undefined;
+  // productos que ni siquiera muestran el selector de aroma. Las fotos
+  // por color solo aplican a las velas personalizables.
+  const [descripcionesAromas, fotosPorColor] = await Promise.all([
+    esVela ? obtenerDescripcionesAromas() : Promise.resolve(undefined),
+    personalizable
+      ? obtenerFotosColorProducto(producto.id)
+      : Promise.resolve({}),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -47,61 +51,55 @@ export default async function ProductoPage(
       </Link>
 
       <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-2">
-        {/* Foto del producto — si todavía no se ha subido una desde
-            el panel de administración, se muestra el ícono de marca
-            a modo de marcador. */}
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface">
-          {producto.fotoUrl ? (
-            <Image
-              src={producto.fotoUrl}
-              alt={producto.nombre}
-              width={600}
-              height={600}
-              className="h-full w-full object-cover"
-              priority
-            />
-          ) : (
-            <FlameIcon className="h-16 w-16 text-ember/30" />
-          )}
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <FichaProducto
-            categoria={producto.categoria}
+        {personalizable ? (
+          // La foto y el selector de color viven en un mismo
+          // componente de cliente porque necesitan compartir el color
+          // elegido — ver GaleriaYPersonalizacion.tsx.
+          <GaleriaYPersonalizacion
+            productoId={producto.id}
             nombre={producto.nombre}
             precioVenta={producto.precioVenta}
+            categoria={producto.categoria}
             disponible={producto.disponible}
             pocasUnidades={producto.pocasUnidades}
             descripcion={producto.descripcion}
+            fotoUrl={producto.fotoUrl}
+            fotosPorColor={fotosPorColor}
+            descripcionesAromas={descripcionesAromas}
           />
+        ) : (
+          <>
+            <ImagenProducto fotoUrl={producto.fotoUrl} alt={producto.nombre} />
 
-          {personalizable ? (
-            <PersonalizarVela
-              productoId={producto.id}
-              nombre={producto.nombre}
-              precioUnitario={producto.precioVenta}
-              disponible={producto.disponible}
-              descripcionesAromas={descripcionesAromas}
-            />
-          ) : (
-            <div className="mt-2 border-t border-border pt-6">
-              {producto.disponible ? (
-                <AgregarAlCarrito
-                  productoId={producto.id}
-                  nombre={producto.nombre}
-                  precioUnitario={producto.precioVenta}
-                  disponible={producto.disponible}
-                  aromas={esVela ? AROMAS_DISPONIBLES : undefined}
-                  descripcionesAromas={descripcionesAromas}
-                />
-              ) : (
-                <p className="text-sm text-danger">
-                  Agotado — no se puede agregar al carrito por ahora.
-                </p>
-              )}
+            <div className="flex flex-col gap-4">
+              <FichaProducto
+                categoria={producto.categoria}
+                nombre={producto.nombre}
+                precioVenta={producto.precioVenta}
+                disponible={producto.disponible}
+                pocasUnidades={producto.pocasUnidades}
+                descripcion={producto.descripcion}
+              />
+
+              <div className="mt-2 border-t border-border pt-6">
+                {producto.disponible ? (
+                  <AgregarAlCarrito
+                    productoId={producto.id}
+                    nombre={producto.nombre}
+                    precioUnitario={producto.precioVenta}
+                    disponible={producto.disponible}
+                    aromas={esVela ? AROMAS_DISPONIBLES : undefined}
+                    descripcionesAromas={descripcionesAromas}
+                  />
+                ) : (
+                  <p className="text-sm text-danger">
+                    Agotado — no se puede agregar al carrito por ahora.
+                  </p>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </main>
   );

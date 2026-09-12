@@ -40,6 +40,13 @@ function asegurarEsquema(): Promise<void> {
          CREATE TABLE IF NOT EXISTS tienda_config (
            clave TEXT PRIMARY KEY,
            valor TEXT
+         );
+         CREATE TABLE IF NOT EXISTS tienda_producto_fotos_color (
+           producto_id INTEGER NOT NULL,
+           color TEXT NOT NULL,
+           foto_url TEXT NOT NULL,
+           actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
+           PRIMARY KEY (producto_id, color)
          );`
       )
       .then(() => undefined);
@@ -275,5 +282,69 @@ export async function guardarDestacadoProducto(
      VALUES ($1, $2, now())
      ON CONFLICT (producto_id) DO UPDATE SET destacado = $2, actualizado_en = now()`,
     [productoId, destacado]
+  );
+}
+
+// Fotos por color, solo para las velas personalizables (ver
+// esPersonalizable en personalizacion.ts) — cuando el cliente elige un
+// color al personalizar, la página de producto cambia la foto
+// principal por esta si existe (ver GaleriaYPersonalizacion.tsx). Si
+// un color no tiene foto propia, la vela sigue mostrando la foto
+// principal de siempre — nunca queda sin imagen.
+export async function obtenerFotosColorProducto(
+  productoId: number
+): Promise<Record<string, string>> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    'SELECT color, foto_url FROM tienda_producto_fotos_color WHERE producto_id = $1',
+    [productoId]
+  );
+  const mapa: Record<string, string> = {};
+  for (const fila of rows) {
+    mapa[fila.color] = fila.foto_url;
+  }
+  return mapa;
+}
+
+// Trae las fotos por color de TODOS los productos en una sola
+// consulta (para el panel de administración, que lista todos los
+// productos de una vez) — en la práctica hoy solo tienen filas los 2
+// productos personalizables, pero no hace falta filtrar por eso aquí.
+export async function obtenerFotosColorTodosLosProductos(): Promise<
+  Record<number, Record<string, string>>
+> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    'SELECT producto_id, color, foto_url FROM tienda_producto_fotos_color'
+  );
+  const mapa: Record<number, Record<string, string>> = {};
+  for (const fila of rows) {
+    (mapa[fila.producto_id] ??= {})[fila.color] = fila.foto_url;
+  }
+  return mapa;
+}
+
+export async function guardarFotoColorProducto(
+  productoId: number,
+  color: string,
+  fotoUrl: string
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_producto_fotos_color (producto_id, color, foto_url, actualizado_en)
+     VALUES ($1, $2, $3, now())
+     ON CONFLICT (producto_id, color) DO UPDATE SET foto_url = $3, actualizado_en = now()`,
+    [productoId, color, fotoUrl]
+  );
+}
+
+export async function eliminarFotoColorProducto(
+  productoId: number,
+  color: string
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    'DELETE FROM tienda_producto_fotos_color WHERE producto_id = $1 AND color = $2',
+    [productoId, color]
   );
 }

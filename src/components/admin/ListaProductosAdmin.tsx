@@ -18,6 +18,7 @@ type ProductoParaAdmin = {
   fotoUrl: string | null;
   descripcion: string;
   destacado: boolean;
+  fotosPorColor: Record<string, string>;
 };
 
 // Mismo agrupamiento en dos niveles que ya usa la tienda pública
@@ -128,6 +129,7 @@ export default function ListaProductosAdmin({
               fotoUrl={producto.fotoUrl}
               descripcion={producto.descripcion}
               destacado={producto.destacado}
+              fotosPorColor={producto.fotosPorColor}
             />
           ))}
         </ul>
