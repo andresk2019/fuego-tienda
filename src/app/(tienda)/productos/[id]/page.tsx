@@ -1,10 +1,10 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { obtenerProductoFuego } from "@/lib/db";
+import { obtenerGaleriaProducto } from "@/lib/admin-db";
 import { AROMAS_DISPONIBLES, esPersonalizable } from "@/lib/personalizacion";
 import { obtenerDescripcionesAromas } from "@/lib/aromas-db";
-import FlameIcon from "@/components/FlameIcon";
+import GaleriaFotosProducto from "@/components/GaleriaFotosProducto";
 import FichaProducto from "@/components/FichaProducto";
 import PersonalizarVela from "@/components/PersonalizarVela";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
@@ -31,11 +31,13 @@ export default async function ProductoPage(
 
   const personalizable = esPersonalizable(producto.id);
   const esVela = producto.subcategoria === "velas";
-  // Solo se necesita para velas — no vale la pena la consulta para
-  // productos que ni siquiera muestran el selector de aroma.
-  const descripcionesAromas = esVela
-    ? await obtenerDescripcionesAromas()
-    : undefined;
+  // La galería de fotos aplica a CUALQUIER producto (no solo a los
+  // personalizables) — ver GaleriaFotosProducto.tsx. Las descripciones
+  // de aroma solo se necesitan para velas.
+  const [descripcionesAromas, galeria] = await Promise.all([
+    esVela ? obtenerDescripcionesAromas() : Promise.resolve(undefined),
+    obtenerGaleriaProducto(producto.id),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -47,23 +49,11 @@ export default async function ProductoPage(
       </Link>
 
       <div className="mt-6 grid grid-cols-1 gap-10 md:grid-cols-2">
-        {/* Foto del producto — si todavía no se ha subido una desde
-            el panel de administración, se muestra el ícono de marca
-            a modo de marcador. */}
-        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface">
-          {producto.fotoUrl ? (
-            <Image
-              src={producto.fotoUrl}
-              alt={producto.nombre}
-              width={600}
-              height={600}
-              className="h-full w-full object-cover"
-              priority
-            />
-          ) : (
-            <FlameIcon className="h-16 w-16 text-ember/30" />
-          )}
-        </div>
+        <GaleriaFotosProducto
+          fotoPrincipal={producto.fotoUrl}
+          fotosGaleria={galeria.map((foto) => foto.fotoUrl)}
+          alt={producto.nombre}
+        />
 
         <div className="flex flex-col gap-4">
           <FichaProducto

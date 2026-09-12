@@ -3,13 +3,19 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { eliminarSesion, haySesion } from '@/lib/session';
-import { subirFotoAStorage, subirLogoAStorage } from '@/lib/storage';
+import {
+  subirFotoAStorage,
+  subirFotoGaleriaAStorage,
+  subirLogoAStorage,
+} from '@/lib/storage';
 import {
   guardarFotoProducto,
   guardarDescripcionProducto,
   guardarLogoUrl,
   guardarDestacadoProducto,
   guardarNumeroWhatsApp,
+  agregarFotoGaleria,
+  eliminarFotoGaleria,
 } from '@/lib/admin-db';
 
 export async function cerrarSesion() {
@@ -158,6 +164,79 @@ export async function guardarWhatsApp(
 
   revalidatePath('/admin');
   revalidatePath('/carrito');
+
+  return { ok: true };
+}
+
+export type EstadoFotoGaleria = { error?: string; ok?: boolean } | undefined;
+
+// A diferencia de subir la foto principal (que siempre reemplaza a la
+// anterior), esto AGREGA una foto más a la galería del producto —
+// cualquier producto, no solo los personalizables (decisión del
+// dueño, 2026-09-11).
+export async function agregarFotoGaleriaProducto(
+  _estado: EstadoFotoGaleria,
+  formData: FormData
+): Promise<EstadoFotoGaleria> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  const archivo = formData.get('foto');
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return { error: 'Selecciona una imagen.' };
+  }
+  if (!archivo.type.startsWith('image/')) {
+    return { error: 'El archivo debe ser una imagen.' };
+  }
+  if (archivo.size > LIMITE_MB * 1024 * 1024) {
+    return { error: `La imagen no puede pesar más de ${LIMITE_MB}MB.` };
+  }
+
+  try {
+    const url = await subirFotoGaleriaAStorage(productoId, archivo);
+    await agregarFotoGaleria(productoId, url);
+  } catch {
+    return { error: 'No se pudo subir la imagen. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath(`/productos/${productoId}`);
+
+  return { ok: true };
+}
+
+export async function quitarFotoGaleriaProducto(
+  _estado: EstadoFotoGaleria,
+  formData: FormData
+): Promise<EstadoFotoGaleria> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  const id = Number(formData.get('id'));
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+  if (!Number.isInteger(id) || id <= 0) {
+    return { error: 'Foto inválida.' };
+  }
+
+  try {
+    await eliminarFotoGaleria(id, productoId);
+  } catch {
+    return { error: 'No se pudo quitar la foto. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath(`/productos/${productoId}`);
 
   return { ok: true };
 }

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   AROMAS_DISPONIBLES,
-  COLORES_DISPONIBLES,
   LONGITUD_MAXIMA_NOMBRE_SECRETO,
 } from "@/lib/personalizacion";
 import { useCarrito } from "@/components/CarritoContext";
@@ -16,8 +15,14 @@ import DescripcionAroma from "@/components/DescripcionAroma";
 // personalización NO se muestra de una vez, solo aparece si el
 // cliente elige esa opción. Cada camino agrega al carrito por su
 // cuenta (con o sin las opciones de personalización). El aroma se
-// puede elegir en los dos caminos (aplica a toda vela); color y
-// nombre secreto solo en el camino de personalizar.
+// puede elegir en los dos caminos (aplica a toda vela); el nombre
+// secreto solo en el camino de personalizar.
+//
+// Ya no hay un desplegable de "Color" acá (decisión del dueño,
+// 2026-09-11): la vista previa de fotos ahora es una galería que el
+// cliente elige haciendo clic en una imagen (ver
+// GaleriaFotosProducto.tsx), no un color de texto para anotar en el
+// pedido.
 export default function PersonalizarVela({
   productoId,
   nombre,
@@ -38,9 +43,6 @@ export default function PersonalizarVela({
   const [aromaElegido, setAromaElegido] = useState<string>(
     AROMAS_DISPONIBLES[0]
   );
-  const [colorElegido, setColorElegido] = useState<string>(
-    COLORES_DISPONIBLES[0]
-  );
   const [nombreSecreto, setNombreSecreto] = useState("");
   const [agregado, setAgregado] = useState(false);
 
@@ -51,7 +53,6 @@ export default function PersonalizarVela({
       precioUnitario,
       cantidad: 1,
       aroma: aromaElegido || undefined,
-      color: colorElegido || undefined,
       nombreSecreto: nombreSecreto.trim() || undefined,
     });
     setAgregado(true);
@@ -106,21 +107,6 @@ export default function PersonalizarVela({
           </label>
 
           <DescripcionAroma descripcion={descripcionesAromas?.[aromaElegido]} />
-
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium text-foreground">Color</span>
-            <select
-              value={colorElegido}
-              onChange={(e) => setColorElegido(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-            >
-              {COLORES_DISPONIBLES.map((color) => (
-                <option key={color} value={color}>
-                  {color}
-                </option>
-              ))}
-            </select>
-          </label>
 
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium text-foreground">

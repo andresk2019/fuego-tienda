@@ -2,7 +2,11 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { haySesion } from '@/lib/session';
 import { obtenerCatalogoFuego } from '@/lib/db';
-import { obtenerLogoUrl, obtenerNumeroWhatsApp } from '@/lib/admin-db';
+import {
+  obtenerLogoUrl,
+  obtenerNumeroWhatsApp,
+  obtenerGaleriaTodosLosProductos,
+} from '@/lib/admin-db';
 import { esPersonalizable } from '@/lib/personalizacion';
 import { cerrarSesion } from './actions';
 import SubirLogoForm from '@/components/admin/SubirLogoForm';
@@ -20,11 +24,13 @@ export default async function AdminPage() {
     redirect('/admin/login');
   }
 
-  const [productos, logoUrl, numeroWhatsApp] = await Promise.all([
-    obtenerCatalogoFuego(),
-    obtenerLogoUrl(),
-    obtenerNumeroWhatsApp(),
-  ]);
+  const [productos, logoUrl, numeroWhatsApp, galeriasTodas] =
+    await Promise.all([
+      obtenerCatalogoFuego(),
+      obtenerLogoUrl(),
+      obtenerNumeroWhatsApp(),
+      obtenerGaleriaTodosLosProductos(),
+    ]);
 
   const productosParaAdmin = productos.map((producto) => ({
     id: producto.id,
@@ -38,6 +44,7 @@ export default async function AdminPage() {
     fotoUrl: producto.fotoUrl,
     descripcion: producto.descripcion,
     destacado: producto.destacado,
+    fotosGaleria: galeriasTodas[producto.id] ?? [],
   }));
 
   return (

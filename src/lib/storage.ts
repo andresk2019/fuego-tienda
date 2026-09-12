@@ -48,6 +48,20 @@ export async function subirFotoAStorage(productoId: number, archivo: File): Prom
   return subirArchivo(`productos/${productoId}.${extension}`, archivo);
 }
 
+// Foto adicional para la galería de un producto (ver
+// tienda_producto_galeria en admin-db.ts) — a diferencia de
+// subirFotoAStorage (una sola ruta fija por producto, siempre se
+// reemplaza), acá se pueden subir varias fotos para el mismo
+// producto, así que cada una necesita su propia ruta única.
+export async function subirFotoGaleriaAStorage(
+  productoId: number,
+  archivo: File
+): Promise<string> {
+  const extension = (archivo.name.split('.').pop() || 'jpg').toLowerCase();
+  const sufijo = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  return subirArchivo(`productos/${productoId}-galeria-${sufijo}.${extension}`, archivo);
+}
+
 export async function subirLogoAStorage(archivo: File): Promise<string> {
   const extension = (archivo.name.split('.').pop() || 'png').toLowerCase();
   return subirArchivo(`sitio/logo.${extension}`, archivo);
