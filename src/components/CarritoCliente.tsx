@@ -63,6 +63,7 @@ export default function CarritoCliente({
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [aceptaPolitica, setAceptaPolitica] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [problemasStock, setProblemasStock] = useState<ProblemaStock[] | null>(
     null
@@ -98,7 +99,7 @@ export default function CarritoCliente({
   // el número de pedido.
   async function manejarContinuar(e: React.FormEvent) {
     e.preventDefault();
-    if (!numeroWhatsApp || enviando) return;
+    if (!numeroWhatsApp || enviando || !aceptaPolitica) return;
 
     // Safari (sobre todo en iPhone) bloquea como "pop-up" cualquier
     // window.open que no ocurra en el mismo instante del clic. Antes,
@@ -119,6 +120,7 @@ export default function CarritoCliente({
         clienteNombre: nombre,
         clienteTelefono: telefono,
         clienteDireccion: direccion,
+        aceptaTratamientoDatos: aceptaPolitica,
         items,
         total,
       });
@@ -273,9 +275,30 @@ export default function CarritoCliente({
             />
           </label>
 
+          <label className="flex items-start gap-2 text-xs text-muted">
+            <input
+              type="checkbox"
+              required
+              checked={aceptaPolitica}
+              onChange={(e) => setAceptaPolitica(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-ember"
+            />
+            <span>
+              He leído y acepto la{" "}
+              <Link
+                href="/politica-de-datos"
+                target="_blank"
+                className="font-medium text-ember transition-colors hover:text-ember-hover"
+              >
+                Política de tratamiento de datos personales
+              </Link>
+              .
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={enviando}
+            disabled={enviando || !aceptaPolitica}
             className="mt-1 flex items-center justify-center gap-2 rounded-lg bg-whatsapp px-4 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-whatsapp-hover disabled:opacity-60"
           >
             <WhatsAppIcon className="h-4 w-4" />

@@ -19,6 +19,7 @@ export async function crearPedidoDesdeCarrito(datos: {
   clienteNombre: string;
   clienteTelefono: string;
   clienteDireccion: string;
+  aceptaTratamientoDatos: boolean;
   items: ItemPedido[];
   total: number;
 }): Promise<ResultadoCrearPedido> {
@@ -29,6 +30,14 @@ export async function crearPedidoDesdeCarrito(datos: {
   if (!clienteNombre) return { error: 'Escribe tu nombre.' };
   if (!clienteTelefono) return { error: 'Escribe tu número de WhatsApp.' };
   if (!clienteDireccion) return { error: 'Escribe tu dirección de entrega.' };
+  // Igual que los campos de arriba: el checkbox del navegador ya lo
+  // exige, pero un Server Action se trata como endpoint público —
+  // nunca hay que confiar solo en que el formulario lo haya validado.
+  if (!datos.aceptaTratamientoDatos) {
+    return {
+      error: 'Acepta la política de tratamiento de datos para continuar.',
+    };
+  }
   if (!datos.items || datos.items.length === 0) {
     return { error: 'Tu carrito está vacío.' };
   }
