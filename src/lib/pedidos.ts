@@ -17,6 +17,16 @@ export const ESTADOS_PEDIDO: { valor: EstadoPedido; etiqueta: string }[] = [
   { valor: 'cancelado', etiqueta: 'Cancelado' },
 ];
 
+// Zona de envío — el costo de domicilio es distinto dentro de
+// Medellín que al resto del país (decisión del dueño, 2026-09-14).
+// El cliente elige una de las dos en el carrito.
+export type ZonaEnvio = 'medellin' | 'nacional';
+
+export const ZONAS_ENVIO: { valor: ZonaEnvio; etiqueta: string }[] = [
+  { valor: 'medellin', etiqueta: 'Medellín' },
+  { valor: 'nacional', etiqueta: 'Resto del país' },
+];
+
 export type ItemPedido = {
   productoId: number;
   nombre: string;
@@ -44,6 +54,9 @@ export type Pedido = {
   // cobró envío porque el pedido era antes de este cambio" de "el
   // envío fue gratis" (0), así que se deja sin valor por defecto.
   costoEnvio: number | null;
+  // Igual que costoEnvio: null en pedidos de antes de que existieran
+  // las 2 zonas.
+  zonaEnvio: ZonaEnvio | null;
   estado: EstadoPedido;
   creadoEn: string;
 };

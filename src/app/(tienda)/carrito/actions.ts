@@ -3,7 +3,7 @@
 import { validarStockCarrito, type ProblemaStock } from '@/lib/db';
 import { crearPedido } from '@/lib/pedidos-db';
 import { obtenerConfigEnvio } from '@/lib/admin-db';
-import type { ItemPedido } from '@/lib/pedidos';
+import { ZONAS_ENVIO, type ItemPedido, type ZonaEnvio } from '@/lib/pedidos';
 
 export type ResultadoCrearPedido = {
   error?: string;
@@ -31,6 +31,7 @@ export async function crearPedidoDesdeCarrito(datos: {
   // la tarifa configurada en /admin, nunca confiando en un valor que
   // mande el navegador (un Server Action es un endpoint público).
   subtotalProductos: number;
+  zonaEnvio: ZonaEnvio;
 }): Promise<ResultadoCrearPedido> {
   const clienteNombre = datos.clienteNombre.trim();
   const clienteTelefono = datos.clienteTelefono.trim();
@@ -39,6 +40,9 @@ export async function crearPedidoDesdeCarrito(datos: {
   if (!clienteNombre) return { error: 'Escribe tu nombre.' };
   if (!clienteTelefono) return { error: 'Escribe tu número de WhatsApp.' };
   if (!clienteDireccion) return { error: 'Escribe tu dirección de entrega.' };
+  if (!ZONAS_ENVIO.some((z) => z.valor === datos.zonaEnvio)) {
+    return { error: 'Selecciona a dónde se envía tu pedido.' };
+  }
   // Igual que los campos de arriba: el checkbox del navegador ya lo
   // exige, pero un Server Action se trata como endpoint público —
   // nunca hay que confiar solo en que el formulario lo haya validado.
@@ -70,8 +74,12 @@ export async function crearPedidoDesdeCarrito(datos: {
   // importa cuánto haya calculado (o manipulado) el navegador, el
   // costo real siempre sale de la misma fuente que ve el dueño.
   const configEnvio = await obtenerConfigEnvio();
+  const costoBase =
+    datos.zonaEnvio === 'medellin'
+      ? configEnvio.costoLocal
+      : configEnvio.costoNacional;
   const costoEnvio =
-    datos.subtotalProductos >= configEnvio.gratisDesde ? 0 : configEnvio.costo;
+    datos.subtotalProductos >= configEnvio.gratisDesde ? 0 : costoBase;
   const total = datos.subtotalProductos + costoEnvio;
 
   try {
@@ -82,6 +90,7 @@ export async function crearPedidoDesdeCarrito(datos: {
       items: datos.items,
       total,
       costoEnvio,
+      zonaEnvio: datos.zonaEnvio,
     });
     return { numero, costoEnvio, total };
   } catch {

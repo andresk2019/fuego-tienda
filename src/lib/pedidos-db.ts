@@ -16,6 +16,7 @@ import {
   type EstadoPedido,
   type ItemPedido,
   type Pedido,
+  type ZonaEnvio,
 } from './pedidos';
 
 let esquemaListo: Promise<void> | undefined;
@@ -35,7 +36,8 @@ function asegurarEsquema(): Promise<void> {
            actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
          );
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_direccion TEXT;
-         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;`
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS zona_envio TEXT;`
       )
       .then(() => undefined);
   }
@@ -49,11 +51,12 @@ export async function crearPedido(datos: {
   items: ItemPedido[];
   total: number;
   costoEnvio: number;
+  zonaEnvio: ZonaEnvio;
 }): Promise<{ id: number; numero: string }> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio, zona_envio)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id`,
     [
       datos.clienteNombre,
@@ -62,6 +65,7 @@ export async function crearPedido(datos: {
       JSON.stringify(datos.items),
       datos.total,
       datos.costoEnvio,
+      datos.zonaEnvio,
     ]
   );
   const id = rows[0].id as number;
@@ -71,7 +75,7 @@ export async function crearPedido(datos: {
 export async function obtenerPedidos(): Promise<Pedido[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio, estado, creado_en
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio, zona_envio, estado, creado_en
      FROM tienda_pedidos
      ORDER BY creado_en DESC`
   );
@@ -89,6 +93,7 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
     // null real (no 0) en pedidos de antes de este campo — ver
     // comentario en pedidos.ts.
     costoEnvio: r.costo_envio !== null ? Number(r.costo_envio) : null,
+    zonaEnvio: (r.zona_envio as ZonaEnvio | null) ?? null,
     estado: r.estado as EstadoPedido,
     creadoEn: new Date(r.creado_en).toISOString(),
   }));

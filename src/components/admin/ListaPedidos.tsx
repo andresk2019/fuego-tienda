@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { actualizarEstado } from '@/app/admin/pedidos/actions';
-import { ESTADOS_PEDIDO, type Pedido } from '@/lib/pedidos';
+import { ESTADOS_PEDIDO, ZONAS_ENVIO, type Pedido } from '@/lib/pedidos';
 
 const formatoCOP = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -52,7 +52,10 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
             </p>
             {pedido.costoEnvio !== null && (
               <p className="text-xs text-muted">
-                Incluye envío:{" "}
+                Incluye envío
+                {pedido.zonaEnvio &&
+                  ` a ${ZONAS_ENVIO.find((z) => z.valor === pedido.zonaEnvio)?.etiqueta}`}
+                :{" "}
                 {pedido.costoEnvio > 0
                   ? formatoCOP.format(pedido.costoEnvio)
                   : "Gratis"}

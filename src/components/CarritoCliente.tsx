@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
+import { ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
 import type { ProblemaStock } from "@/lib/db";
 import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
 import type { ConfigEnvio } from "@/lib/admin-db";
@@ -33,6 +34,7 @@ function construirMensajeWhatsApp(
   items: ItemCarrito[],
   subtotal: number,
   costoEnvio: number,
+  zonaEnvio: ZonaEnvio,
   nombreCliente: string,
   direccion: string,
   numero: string | null
@@ -46,9 +48,11 @@ function construirMensajeWhatsApp(
   const encabezado = numero
     ? `Hola, soy ${nombreCliente}. Quiero hacer este pedido (#${numero}):`
     : `Hola, soy ${nombreCliente}. Quiero hacer este pedido:`;
+  const etiquetaZona =
+    ZONAS_ENVIO.find((z) => z.valor === zonaEnvio)?.etiqueta ?? "";
   const lineaEnvio =
     costoEnvio > 0 ? formatoCOP.format(costoEnvio) : "Gratis";
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío: ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nDirección de entrega: ${direccion}`;
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nDirección de entrega: ${direccion}`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -56,14 +60,14 @@ function construirMensajeWhatsApp(
 // NEXT_PUBLIC_WHATSAPP_NUMBER directo; ahora el número se puede
 // cambiar desde /admin sin necesidad de un nuevo despliegue (ver
 // obtenerNumeroWhatsApp en admin-db.ts).
-// `configEnvio` llega desde el servidor (ver (tienda)/carrito/
-// page.tsx) — envío a domicilio a nivel nacional, tarifa única
-// (decisión del dueño, 2026-09-14), gratis a partir de cierto monto.
-// El envío mostrado acá es solo para que el cliente vea el total
-// antes de enviar; el que de verdad queda registrado en el pedido se
-// vuelve a calcular en el servidor con la tarifa vigente en ese
-// momento (ver crearPedidoDesdeCarrito), nunca confiando en lo que
-// calculó el navegador.
+// `configEnvio` también llega desde el servidor — 2 tarifas de
+// domicilio (dentro de Medellín / resto del país, decisión del dueño,
+// 2026-09-14), gratis a partir de cierto monto en cualquiera de las
+// 2. Lo mostrado acá es solo para que el cliente vea el total antes
+// de enviar; el que de verdad queda registrado en el pedido se vuelve
+// a calcular en el servidor con la tarifa vigente en ese momento (ver
+// crearPedidoDesdeCarrito), nunca confiando en lo que calculó el
+// navegador.
 export default function CarritoCliente({
   numeroWhatsApp,
   configEnvio,
@@ -73,18 +77,25 @@ export default function CarritoCliente({
 }) {
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
   const subtotal = totalCarrito(items);
-  const costoEnvioMostrado =
-    subtotal >= configEnvio.gratisDesde ? 0 : configEnvio.costo;
-  const totalMostrado = subtotal + costoEnvioMostrado;
+  const envioGratis = subtotal >= configEnvio.gratisDesde;
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [direccion, setDireccion] = useState("");
+  const [zonaEnvio, setZonaEnvio] = useState<ZonaEnvio | null>(null);
   const [aceptaPolitica, setAceptaPolitica] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [problemasStock, setProblemasStock] = useState<ProblemaStock[] | null>(
     null
   );
+
+  const costoPorZona: Record<ZonaEnvio, number> = {
+    medellin: envioGratis ? 0 : configEnvio.costoLocal,
+    nacional: envioGratis ? 0 : configEnvio.costoNacional,
+  };
+  const costoEnvioMostrado = zonaEnvio ? costoPorZona[zonaEnvio] : null;
+  const totalMostrado =
+    costoEnvioMostrado !== null ? subtotal + costoEnvioMostrado : null;
 
   if (items.length === 0) {
     return (
@@ -116,7 +127,7 @@ export default function CarritoCliente({
   // el número de pedido.
   async function manejarContinuar(e: React.FormEvent) {
     e.preventDefault();
-    if (!numeroWhatsApp || enviando || !aceptaPolitica) return;
+    if (!numeroWhatsApp || enviando || !aceptaPolitica || !zonaEnvio) return;
 
     // Safari (sobre todo en iPhone) bloquea como "pop-up" cualquier
     // window.open que no ocurra en el mismo instante del clic. Antes,
@@ -136,7 +147,7 @@ export default function CarritoCliente({
     // calculado acá en el navegador (ver comentario del componente) —
     // no es exacto al 100% si justo en ese instante cambió la tarifa,
     // pero es mejor que dejar al cliente sin poder pedir.
-    let costoEnvio = costoEnvioMostrado;
+    let costoEnvio = costoPorZona[zonaEnvio];
     try {
       const resultado = await crearPedidoDesdeCarrito({
         clienteNombre: nombre,
@@ -145,6 +156,7 @@ export default function CarritoCliente({
         aceptaTratamientoDatos: aceptaPolitica,
         items,
         subtotalProductos: subtotal,
+        zonaEnvio,
       });
       if (resultado.problemasStock && resultado.problemasStock.length > 0) {
         setEnviando(false);
@@ -163,6 +175,7 @@ export default function CarritoCliente({
       items,
       subtotal,
       costoEnvio,
+      zonaEnvio,
       nombre,
       direccion,
       numero
@@ -232,24 +245,47 @@ export default function CarritoCliente({
           <span>Subtotal</span>
           <span>{formatoCOP.format(subtotal)}</span>
         </div>
-        <div className="flex items-center justify-between text-sm text-muted">
-          <span>Envío a domicilio</span>
-          <span>
-            {costoEnvioMostrado > 0
-              ? formatoCOP.format(costoEnvioMostrado)
-              : "Gratis"}
-          </span>
-        </div>
-        {costoEnvioMostrado > 0 && (
+
+        <fieldset className="flex flex-col gap-1.5 py-1.5">
+          <legend className="text-sm font-medium text-foreground">
+            ¿A dónde se envía tu pedido?
+          </legend>
+          {ZONAS_ENVIO.map((zona) => (
+            <label
+              key={zona.valor}
+              className="flex items-center justify-between gap-2 text-sm text-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="zonaEnvio"
+                  checked={zonaEnvio === zona.valor}
+                  onChange={() => setZonaEnvio(zona.valor)}
+                  className="h-4 w-4 accent-ember"
+                />
+                {zona.etiqueta}
+              </span>
+              <span className="text-muted">
+                {costoPorZona[zona.valor] > 0
+                  ? formatoCOP.format(costoPorZona[zona.valor])
+                  : "Gratis"}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        {envioGratis && (
           <p className="text-xs text-muted">
-            Envío gratis en compras desde{" "}
-            {formatoCOP.format(configEnvio.gratisDesde)}.
+            Envío gratis por superar {formatoCOP.format(configEnvio.gratisDesde)}
+            .
           </p>
         )}
+
         <div className="mt-1 flex items-center justify-between border-t border-border pt-2">
           <span className="font-medium text-foreground">Total</span>
           <span className="text-lg font-semibold text-foreground">
-            {formatoCOP.format(totalMostrado)}
+            {totalMostrado !== null
+              ? formatoCOP.format(totalMostrado)
+              : "Elige a dónde se envía"}
           </span>
         </div>
       </div>
@@ -342,7 +378,7 @@ export default function CarritoCliente({
 
           <button
             type="submit"
-            disabled={enviando || !aceptaPolitica}
+            disabled={enviando || !aceptaPolitica || !zonaEnvio}
             className="mt-1 flex items-center justify-center gap-2 rounded-lg bg-whatsapp px-4 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-whatsapp-hover disabled:opacity-60"
           >
             <WhatsAppIcon className="h-4 w-4" />

@@ -10,10 +10,10 @@ const formatoCOP = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
 });
 
-// Envío a domicilio a nivel nacional, tarifa única (decisión del
-// dueño, 2026-09-14) — no hay tarifas por ciudad/zona todavía. Se
-// muestra en el carrito sumado al total, y gratis si el pedido llega
-// al monto configurado aquí.
+// Envío a domicilio con 2 tarifas — dentro de Medellín y al resto del
+// país (decisión del dueño, 2026-09-14). Se muestran en el carrito
+// como 2 opciones para que el cliente elija, y gratis si el pedido
+// llega al monto configurado aquí (en cualquiera de las 2 zonas).
 export default function ConfigEnvioForm({
   configActual,
 }: {
@@ -28,20 +28,32 @@ export default function ConfigEnvioForm({
           Costo de envío
         </p>
         <p className="text-xs text-muted">
-          Domicilio a nivel nacional, tarifa única — se suma al total
-          en el carrito.
+          Domicilio con tarifa distinta dentro de Medellín y al resto
+          del país — se suma al total en el carrito.
         </p>
       </div>
 
       <form action={accion} className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-muted">Valor del envío</span>
+          <span className="text-xs text-muted">Dentro de Medellín</span>
           <input
             type="number"
-            name="costo"
+            name="costoLocal"
             min={0}
             step={500}
-            defaultValue={configActual.costo}
+            defaultValue={configActual.costoLocal}
+            required
+            className="w-32 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-muted">Resto del país</span>
+          <input
+            type="number"
+            name="costoNacional"
+            min={0}
+            step={500}
+            defaultValue={configActual.costoNacional}
             required
             className="w-32 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground"
           />
@@ -67,8 +79,10 @@ export default function ConfigEnvioForm({
       </form>
 
       <p className="text-xs text-muted">
-        Hoy: envío de {formatoCOP.format(configActual.costo)}, gratis en
-        compras desde {formatoCOP.format(configActual.gratisDesde)}.
+        Hoy: {formatoCOP.format(configActual.costoLocal)} dentro de
+        Medellín, {formatoCOP.format(configActual.costoNacional)} al
+        resto del país, gratis en compras desde{' '}
+        {formatoCOP.format(configActual.gratisDesde)}.
       </p>
 
       {estado?.error && <p className="text-xs text-danger">{estado.error}</p>}

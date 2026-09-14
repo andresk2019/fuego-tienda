@@ -97,24 +97,27 @@ export async function guardarNumeroWhatsApp(numero: string): Promise<void> {
   );
 }
 
-// Costo de envío — siempre es a domicilio a nivel nacional (decisión
-// del dueño, 2026-09-14), así que por ahora es una sola tarifa fija
-// para toda Colombia (no por ciudad/zona), con envío gratis a partir
-// de cierto monto de compra. Los valores por defecto son los que el
-// dueño pidió al construir esto ($15.000 / gratis desde $100.000) —
-// sirven de respaldo hasta que se guarde algo distinto desde /admin.
+// Costo de envío — 2 tarifas fijas (decisión del dueño, 2026-09-14):
+// una para domicilios dentro de Medellín y otra para el resto del
+// país (ver ZonaEnvio en pedidos.ts), con envío gratis a partir de
+// cierto monto de compra en cualquiera de las dos. Los valores por
+// defecto son los que el dueño pidió al construir esto — sirven de
+// respaldo hasta que se guarde algo distinto desde /admin.
 export type ConfigEnvio = {
-  costo: number;
+  costoLocal: number; // Medellín
+  costoNacional: number; // resto del país
   gratisDesde: number;
 };
 
 const CONFIG_ENVIO_POR_DEFECTO: ConfigEnvio = {
-  costo: 15000,
+  costoLocal: 15000,
+  costoNacional: 20000,
   gratisDesde: 100000,
 };
 
 const CLAVES_ENVIO = {
-  costo: 'envio_costo',
+  costoLocal: 'envio_costo_local',
+  costoNacional: 'envio_costo_nacional',
   gratisDesde: 'envio_gratis_desde',
 } as const;
 
@@ -129,9 +132,12 @@ export async function obtenerConfigEnvio(): Promise<ConfigEnvio> {
     guardado[fila.clave] = fila.valor;
   }
   return {
-    costo: guardado[CLAVES_ENVIO.costo]
-      ? Number(guardado[CLAVES_ENVIO.costo])
-      : CONFIG_ENVIO_POR_DEFECTO.costo,
+    costoLocal: guardado[CLAVES_ENVIO.costoLocal]
+      ? Number(guardado[CLAVES_ENVIO.costoLocal])
+      : CONFIG_ENVIO_POR_DEFECTO.costoLocal,
+    costoNacional: guardado[CLAVES_ENVIO.costoNacional]
+      ? Number(guardado[CLAVES_ENVIO.costoNacional])
+      : CONFIG_ENVIO_POR_DEFECTO.costoNacional,
     gratisDesde: guardado[CLAVES_ENVIO.gratisDesde]
       ? Number(guardado[CLAVES_ENVIO.gratisDesde])
       : CONFIG_ENVIO_POR_DEFECTO.gratisDesde,
@@ -141,11 +147,13 @@ export async function obtenerConfigEnvio(): Promise<ConfigEnvio> {
 export async function guardarConfigEnvio(config: ConfigEnvio): Promise<void> {
   await asegurarEsquema();
   await getPool().query(
-    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4)
+    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4), ($5, $6)
      ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
     [
-      CLAVES_ENVIO.costo,
-      String(config.costo),
+      CLAVES_ENVIO.costoLocal,
+      String(config.costoLocal),
+      CLAVES_ENVIO.costoNacional,
+      String(config.costoNacional),
       CLAVES_ENVIO.gratisDesde,
       String(config.gratisDesde),
     ]
