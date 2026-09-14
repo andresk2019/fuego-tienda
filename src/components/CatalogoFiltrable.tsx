@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CATEGORIAS, type CategoriaSlug } from "@/lib/categorias";
 import { esPersonalizable } from "@/lib/personalizacion";
 import type { ProductoCatalogo } from "@/lib/db";
+import type { ResumenResenas } from "@/lib/resenas-db";
 import { productoHref } from "@/lib/slug";
 import Chip from "@/components/Chip";
 import FiltroPrecio from "@/components/FiltroPrecio";
@@ -12,8 +13,10 @@ import TarjetaProducto from "@/components/TarjetaProducto";
 
 export default function CatalogoFiltrable({
   productos,
+  resumenResenasPorProducto,
 }: {
   productos: ProductoCatalogo[];
+  resumenResenasPorProducto: Record<number, ResumenResenas>;
 }) {
   // Solo se muestran en el menú las categorías que de verdad tienen
   // productos hoy (en el orden definido en CATEGORIAS), para no listar
@@ -151,6 +154,7 @@ export default function CatalogoFiltrable({
                   disponible={producto.disponible}
                   pocasUnidades={producto.pocasUnidades}
                   personalizable={esPersonalizable(producto.id)}
+                  resumenResenas={resumenResenasPorProducto[producto.id] ?? null}
                 />
               </Link>
             </li>

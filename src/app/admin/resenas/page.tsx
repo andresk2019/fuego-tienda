@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { haySesion } from '@/lib/session';
 import { obtenerResenas } from '@/lib/resenas-db';
+import { obtenerCatalogoFuego } from '@/lib/db';
 import ListaResenas from '@/components/admin/ListaResenas';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,16 @@ export default async function ResenasPage() {
     redirect('/admin/login');
   }
 
-  const resenas = await obtenerResenas();
+  const [resenas, productos] = await Promise.all([
+    obtenerResenas(),
+    obtenerCatalogoFuego(),
+  ]);
+  // Solo se necesitan id + nombre para el desplegable de "Vela
+  // relacionada" — se ordenan alfabéticamente, más fácil de encontrar
+  // una vela puntual que en el orden en que salen de la base de datos.
+  const productosParaSelector = productos
+    .map((p) => ({ id: p.id, nombre: p.nombre }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
@@ -31,7 +41,7 @@ export default async function ResenasPage() {
         aparecen en el inicio de la tienda.
       </p>
 
-      <ListaResenas resenas={resenas} />
+      <ListaResenas resenas={resenas} productos={productosParaSelector} />
     </main>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SECCIONES } from "@/lib/secciones";
 import type { ProductoCatalogo } from "@/lib/db";
+import type { ResumenResenas } from "@/lib/resenas-db";
 import CatalogoFiltrable from "@/components/CatalogoFiltrable";
 import Chip from "@/components/Chip";
 import FlameIcon from "@/components/FlameIcon";
@@ -22,8 +23,10 @@ import FlameIcon from "@/components/FlameIcon";
 // estilo de botón.
 export default function CatalogoPorSeccion({
   productos,
+  resumenResenasPorProducto,
 }: {
   productos: ProductoCatalogo[];
+  resumenResenasPorProducto: Record<number, ResumenResenas>;
 }) {
   const [seccionActiva, setSeccionActiva] = useState(SECCIONES[0]);
   const [subcategoriaActiva, setSubcategoriaActiva] = useState(
@@ -94,7 +97,10 @@ export default function CatalogoPorSeccion({
           </p>
         </div>
       ) : (
-        <CatalogoFiltrable productos={productosDeLaSubcategoria} />
+        <CatalogoFiltrable
+          productos={productosDeLaSubcategoria}
+          resumenResenasPorProducto={resumenResenasPorProducto}
+        />
       )}
     </div>
   );

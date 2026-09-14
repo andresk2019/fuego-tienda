@@ -1,4 +1,5 @@
 import { obtenerCatalogoFuego } from "@/lib/db";
+import { obtenerResumenResenasPorProducto } from "@/lib/resenas-db";
 import CatalogoPorSeccion from "@/components/CatalogoPorSeccion";
 
 // El stock puede cambiar en cualquier momento por una venta de mostrador
@@ -12,7 +13,10 @@ export const metadata = {
 };
 
 export default async function CatalogoPage() {
-  const productos = await obtenerCatalogoFuego();
+  const [productos, resumenResenasPorProducto] = await Promise.all([
+    obtenerCatalogoFuego(),
+    obtenerResumenResenasPorProducto(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -21,7 +25,10 @@ export default async function CatalogoPage() {
           Todavía no hay productos publicados.
         </p>
       ) : (
-        <CatalogoPorSeccion productos={productos} />
+        <CatalogoPorSeccion
+          productos={productos}
+          resumenResenasPorProducto={resumenResenasPorProducto}
+        />
       )}
     </main>
   );

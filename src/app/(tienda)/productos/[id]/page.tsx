@@ -2,12 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { obtenerProductoFuego } from "@/lib/db";
 import { obtenerGaleriaProducto } from "@/lib/admin-db";
+import {
+  obtenerResumenResenasDeProducto,
+  obtenerResenasDeProducto,
+} from "@/lib/resenas-db";
 import { AROMAS_DISPONIBLES, esPersonalizable } from "@/lib/personalizacion";
 import { obtenerDescripcionesAromas } from "@/lib/aromas-db";
 import GaleriaFotosProducto from "@/components/GaleriaFotosProducto";
 import FichaProducto from "@/components/FichaProducto";
 import PersonalizarVela from "@/components/PersonalizarVela";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
+import ResenasProducto from "@/components/ResenasProducto";
 
 // Igual que el catálogo: el stock puede cambiar en cualquier momento
 // por una venta de mostrador en Contabilidad Lady, así que nunca se
@@ -32,12 +37,16 @@ export default async function ProductoPage(
   const personalizable = esPersonalizable(producto.id);
   const esVela = producto.subcategoria === "velas";
   // La galería de fotos aplica a CUALQUIER producto (no solo a los
-  // personalizables) — ver GaleriaFotosProducto.tsx. Las descripciones
+  // personalizables) — ver GaleriaFotosProducto.tsx. Las reseñas
+  // también son por producto — ver resenas-db.ts. Las descripciones
   // de aroma solo se necesitan para velas.
-  const [descripcionesAromas, galeria] = await Promise.all([
-    esVela ? obtenerDescripcionesAromas() : Promise.resolve(undefined),
-    obtenerGaleriaProducto(producto.id),
-  ]);
+  const [descripcionesAromas, galeria, resumenResenas, resenas] =
+    await Promise.all([
+      esVela ? obtenerDescripcionesAromas() : Promise.resolve(undefined),
+      obtenerGaleriaProducto(producto.id),
+      obtenerResumenResenasDeProducto(producto.id),
+      obtenerResenasDeProducto(producto.id),
+    ]);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -63,6 +72,7 @@ export default async function ProductoPage(
             disponible={producto.disponible}
             pocasUnidades={producto.pocasUnidades}
             descripcion={producto.descripcion}
+            resumenResenas={resumenResenas}
           />
 
           {personalizable ? (
@@ -91,6 +101,8 @@ export default async function ProductoPage(
               )}
             </div>
           )}
+
+          <ResenasProducto resenas={resenas} />
         </div>
       </div>
     </main>

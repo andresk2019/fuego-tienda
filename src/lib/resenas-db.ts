@@ -8,6 +8,13 @@
 // ahora, el dueño las carga a mano desde el panel de administración
 // (ej. cuando un cliente le escribe algo bueno por WhatsApp) y decide
 // cuáles mostrar en la portada con el interruptor de "visible".
+//
+// Cada reseña puede (opcionalmente) quedar asociada a una vela
+// puntual (`producto_id`) — así el catálogo y la página de ese
+// producto pueden mostrar SU PROPIA calificación, en vez de un
+// promedio general repetido en todos lados. Una reseña sin producto
+// asociado sigue contando como "reseña general de la tienda" y solo
+// aparece en la portada.
 import 'server-only';
 import { getPool } from './pool';
 import type { Resena } from './resenas';
@@ -25,7 +32,8 @@ function asegurarEsquema(): Promise<void> {
            calificacion INTEGER NOT NULL DEFAULT 5,
            visible BOOLEAN NOT NULL DEFAULT true,
            creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-         );`
+         );
+         ALTER TABLE tienda_resenas ADD COLUMN IF NOT EXISTS producto_id INTEGER;`
       )
       .then(() => undefined);
   }
@@ -39,6 +47,7 @@ function filaAResena(r: {
   calificacion: number;
   visible: boolean;
   creado_en: Date | string;
+  producto_id: number | null;
 }): Resena {
   return {
     id: r.id,
@@ -47,6 +56,7 @@ function filaAResena(r: {
     calificacion: r.calificacion,
     visible: r.visible,
     creadoEn: new Date(r.creado_en).toISOString(),
+    productoId: r.producto_id,
   };
 }
 
@@ -55,7 +65,7 @@ function filaAResena(r: {
 export async function obtenerResenasVisibles(): Promise<Resena[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, texto, calificacion, visible, creado_en
+    `SELECT id, cliente_nombre, texto, calificacion, visible, creado_en, producto_id
      FROM tienda_resenas
      WHERE visible = true
      ORDER BY creado_en DESC`
@@ -67,23 +77,88 @@ export async function obtenerResenasVisibles(): Promise<Resena[]> {
 export async function obtenerResenas(): Promise<Resena[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, texto, calificacion, visible, creado_en
+    `SELECT id, cliente_nombre, texto, calificacion, visible, creado_en, producto_id
      FROM tienda_resenas
      ORDER BY creado_en DESC`
   );
   return rows.map(filaAResena);
 }
 
+// Reseñas visibles de UNA vela puntual — para mostrar en su propia
+// página de producto.
+export async function obtenerResenasDeProducto(
+  productoId: number
+): Promise<Resena[]> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    `SELECT id, cliente_nombre, texto, calificacion, visible, creado_en, producto_id
+     FROM tienda_resenas
+     WHERE visible = true AND producto_id = $1
+     ORDER BY creado_en DESC`,
+    [productoId]
+  );
+  return rows.map(filaAResena);
+}
+
+export type ResumenResenas = {
+  promedio: number;
+  total: number;
+};
+
+// Promedio y total de reseñas visibles de UNA vela puntual — null si
+// todavía no tiene ninguna (para no mostrar "0 reseñas" en su
+// página).
+export async function obtenerResumenResenasDeProducto(
+  productoId: number
+): Promise<ResumenResenas | null> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    `SELECT avg(calificacion) AS promedio, count(*) AS total
+     FROM tienda_resenas
+     WHERE visible = true AND producto_id = $1`,
+    [productoId]
+  );
+  const total = Number(rows[0]?.total ?? 0);
+  if (total === 0) return null;
+  return { promedio: Number(rows[0].promedio), total };
+}
+
+// Lo mismo que la función de arriba, pero para TODOS los productos en
+// una sola consulta (para el catálogo, que muestra muchas tarjetas a
+// la vez) — solo trae productos que de verdad tienen al menos una
+// reseña visible asociada.
+export async function obtenerResumenResenasPorProducto(): Promise<
+  Record<number, ResumenResenas>
+> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    `SELECT producto_id, avg(calificacion) AS promedio, count(*) AS total
+     FROM tienda_resenas
+     WHERE visible = true AND producto_id IS NOT NULL
+     GROUP BY producto_id`
+  );
+  const mapa: Record<number, ResumenResenas> = {};
+  for (const fila of rows) {
+    mapa[fila.producto_id] = {
+      promedio: Number(fila.promedio),
+      total: Number(fila.total),
+    };
+  }
+  return mapa;
+}
+
 export async function crearResena(datos: {
   clienteNombre: string;
   texto: string;
   calificacion: number;
+  // null = reseña general de la tienda, no de una vela en particular.
+  productoId: number | null;
 }): Promise<void> {
   await asegurarEsquema();
   await getPool().query(
-    `INSERT INTO tienda_resenas (cliente_nombre, texto, calificacion)
-     VALUES ($1, $2, $3)`,
-    [datos.clienteNombre, datos.texto, datos.calificacion]
+    `INSERT INTO tienda_resenas (cliente_nombre, texto, calificacion, producto_id)
+     VALUES ($1, $2, $3, $4)`,
+    [datos.clienteNombre, datos.texto, datos.calificacion, datos.productoId]
   );
 }
 

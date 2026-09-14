@@ -24,6 +24,9 @@ export async function agregarResena(
   const clienteNombre = String(formData.get('clienteNombre') ?? '').trim();
   const texto = String(formData.get('texto') ?? '').trim();
   const calificacion = Number(formData.get('calificacion'));
+  // Campo vacío ("General, toda la tienda") = sin producto asociado.
+  const productoIdCrudo = String(formData.get('productoId') ?? '').trim();
+  const productoId = productoIdCrudo ? Number(productoIdCrudo) : null;
 
   if (!clienteNombre) return { error: 'Escribe el nombre del cliente.' };
   if (!texto) return { error: 'Escribe el texto de la reseña.' };
@@ -34,15 +37,20 @@ export async function agregarResena(
   ) {
     return { error: 'Calificación inválida.' };
   }
+  if (productoId !== null && (!Number.isInteger(productoId) || productoId <= 0)) {
+    return { error: 'Producto inválido.' };
+  }
 
   try {
-    await crearResena({ clienteNombre, texto, calificacion });
+    await crearResena({ clienteNombre, texto, calificacion, productoId });
   } catch {
     return { error: 'No se pudo guardar la reseña. Intenta de nuevo.' };
   }
 
   revalidatePath('/admin/resenas');
   revalidatePath('/');
+  revalidatePath('/catalogo');
+  if (productoId) revalidatePath(`/productos/${productoId}`);
   return { ok: true };
 }
 
@@ -71,6 +79,7 @@ export async function actualizarVisibilidad(
 
   revalidatePath('/admin/resenas');
   revalidatePath('/');
+  revalidatePath('/catalogo');
   return { ok: true };
 }
 
@@ -83,4 +92,5 @@ export async function borrarResena(formData: FormData): Promise<void> {
   await eliminarResena(resenaId);
   revalidatePath('/admin/resenas');
   revalidatePath('/');
+  revalidatePath('/catalogo');
 }

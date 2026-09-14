@@ -6,7 +6,18 @@ import type { Resena } from "@/lib/resenas";
 // tiene sentido mostrar una sección vacía o con un aviso — se
 // devuelve null y listo, aparece sola en cuanto el dueño cargue la
 // primera desde el panel de administración.
-export default function Resenas({ resenas }: { resenas: Resena[] }) {
+//
+// Mezcla reseñas generales de la tienda con reseñas de una vela
+// puntual (ver resena.productoId) — a las segundas se les agrega una
+// etiqueta con el nombre de esa vela, para que quede claro de qué
+// producto habla el cliente.
+export default function Resenas({
+  resenas,
+  nombresProductos,
+}: {
+  resenas: Resena[];
+  nombresProductos: Record<number, string>;
+}) {
   if (resenas.length === 0) return null;
 
   return (
@@ -36,6 +47,11 @@ export default function Resenas({ resenas }: { resenas: Resena[] }) {
             <p className="mt-auto text-xs font-medium text-muted">
               — {resena.clienteNombre}
             </p>
+            {resena.productoId && nombresProductos[resena.productoId] && (
+              <p className="text-xs text-ember">
+                Sobre: {nombresProductos[resena.productoId]}
+              </p>
+            )}
           </li>
         ))}
       </ul>

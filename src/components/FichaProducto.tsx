@@ -1,4 +1,6 @@
 import { nombreCategoria, type CategoriaSlug } from "@/lib/categorias";
+import type { ResumenResenas } from "@/lib/resenas-db";
+import EstrellaIcon from "@/components/EstrellaIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -19,6 +21,7 @@ export default function FichaProducto({
   disponible,
   pocasUnidades,
   descripcion,
+  resumenResenas,
 }: {
   categoria: CategoriaSlug;
   nombre: string;
@@ -26,6 +29,9 @@ export default function FichaProducto({
   disponible: boolean;
   pocasUnidades: boolean;
   descripcion: string;
+  // Opcional: solo las velas con al menos una reseña asociada tienen
+  // esto — ver obtenerResumenResenasDeProducto en resenas-db.ts.
+  resumenResenas?: ResumenResenas | null;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -34,6 +40,24 @@ export default function FichaProducto({
       </span>
 
       <h1 className="font-serif text-3xl text-foreground">{nombre}</h1>
+
+      {resumenResenas && (
+        <div className="-mt-2 flex items-center gap-1.5">
+          <div className="flex gap-0.5 text-ember">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <EstrellaIcon
+                key={i}
+                llena={i < Math.round(resumenResenas.promedio)}
+                className="h-4 w-4"
+              />
+            ))}
+          </div>
+          <span className="text-sm text-muted">
+            {resumenResenas.promedio.toFixed(1)} ({resumenResenas.total}{" "}
+            {resumenResenas.total === 1 ? "reseña" : "reseñas"})
+          </span>
+        </div>
+      )}
 
       <p className="text-2xl font-semibold text-foreground">
         {formatoCOP.format(precioVenta)}

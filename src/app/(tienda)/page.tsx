@@ -19,13 +19,16 @@ export default async function Home() {
   ]);
 
   const destacados = productos.filter((p) => p.destacado);
+  const nombresProductos = Object.fromEntries(
+    productos.map((p) => [p.id, p.nombre])
+  );
 
   return (
     <>
       <Hero logoUrl={logoUrl} />
       <BadgesConfianza />
       <CarruselDestacados productos={destacados} />
-      <Resenas resenas={resenas} />
+      <Resenas resenas={resenas} nombresProductos={nombresProductos} />
     </>
   );
 }
