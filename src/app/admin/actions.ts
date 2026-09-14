@@ -14,6 +14,7 @@ import {
   guardarLogoUrl,
   guardarDestacadoProducto,
   guardarNumeroWhatsApp,
+  guardarConfigEnvio,
   agregarFotoGaleria,
   eliminarFotoGaleria,
 } from '@/lib/admin-db';
@@ -158,6 +159,38 @@ export async function guardarWhatsApp(
 
   try {
     await guardarNumeroWhatsApp(numero);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/carrito');
+
+  return { ok: true };
+}
+
+export type EstadoEnvio = { error?: string; ok?: boolean } | undefined;
+
+export async function guardarEnvio(
+  _estado: EstadoEnvio,
+  formData: FormData
+): Promise<EstadoEnvio> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const costo = Number(formData.get('costo'));
+  const gratisDesde = Number(formData.get('gratisDesde'));
+
+  if (!Number.isFinite(costo) || costo < 0) {
+    return { error: 'El costo de envío no es válido.' };
+  }
+  if (!Number.isFinite(gratisDesde) || gratisDesde < 0) {
+    return { error: 'El monto para envío gratis no es válido.' };
+  }
+
+  try {
+    await guardarConfigEnvio({ costo, gratisDesde });
   } catch {
     return { error: 'No se pudo guardar. Intenta de nuevo.' };
   }

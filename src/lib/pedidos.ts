@@ -36,7 +36,14 @@ export type Pedido = {
   // undefined, para no tener que revisar en cada pantalla si existe.
   clienteDireccion: string;
   items: ItemPedido[];
+  // `total` YA incluye el envío (ver costoEnvio) — es el valor real
+  // que se le pidió pagar al cliente, no solo la suma de productos.
   total: number;
+  // null en pedidos de antes de que existiera el costo de envío — a
+  // diferencia de clienteDireccion, aquí sí importa distinguir "no se
+  // cobró envío porque el pedido era antes de este cambio" de "el
+  // envío fue gratis" (0), así que se deja sin valor por defecto.
+  costoEnvio: number | null;
   estado: EstadoPedido;
   creadoEn: string;
 };

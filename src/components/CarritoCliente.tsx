@@ -6,6 +6,7 @@ import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
 import type { ProblemaStock } from "@/lib/db";
 import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
+import type { ConfigEnvio } from "@/lib/admin-db";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
@@ -30,7 +31,8 @@ function detallesItem(item: ItemCarrito): string {
 // que es nuestro, no suyo.
 function construirMensajeWhatsApp(
   items: ItemCarrito[],
-  total: number,
+  subtotal: number,
+  costoEnvio: number,
   nombreCliente: string,
   direccion: string,
   numero: string | null
@@ -44,7 +46,9 @@ function construirMensajeWhatsApp(
   const encabezado = numero
     ? `Hola, soy ${nombreCliente}. Quiero hacer este pedido (#${numero}):`
     : `Hola, soy ${nombreCliente}. Quiero hacer este pedido:`;
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nTotal: ${formatoCOP.format(total)}\n\nDirección de entrega: ${direccion}`;
+  const lineaEnvio =
+    costoEnvio > 0 ? formatoCOP.format(costoEnvio) : "Gratis";
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío: ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nDirección de entrega: ${direccion}`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -52,13 +56,26 @@ function construirMensajeWhatsApp(
 // NEXT_PUBLIC_WHATSAPP_NUMBER directo; ahora el número se puede
 // cambiar desde /admin sin necesidad de un nuevo despliegue (ver
 // obtenerNumeroWhatsApp en admin-db.ts).
+// `configEnvio` llega desde el servidor (ver (tienda)/carrito/
+// page.tsx) — envío a domicilio a nivel nacional, tarifa única
+// (decisión del dueño, 2026-09-14), gratis a partir de cierto monto.
+// El envío mostrado acá es solo para que el cliente vea el total
+// antes de enviar; el que de verdad queda registrado en el pedido se
+// vuelve a calcular en el servidor con la tarifa vigente en ese
+// momento (ver crearPedidoDesdeCarrito), nunca confiando en lo que
+// calculó el navegador.
 export default function CarritoCliente({
   numeroWhatsApp,
+  configEnvio,
 }: {
   numeroWhatsApp: string | null;
+  configEnvio: ConfigEnvio;
 }) {
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
-  const total = totalCarrito(items);
+  const subtotal = totalCarrito(items);
+  const costoEnvioMostrado =
+    subtotal >= configEnvio.gratisDesde ? 0 : configEnvio.costo;
+  const totalMostrado = subtotal + costoEnvioMostrado;
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -115,6 +132,11 @@ export default function CarritoCliente({
     setProblemasStock(null);
 
     let numero: string | null = null;
+    // Si el registro falla, el mensaje igual se arma con el envío
+    // calculado acá en el navegador (ver comentario del componente) —
+    // no es exacto al 100% si justo en ese instante cambió la tarifa,
+    // pero es mejor que dejar al cliente sin poder pedir.
+    let costoEnvio = costoEnvioMostrado;
     try {
       const resultado = await crearPedidoDesdeCarrito({
         clienteNombre: nombre,
@@ -122,7 +144,7 @@ export default function CarritoCliente({
         clienteDireccion: direccion,
         aceptaTratamientoDatos: aceptaPolitica,
         items,
-        total,
+        subtotalProductos: subtotal,
       });
       if (resultado.problemasStock && resultado.problemasStock.length > 0) {
         setEnviando(false);
@@ -131,6 +153,7 @@ export default function CarritoCliente({
         return;
       }
       numero = resultado.numero ?? null;
+      if (resultado.costoEnvio !== undefined) costoEnvio = resultado.costoEnvio;
     } catch {
       // seguimos sin número — ver comentario arriba
     }
@@ -138,7 +161,8 @@ export default function CarritoCliente({
 
     const mensaje = construirMensajeWhatsApp(
       items,
-      total,
+      subtotal,
+      costoEnvio,
       nombre,
       direccion,
       numero
@@ -203,11 +227,31 @@ export default function CarritoCliente({
         })}
       </ul>
 
-      <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-        <span className="font-medium text-foreground">Total</span>
-        <span className="text-lg font-semibold text-foreground">
-          {formatoCOP.format(total)}
-        </span>
+      <div className="mt-6 flex flex-col gap-1.5 border-t border-border pt-4">
+        <div className="flex items-center justify-between text-sm text-muted">
+          <span>Subtotal</span>
+          <span>{formatoCOP.format(subtotal)}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm text-muted">
+          <span>Envío a domicilio</span>
+          <span>
+            {costoEnvioMostrado > 0
+              ? formatoCOP.format(costoEnvioMostrado)
+              : "Gratis"}
+          </span>
+        </div>
+        {costoEnvioMostrado > 0 && (
+          <p className="text-xs text-muted">
+            Envío gratis en compras desde{" "}
+            {formatoCOP.format(configEnvio.gratisDesde)}.
+          </p>
+        )}
+        <div className="mt-1 flex items-center justify-between border-t border-border pt-2">
+          <span className="font-medium text-foreground">Total</span>
+          <span className="text-lg font-semibold text-foreground">
+            {formatoCOP.format(totalMostrado)}
+          </span>
+        </div>
       </div>
 
       {problemasStock && (

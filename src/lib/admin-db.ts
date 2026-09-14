@@ -97,6 +97,61 @@ export async function guardarNumeroWhatsApp(numero: string): Promise<void> {
   );
 }
 
+// Costo de envío — siempre es a domicilio a nivel nacional (decisión
+// del dueño, 2026-09-14), así que por ahora es una sola tarifa fija
+// para toda Colombia (no por ciudad/zona), con envío gratis a partir
+// de cierto monto de compra. Los valores por defecto son los que el
+// dueño pidió al construir esto ($15.000 / gratis desde $100.000) —
+// sirven de respaldo hasta que se guarde algo distinto desde /admin.
+export type ConfigEnvio = {
+  costo: number;
+  gratisDesde: number;
+};
+
+const CONFIG_ENVIO_POR_DEFECTO: ConfigEnvio = {
+  costo: 15000,
+  gratisDesde: 100000,
+};
+
+const CLAVES_ENVIO = {
+  costo: 'envio_costo',
+  gratisDesde: 'envio_gratis_desde',
+} as const;
+
+export async function obtenerConfigEnvio(): Promise<ConfigEnvio> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    'SELECT clave, valor FROM tienda_config WHERE clave = ANY($1)',
+    [Object.values(CLAVES_ENVIO)]
+  );
+  const guardado: Record<string, string> = {};
+  for (const fila of rows) {
+    guardado[fila.clave] = fila.valor;
+  }
+  return {
+    costo: guardado[CLAVES_ENVIO.costo]
+      ? Number(guardado[CLAVES_ENVIO.costo])
+      : CONFIG_ENVIO_POR_DEFECTO.costo,
+    gratisDesde: guardado[CLAVES_ENVIO.gratisDesde]
+      ? Number(guardado[CLAVES_ENVIO.gratisDesde])
+      : CONFIG_ENVIO_POR_DEFECTO.gratisDesde,
+  };
+}
+
+export async function guardarConfigEnvio(config: ConfigEnvio): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4)
+     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+    [
+      CLAVES_ENVIO.costo,
+      String(config.costo),
+      CLAVES_ENVIO.gratisDesde,
+      String(config.gratisDesde),
+    ]
+  );
+}
+
 // Texto de "Quiénes somos" (historia, misión, contacto) — antes vivía
 // escrito directo en el archivo de la página, marcado como "contenido
 // de prueba" mientras el dueño definía el texto real. Ahora se guarda

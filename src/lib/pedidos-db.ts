@@ -34,7 +34,8 @@ function asegurarEsquema(): Promise<void> {
            creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
            actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
          );
-         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_direccion TEXT;`
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_direccion TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;`
       )
       .then(() => undefined);
   }
@@ -47,11 +48,12 @@ export async function crearPedido(datos: {
   clienteDireccion: string;
   items: ItemPedido[];
   total: number;
+  costoEnvio: number;
 }): Promise<{ id: number; numero: string }> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, items, total)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
     [
       datos.clienteNombre,
@@ -59,6 +61,7 @@ export async function crearPedido(datos: {
       datos.clienteDireccion,
       JSON.stringify(datos.items),
       datos.total,
+      datos.costoEnvio,
     ]
   );
   const id = rows[0].id as number;
@@ -68,7 +71,7 @@ export async function crearPedido(datos: {
 export async function obtenerPedidos(): Promise<Pedido[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, items, total, estado, creado_en
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio, estado, creado_en
      FROM tienda_pedidos
      ORDER BY creado_en DESC`
   );
@@ -83,6 +86,9 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
     // node-postgres ya devuelve JSONB parseado como objeto/arreglo JS.
     items: r.items as ItemPedido[],
     total: Number(r.total),
+    // null real (no 0) en pedidos de antes de este campo — ver
+    // comentario en pedidos.ts.
+    costoEnvio: r.costo_envio !== null ? Number(r.costo_envio) : null,
     estado: r.estado as EstadoPedido,
     creadoEn: new Date(r.creado_en).toISOString(),
   }));

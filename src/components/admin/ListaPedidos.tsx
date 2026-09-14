@@ -46,9 +46,19 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          <p className="font-semibold text-foreground">
-            {formatoCOP.format(pedido.total)}
-          </p>
+          <div className="text-right">
+            <p className="font-semibold text-foreground">
+              {formatoCOP.format(pedido.total)}
+            </p>
+            {pedido.costoEnvio !== null && (
+              <p className="text-xs text-muted">
+                Incluye envío:{" "}
+                {pedido.costoEnvio > 0
+                  ? formatoCOP.format(pedido.costoEnvio)
+                  : "Gratis"}
+              </p>
+            )}
+          </div>
           <form action={accion} className="contents">
             <input type="hidden" name="pedidoId" value={pedido.id} />
             <select

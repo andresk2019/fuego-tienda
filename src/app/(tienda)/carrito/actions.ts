@@ -2,12 +2,18 @@
 
 import { validarStockCarrito, type ProblemaStock } from '@/lib/db';
 import { crearPedido } from '@/lib/pedidos-db';
+import { obtenerConfigEnvio } from '@/lib/admin-db';
 import type { ItemPedido } from '@/lib/pedidos';
 
 export type ResultadoCrearPedido = {
   error?: string;
   numero?: string;
   problemasStock?: ProblemaStock[];
+  // Vienen del cálculo hecho acá (ver más abajo), para que el mensaje
+  // de WhatsApp muestre el costo de envío real que quedó registrado
+  // en el pedido, no uno calculado aparte en el navegador.
+  costoEnvio?: number;
+  total?: number;
 };
 
 // Este Server Action se llama directo desde el cliente (no desde un
@@ -21,7 +27,10 @@ export async function crearPedidoDesdeCarrito(datos: {
   clienteDireccion: string;
   aceptaTratamientoDatos: boolean;
   items: ItemPedido[];
-  total: number;
+  // Solo la suma de los productos — el envío se calcula acá abajo con
+  // la tarifa configurada en /admin, nunca confiando en un valor que
+  // mande el navegador (un Server Action es un endpoint público).
+  subtotalProductos: number;
 }): Promise<ResultadoCrearPedido> {
   const clienteNombre = datos.clienteNombre.trim();
   const clienteTelefono = datos.clienteTelefono.trim();
@@ -57,15 +66,24 @@ export async function crearPedidoDesdeCarrito(datos: {
     return { problemasStock };
   }
 
+  // El envío se calcula acá, con la tarifa vigente en /admin — así no
+  // importa cuánto haya calculado (o manipulado) el navegador, el
+  // costo real siempre sale de la misma fuente que ve el dueño.
+  const configEnvio = await obtenerConfigEnvio();
+  const costoEnvio =
+    datos.subtotalProductos >= configEnvio.gratisDesde ? 0 : configEnvio.costo;
+  const total = datos.subtotalProductos + costoEnvio;
+
   try {
     const { numero } = await crearPedido({
       clienteNombre,
       clienteTelefono,
       clienteDireccion,
       items: datos.items,
-      total: datos.total,
+      total,
+      costoEnvio,
     });
-    return { numero };
+    return { numero, costoEnvio, total };
   } catch {
     // A diferencia de la validación de stock, esto sí es un problema
     // técnico nuestro (ej. la base de datos no respondió) — no se le
