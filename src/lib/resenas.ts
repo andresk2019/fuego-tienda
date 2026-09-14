@@ -9,6 +9,9 @@ export type Resena = {
   calificacion: number; // 1 a 5
   visible: boolean;
   creadoEn: string;
+  // Vela sobre la que es la reseña — null significa que es una
+  // reseña general de la tienda, no de un producto en particular.
+  productoId: number | null;
 };
 
 export const CALIFICACION_MAXIMA = 5;

@@ -13,10 +13,10 @@ import TarjetaProducto from "@/components/TarjetaProducto";
 
 export default function CatalogoFiltrable({
   productos,
-  resumenResenas,
+  resumenResenasPorProducto,
 }: {
   productos: ProductoCatalogo[];
-  resumenResenas: ResumenResenas | null;
+  resumenResenasPorProducto: Record<number, ResumenResenas>;
 }) {
   // Solo se muestran en el menú las categorías que de verdad tienen
   // productos hoy (en el orden definido en CATEGORIAS), para no listar
@@ -154,7 +154,7 @@ export default function CatalogoFiltrable({
                   disponible={producto.disponible}
                   pocasUnidades={producto.pocasUnidades}
                   personalizable={esPersonalizable(producto.id)}
-                  resumenResenas={resumenResenas}
+                  resumenResenas={resumenResenasPorProducto[producto.id] ?? null}
                 />
               </Link>
             </li>

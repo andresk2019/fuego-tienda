@@ -23,10 +23,10 @@ import FlameIcon from "@/components/FlameIcon";
 // estilo de botón.
 export default function CatalogoPorSeccion({
   productos,
-  resumenResenas,
+  resumenResenasPorProducto,
 }: {
   productos: ProductoCatalogo[];
-  resumenResenas: ResumenResenas | null;
+  resumenResenasPorProducto: Record<number, ResumenResenas>;
 }) {
   const [seccionActiva, setSeccionActiva] = useState(SECCIONES[0]);
   const [subcategoriaActiva, setSubcategoriaActiva] = useState(
@@ -99,7 +99,7 @@ export default function CatalogoPorSeccion({
       ) : (
         <CatalogoFiltrable
           productos={productosDeLaSubcategoria}
-          resumenResenas={resumenResenas}
+          resumenResenasPorProducto={resumenResenasPorProducto}
         />
       )}
     </div>

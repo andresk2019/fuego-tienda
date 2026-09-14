@@ -29,11 +29,11 @@ export default function TarjetaProducto({
   disponible: boolean;
   pocasUnidades: boolean;
   personalizable: boolean;
-  // Opcional: hoy las reseñas son generales de la tienda (no por
-  // producto), así que este mismo resumen se ve igual en todas las
-  // tarjetas — ver obtenerResumenResenas en resenas-db.ts. Se omite
-  // por completo (ni el prop se manda) en los espejos de vista previa
-  // del admin, donde no aplica.
+  // Opcional: resumen de ESTA vela puntual (ver
+  // obtenerResumenResenasPorProducto en resenas-db.ts) — null si
+  // todavía no tiene ninguna reseña asociada. Se omite por completo
+  // (ni el prop se manda) en los espejos de vista previa del admin,
+  // donde no aplica.
   resumenResenas?: ResumenResenas | null;
 }) {
   return (

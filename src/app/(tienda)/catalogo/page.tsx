@@ -1,5 +1,5 @@
 import { obtenerCatalogoFuego } from "@/lib/db";
-import { obtenerResumenResenas } from "@/lib/resenas-db";
+import { obtenerResumenResenasPorProducto } from "@/lib/resenas-db";
 import CatalogoPorSeccion from "@/components/CatalogoPorSeccion";
 
 // El stock puede cambiar en cualquier momento por una venta de mostrador
@@ -13,9 +13,9 @@ export const metadata = {
 };
 
 export default async function CatalogoPage() {
-  const [productos, resumenResenas] = await Promise.all([
+  const [productos, resumenResenasPorProducto] = await Promise.all([
     obtenerCatalogoFuego(),
-    obtenerResumenResenas(),
+    obtenerResumenResenasPorProducto(),
   ]);
 
   return (
@@ -25,7 +25,10 @@ export default async function CatalogoPage() {
           Todavía no hay productos publicados.
         </p>
       ) : (
-        <CatalogoPorSeccion productos={productos} resumenResenas={resumenResenas} />
+        <CatalogoPorSeccion
+          productos={productos}
+          resumenResenasPorProducto={resumenResenasPorProducto}
+        />
       )}
     </main>
   );

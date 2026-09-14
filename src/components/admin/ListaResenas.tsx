@@ -40,7 +40,11 @@ function SelectorCalificacion({
   );
 }
 
-function FormularioNuevaResena() {
+function FormularioNuevaResena({
+  productos,
+}: {
+  productos: { id: number; nombre: string }[];
+}) {
   const [estado, accion] = useActionState(agregarResena, undefined);
   const [calificacion, setCalificacion] = useState(5);
 
@@ -67,6 +71,27 @@ function FormularioNuevaResena() {
         placeholder="¿Qué dijo el cliente?"
         className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
       />
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-foreground">
+          Vela relacionada (opcional)
+        </span>
+        <select
+          name="productoId"
+          defaultValue=""
+          className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
+        >
+          <option value="">General (toda la tienda)</option>
+          {productos.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nombre}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-muted">
+          Si es sobre una vela puntual, esa vela muestra su propia
+          calificación en el catálogo y en su página.
+        </span>
+      </label>
       <button
         type="submit"
         className="w-fit rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover"
@@ -78,7 +103,13 @@ function FormularioNuevaResena() {
   );
 }
 
-function FilaResena({ resena }: { resena: Resena }) {
+function FilaResena({
+  resena,
+  nombreProducto,
+}: {
+  resena: Resena;
+  nombreProducto: string | null;
+}) {
   const [estado, accionVisibilidad] = useActionState(
     actualizarVisibilidad,
     undefined
@@ -105,6 +136,9 @@ function FilaResena({ resena }: { resena: Resena }) {
           <p className="mt-1 text-sm text-foreground">{resena.texto}</p>
           <p className="mt-1 text-xs text-muted">
             — {resena.clienteNombre} · {formatoFecha.format(new Date(resena.creadoEn))}
+          </p>
+          <p className="mt-1 text-xs font-medium text-ember">
+            {nombreProducto ? `Sobre: ${nombreProducto}` : 'General (toda la tienda)'}
           </p>
         </div>
 
@@ -158,17 +192,33 @@ function FilaResena({ resena }: { resena: Resena }) {
   );
 }
 
-export default function ListaResenas({ resenas }: { resenas: Resena[] }) {
+export default function ListaResenas({
+  resenas,
+  productos,
+}: {
+  resenas: Resena[];
+  productos: { id: number; nombre: string }[];
+}) {
+  const nombrePorId = new Map(productos.map((p) => [p.id, p.nombre]));
+
   return (
     <div className="flex flex-col gap-6">
-      <FormularioNuevaResena />
+      <FormularioNuevaResena productos={productos} />
 
       {resenas.length === 0 ? (
         <p className="text-sm text-muted">Todavía no hay reseñas cargadas.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {resenas.map((resena) => (
-            <FilaResena key={resena.id} resena={resena} />
+            <FilaResena
+              key={resena.id}
+              resena={resena}
+              nombreProducto={
+                resena.productoId
+                  ? (nombrePorId.get(resena.productoId) ?? 'Vela eliminada')
+                  : null
+              }
+            />
           ))}
         </ul>
       )}
