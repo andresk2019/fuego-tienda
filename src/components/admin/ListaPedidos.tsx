@@ -37,6 +37,9 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
           <p className="text-sm text-muted">
             {pedido.clienteNombre} · {pedido.clienteTelefono}
           </p>
+          {pedido.clienteDireccion && (
+            <p className="text-sm text-muted">📍 {pedido.clienteDireccion}</p>
+          )}
           <p className="text-xs text-muted">
             {formatoFecha.format(new Date(pedido.creadoEn))}
           </p>

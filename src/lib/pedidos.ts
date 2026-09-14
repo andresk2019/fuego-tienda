@@ -32,6 +32,9 @@ export type Pedido = {
   numero: string;
   clienteNombre: string;
   clienteTelefono: string;
+  // Vacío en pedidos de antes de este campo (no se pedía) — nunca
+  // undefined, para no tener que revisar en cada pantalla si existe.
+  clienteDireccion: string;
   items: ItemPedido[];
   total: number;
   estado: EstadoPedido;

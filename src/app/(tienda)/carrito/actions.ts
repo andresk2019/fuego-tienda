@@ -18,14 +18,17 @@ export type ResultadoCrearPedido = {
 export async function crearPedidoDesdeCarrito(datos: {
   clienteNombre: string;
   clienteTelefono: string;
+  clienteDireccion: string;
   items: ItemPedido[];
   total: number;
 }): Promise<ResultadoCrearPedido> {
   const clienteNombre = datos.clienteNombre.trim();
   const clienteTelefono = datos.clienteTelefono.trim();
+  const clienteDireccion = datos.clienteDireccion.trim();
 
   if (!clienteNombre) return { error: 'Escribe tu nombre.' };
   if (!clienteTelefono) return { error: 'Escribe tu número de WhatsApp.' };
+  if (!clienteDireccion) return { error: 'Escribe tu dirección de entrega.' };
   if (!datos.items || datos.items.length === 0) {
     return { error: 'Tu carrito está vacío.' };
   }
@@ -49,6 +52,7 @@ export async function crearPedidoDesdeCarrito(datos: {
     const { numero } = await crearPedido({
       clienteNombre,
       clienteTelefono,
+      clienteDireccion,
       items: datos.items,
       total: datos.total,
     });

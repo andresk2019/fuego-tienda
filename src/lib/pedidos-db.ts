@@ -33,7 +33,8 @@ function asegurarEsquema(): Promise<void> {
            estado TEXT NOT NULL DEFAULT 'pendiente',
            creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
            actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-         );`
+         );
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_direccion TEXT;`
       )
       .then(() => undefined);
   }
@@ -43,17 +44,19 @@ function asegurarEsquema(): Promise<void> {
 export async function crearPedido(datos: {
   clienteNombre: string;
   clienteTelefono: string;
+  clienteDireccion: string;
   items: ItemPedido[];
   total: number;
 }): Promise<{ id: number; numero: string }> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, items, total)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, items, total)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id`,
     [
       datos.clienteNombre,
       datos.clienteTelefono,
+      datos.clienteDireccion,
       JSON.stringify(datos.items),
       datos.total,
     ]
@@ -65,7 +68,7 @@ export async function crearPedido(datos: {
 export async function obtenerPedidos(): Promise<Pedido[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, cliente_telefono, items, total, estado, creado_en
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, items, total, estado, creado_en
      FROM tienda_pedidos
      ORDER BY creado_en DESC`
   );
@@ -74,6 +77,9 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
     numero: formatearNumeroPedido(r.id),
     clienteNombre: r.cliente_nombre,
     clienteTelefono: r.cliente_telefono,
+    // Pedidos de antes de este campo quedan con '' (ver comentario en
+    // pedidos.ts) en vez de null.
+    clienteDireccion: r.cliente_direccion ?? '',
     // node-postgres ya devuelve JSONB parseado como objeto/arreglo JS.
     items: r.items as ItemPedido[],
     total: Number(r.total),

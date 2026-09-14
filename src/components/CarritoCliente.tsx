@@ -32,6 +32,7 @@ function construirMensajeWhatsApp(
   items: ItemCarrito[],
   total: number,
   nombreCliente: string,
+  direccion: string,
   numero: string | null
 ): string {
   const lineas = items.map((item) => {
@@ -43,7 +44,7 @@ function construirMensajeWhatsApp(
   const encabezado = numero
     ? `Hola, soy ${nombreCliente}. Quiero hacer este pedido (#${numero}):`
     : `Hola, soy ${nombreCliente}. Quiero hacer este pedido:`;
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nTotal: ${formatoCOP.format(total)}`;
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nTotal: ${formatoCOP.format(total)}\n\nDirección de entrega: ${direccion}`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -61,6 +62,7 @@ export default function CarritoCliente({
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [direccion, setDireccion] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [problemasStock, setProblemasStock] = useState<ProblemaStock[] | null>(
     null
@@ -116,6 +118,7 @@ export default function CarritoCliente({
       const resultado = await crearPedidoDesdeCarrito({
         clienteNombre: nombre,
         clienteTelefono: telefono,
+        clienteDireccion: direccion,
         items,
         total,
       });
@@ -131,7 +134,13 @@ export default function CarritoCliente({
     }
     setEnviando(false);
 
-    const mensaje = construirMensajeWhatsApp(items, total, nombre, numero);
+    const mensaje = construirMensajeWhatsApp(
+      items,
+      total,
+      nombre,
+      direccion,
+      numero
+    );
     const linkWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     if (ventanaWhatsApp) {
       ventanaWhatsApp.location.href = linkWhatsApp;
@@ -247,6 +256,19 @@ export default function CarritoCliente({
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
               placeholder="Ej. 3001234567"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-foreground">
+              Dirección de entrega
+            </span>
+            <textarea
+              required
+              rows={2}
+              value={direccion}
+              onChange={(e) => setDireccion(e.target.value)}
+              placeholder="Calle, número, barrio y algún punto de referencia"
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
             />
           </label>
