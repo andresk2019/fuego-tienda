@@ -74,6 +74,29 @@ export async function obtenerResenas(): Promise<Resena[]> {
   return rows.map(filaAResena);
 }
 
+export type ResumenResenas = {
+  promedio: number;
+  total: number;
+};
+
+// Promedio y total de reseñas VISIBLES — hoy las reseñas son
+// generales de la tienda (no hay forma de asociar una a un producto
+// puntual), así que este mismo resumen se muestra igual en cada
+// tarjeta del catálogo (ver TarjetaProducto.tsx). Devuelve null si
+// todavía no hay ninguna reseña visible, para no mostrar "0 reseñas"
+// en todo el catálogo.
+export async function obtenerResumenResenas(): Promise<ResumenResenas | null> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    `SELECT avg(calificacion) AS promedio, count(*) AS total
+     FROM tienda_resenas
+     WHERE visible = true`
+  );
+  const total = Number(rows[0]?.total ?? 0);
+  if (total === 0) return null;
+  return { promedio: Number(rows[0].promedio), total };
+}
+
 export async function crearResena(datos: {
   clienteNombre: string;
   texto: string;
