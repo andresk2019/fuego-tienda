@@ -18,9 +18,12 @@ import {
   guardarNumeroWhatsApp,
   guardarConfigEnvio,
   guardarConfigCompra,
+  guardarContrasenaAdminHash,
   agregarFotoGaleria,
   eliminarFotoGaleria,
 } from '@/lib/admin-db';
+import { hashearContrasena } from '@/lib/auth';
+import { credencialesValidas } from '@/lib/credenciales';
 import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
 
 export async function cerrarSesion() {
@@ -414,6 +417,50 @@ export async function guardarCategoria(
   revalidatePath('/');
   revalidatePath('/catalogo');
   revalidatePath(`/productos/${productoId}`);
+
+  return { ok: true };
+}
+
+export type EstadoContrasena = { error?: string; ok?: boolean } | undefined;
+
+// Antes la contraseña SOLO se podía cambiar editando ADMIN_PASSWORD
+// en Vercel y esperando un redeploy. Se pide la contraseña ACTUAL
+// aunque ya haya una sesión abierta — cambiar la contraseña es
+// sensible: si alguien deja la sesión abierta en un computador
+// compartido, no debería poder cambiarla sin saber la actual.
+export async function cambiarContrasena(
+  _estado: EstadoContrasena,
+  formData: FormData
+): Promise<EstadoContrasena> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const actual = String(formData.get('actual') ?? '');
+  const nueva = String(formData.get('nueva') ?? '');
+  const confirmar = String(formData.get('confirmar') ?? '');
+
+  if (!actual || !nueva || !confirmar) {
+    return { error: 'Completa los 3 campos.' };
+  }
+
+  const usuario = process.env.ADMIN_USER ?? '';
+  if (!(await credencialesValidas(usuario, actual))) {
+    return { error: 'La contraseña actual no es correcta.' };
+  }
+  if (nueva.length < 8) {
+    return { error: 'La nueva contraseña debe tener al menos 8 caracteres.' };
+  }
+  if (nueva !== confirmar) {
+    return { error: 'La nueva contraseña no coincide con la confirmación.' };
+  }
+
+  try {
+    const hash = await hashearContrasena(nueva);
+    await guardarContrasenaAdminHash(hash);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
 
   return { ok: true };
 }
