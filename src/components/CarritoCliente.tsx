@@ -186,7 +186,6 @@ export default function CarritoCliente({
         clienteMunicipio: municipio,
         aceptaTratamientoDatos: aceptaPolitica,
         items,
-        subtotalProductos: subtotal,
       });
       if (resultado.problemasStock && resultado.problemasStock.length > 0) {
         setEnviando(false);
