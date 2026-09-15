@@ -162,6 +162,61 @@ export async function guardarConfigEnvio(config: ConfigEnvio): Promise<void> {
   );
 }
 
+// Formas de pago y tiempo de entrega — antes el carrito no decía
+// nada de esto, el cliente lo averiguaba recién por WhatsApp (fricción
+// justo antes de pedir). Texto libre, editable desde /admin, para que
+// el dueño lo pueda ajustar sin pedir un redeploy (ej. en temporada
+// alta cambian los tiempos de entrega). Los valores por defecto son
+// los que dio el dueño al construir esto (2026-09-15).
+export type ConfigCompra = {
+  formasPago: string;
+  tiempoEntrega: string;
+};
+
+const CONFIG_COMPRA_POR_DEFECTO: ConfigCompra = {
+  formasPago: "Transferencia o efectivo contraentrega.",
+  tiempoEntrega:
+    "Medellín: 2 días hábiles · Resto del país: 4-6 días hábiles.",
+};
+
+const CLAVES_COMPRA = {
+  formasPago: "info_formas_pago",
+  tiempoEntrega: "info_tiempo_entrega",
+} as const;
+
+export async function obtenerConfigCompra(): Promise<ConfigCompra> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    "SELECT clave, valor FROM tienda_config WHERE clave = ANY($1)",
+    [Object.values(CLAVES_COMPRA)]
+  );
+  const guardado: Record<string, string> = {};
+  for (const fila of rows) {
+    guardado[fila.clave] = fila.valor;
+  }
+  return {
+    formasPago:
+      guardado[CLAVES_COMPRA.formasPago] || CONFIG_COMPRA_POR_DEFECTO.formasPago,
+    tiempoEntrega:
+      guardado[CLAVES_COMPRA.tiempoEntrega] ||
+      CONFIG_COMPRA_POR_DEFECTO.tiempoEntrega,
+  };
+}
+
+export async function guardarConfigCompra(config: ConfigCompra): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4)
+     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+    [
+      CLAVES_COMPRA.formasPago,
+      config.formasPago,
+      CLAVES_COMPRA.tiempoEntrega,
+      config.tiempoEntrega,
+    ]
+  );
+}
+
 // Texto de "Quiénes somos" (historia, misión, contacto) — antes vivía
 // escrito directo en el archivo de la página, marcado como "contenido
 // de prueba" mientras el dueño definía el texto real. Ahora se guarda

@@ -6,6 +6,7 @@ import {
   obtenerLogoUrl,
   obtenerNumeroWhatsApp,
   obtenerConfigEnvio,
+  obtenerConfigCompra,
   obtenerGaleriaTodosLosProductos,
 } from '@/lib/admin-db';
 import { esPersonalizable } from '@/lib/personalizacion';
@@ -13,6 +14,7 @@ import { cerrarSesion } from './actions';
 import SubirLogoForm from '@/components/admin/SubirLogoForm';
 import ConfigWhatsAppForm from '@/components/admin/ConfigWhatsAppForm';
 import ConfigEnvioForm from '@/components/admin/ConfigEnvioForm';
+import ConfigCompraForm from '@/components/admin/ConfigCompraForm';
 import ListaProductosAdmin from '@/components/admin/ListaProductosAdmin';
 
 // El proxy (src/proxy.ts) ya protege /admin/*, pero se vuelve a
@@ -26,14 +28,21 @@ export default async function AdminPage() {
     redirect('/admin/login');
   }
 
-  const [productos, logoUrl, numeroWhatsApp, configEnvio, galeriasTodas] =
-    await Promise.all([
-      obtenerCatalogoFuego(),
-      obtenerLogoUrl(),
-      obtenerNumeroWhatsApp(),
-      obtenerConfigEnvio(),
-      obtenerGaleriaTodosLosProductos(),
-    ]);
+  const [
+    productos,
+    logoUrl,
+    numeroWhatsApp,
+    configEnvio,
+    configCompra,
+    galeriasTodas,
+  ] = await Promise.all([
+    obtenerCatalogoFuego(),
+    obtenerLogoUrl(),
+    obtenerNumeroWhatsApp(),
+    obtenerConfigEnvio(),
+    obtenerConfigCompra(),
+    obtenerGaleriaTodosLosProductos(),
+  ]);
 
   const productosParaAdmin = productos.map((producto) => ({
     id: producto.id,
@@ -96,6 +105,7 @@ export default async function AdminPage() {
         <SubirLogoForm logoUrl={logoUrl} />
         <ConfigWhatsAppForm numeroActual={numeroWhatsApp} />
         <ConfigEnvioForm configActual={configEnvio} />
+        <ConfigCompraForm configActual={configCompra} />
       </div>
 
       <p className="mb-2 text-sm text-muted">
