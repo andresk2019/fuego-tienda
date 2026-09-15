@@ -1,6 +1,6 @@
 'use server';
 
-import { validarStockCarrito, type ProblemaStock } from '@/lib/db';
+import { validarStockCarrito, calcularSubtotalReal, type ProblemaStock } from '@/lib/db';
 import { crearPedido } from '@/lib/pedidos-db';
 import { obtenerConfigEnvio } from '@/lib/admin-db';
 import { determinarZonaEnvio, type ItemPedido } from '@/lib/pedidos';
@@ -30,10 +30,6 @@ export async function crearPedidoDesdeCarrito(datos: {
   clienteMunicipio: string;
   aceptaTratamientoDatos: boolean;
   items: ItemPedido[];
-  // Solo la suma de los productos — el envío se calcula acá abajo con
-  // la tarifa configurada en /admin, nunca confiando en un valor que
-  // mande el navegador (un Server Action es un endpoint público).
-  subtotalProductos: number;
 }): Promise<ResultadoCrearPedido> {
   const clienteNombre = datos.clienteNombre.trim();
   const clienteTelefono = datos.clienteTelefono.trim();
@@ -74,12 +70,20 @@ export async function crearPedidoDesdeCarrito(datos: {
   // problema real para el cliente, no un detalle técnico nuestro — se
   // le avisa en el carrito para que ajuste cantidades, en vez de
   // dejarlo llegar a WhatsApp a pedir algo que no se le puede cumplir.
-  const problemasStock = await validarStockCarrito(
-    datos.items.map((item) => ({
-      productoId: item.productoId,
-      cantidad: item.cantidad,
-    }))
-  );
+  //
+  // El subtotal se calcula en paralelo, con el precio real del
+  // catálogo — nunca con lo que sume el navegador (ver comentario de
+  // calcularSubtotalReal en db.ts). Antes este Server Action recibía
+  // `subtotalProductos` directo del cliente y lo daba por bueno:
+  // cualquiera podía llamarlo con un total inventado.
+  const itemsParaValidar = datos.items.map((item) => ({
+    productoId: item.productoId,
+    cantidad: item.cantidad,
+  }));
+  const [problemasStock, subtotalReal] = await Promise.all([
+    validarStockCarrito(itemsParaValidar),
+    calcularSubtotalReal(itemsParaValidar),
+  ]);
   if (problemasStock.length > 0) {
     return { problemasStock };
   }
@@ -96,9 +100,8 @@ export async function crearPedidoDesdeCarrito(datos: {
   const configEnvio = await obtenerConfigEnvio();
   const costoBase =
     zonaEnvio === 'medellin' ? configEnvio.costoLocal : configEnvio.costoNacional;
-  const costoEnvio =
-    datos.subtotalProductos >= configEnvio.gratisDesde ? 0 : costoBase;
-  const total = datos.subtotalProductos + costoEnvio;
+  const costoEnvio = subtotalReal >= configEnvio.gratisDesde ? 0 : costoBase;
+  const total = subtotalReal + costoEnvio;
 
   try {
     const { numero } = await crearPedido({

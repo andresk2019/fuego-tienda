@@ -176,3 +176,35 @@ export async function validarStockCarrito(
   }
   return problemas;
 }
+
+// Se llama junto con validarStockCarrito, justo antes de registrar un
+// pedido — el subtotal del pedido se calcula ACÁ, con el precio real
+// del catálogo, nunca con lo que el navegador diga que suma (un
+// Server Action es un endpoint público: nada impide llamarlo directo
+// con un `subtotalProductos` inventado). Un id que no aparece (borrado
+// o de otra marca) suma $0 en vez de tronar — en la práctica nunca
+// pasa, porque validarStockCarrito ya habría bloqueado ese mismo ítem
+// antes de llegar a calcular el subtotal.
+export async function calcularSubtotalReal(
+  items: { productoId: number; cantidad: number }[]
+): Promise<number> {
+  if (items.length === 0) return 0;
+
+  const { rows } = await getPool().query(
+    `SELECT i.id, i.precio_venta
+     FROM inventario i
+     JOIN empresas e ON e.id = i.empresa_id
+     WHERE e.nombre = 'Fuego' AND i.es_informativo = false
+       AND i.id = ANY($1::int[])`,
+    [items.map((item) => item.productoId)]
+  );
+
+  const precioPorId = new Map(
+    rows.map((r) => [r.id as number, Number(r.precio_venta)])
+  );
+
+  return items.reduce(
+    (suma, item) => suma + (precioPorId.get(item.productoId) ?? 0) * item.cantidad,
+    0
+  );
+}
