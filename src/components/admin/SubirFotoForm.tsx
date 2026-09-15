@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import {
   subirFotoProducto,
+  quitarFoto,
   guardarDescripcion,
   guardarDestacado,
   guardarCategoria,
@@ -49,6 +50,10 @@ export default function SubirFotoForm({
 }) {
   const [estadoFoto, accionFoto, subiendoFoto] = useActionState(
     subirFotoProducto,
+    undefined
+  );
+  const [estadoQuitarFoto, accionQuitarFoto, quitandoFoto] = useActionState(
+    quitarFoto,
     undefined
   );
   const [estadoDestacado, accionDestacado] = useActionState(
@@ -139,6 +144,23 @@ export default function SubirFotoForm({
           </button>
         </form>
 
+        {/* Solo tiene sentido si ya hay una foto que quitar — antes
+            solo se podía reemplazar, nunca dejar el producto sin
+            foto. */}
+        {fotoUrl && (
+          <form action={accionQuitarFoto} className="contents">
+            <input type="hidden" name="productoId" value={productoId} />
+            <button
+              type="submit"
+              disabled={quitandoFoto}
+              title="Quitar la foto principal"
+              className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-danger/60 hover:text-danger disabled:opacity-60"
+            >
+              {quitandoFoto ? '...' : 'Quitar foto'}
+            </button>
+          </form>
+        )}
+
         {/* className="contents": el <form> no afecta el layout, el
             <label> de adentro se acomoda como si estuviera directo en
             la fila flex de arriba. */}
@@ -191,6 +213,9 @@ export default function SubirFotoForm({
 
       {estadoFoto?.error && <p className="text-xs text-danger">{estadoFoto.error}</p>}
       {estadoFoto?.ok && <p className="text-xs text-ember">¡Foto actualizada!</p>}
+      {estadoQuitarFoto?.error && (
+        <p className="text-xs text-danger">{estadoQuitarFoto.error}</p>
+      )}
       {estadoDestacado?.error && (
         <p className="text-xs text-danger">{estadoDestacado.error}</p>
       )}

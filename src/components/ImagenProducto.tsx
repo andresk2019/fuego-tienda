@@ -15,12 +15,17 @@ export default function ImagenProducto({
   return (
     <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface">
       {fotoUrl ? (
+        // object-contain (no object-cover): una foto que no sea
+        // cuadrada se veía recortada — sobre todo fotos verticales de
+        // celular, que perdían la parte de arriba/abajo. Con contain
+        // se ve la foto completa, con un margen del mismo fondo si no
+        // es cuadrada, en vez de adivinar qué parte recortar.
         <Image
           src={fotoUrl}
           alt={alt}
           width={600}
           height={600}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
           priority
         />
       ) : (

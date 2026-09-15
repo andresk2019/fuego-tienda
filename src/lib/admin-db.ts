@@ -336,6 +336,20 @@ export async function guardarFotoProducto(productoId: number, fotoUrl: string): 
   );
 }
 
+// Antes no había forma de quitar la foto principal de un producto,
+// solo de reemplazarla subiendo otra — un producto que ya no debería
+// tener foto (ej. se subió una equivocada) se quedaba pegado con ella
+// para siempre. Deja el registro en NULL, igual que si nunca se
+// hubiera subido nada; no borra el archivo del bucket de Supabase
+// (mismo criterio que eliminarFotoGaleria, más abajo).
+export async function quitarFotoProducto(productoId: number): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    'UPDATE tienda_producto_meta SET foto_url = NULL, actualizado_en = now() WHERE producto_id = $1',
+    [productoId]
+  );
+}
+
 // Si `descripcion` llega vacía, se guarda como NULL (NULLIF) — así el
 // producto vuelve a mostrar el texto genérico en vez de quedar con un
 // texto vacío.

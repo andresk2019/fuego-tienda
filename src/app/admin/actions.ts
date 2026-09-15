@@ -10,6 +10,7 @@ import {
 } from '@/lib/storage';
 import {
   guardarFotoProducto,
+  quitarFotoProducto,
   guardarDescripcionProducto,
   guardarLogoUrl,
   guardarDestacadoProducto,
@@ -66,6 +67,37 @@ export async function subirFotoProducto(
   // El catálogo, el detalle del producto y el panel muestran la foto
   // nueva de inmediato (aunque el catálogo/detalle ya son
   // force-dynamic, esto no sobra).
+  revalidatePath('/admin');
+  revalidatePath('/');
+  revalidatePath(`/productos/${productoId}`);
+
+  return { ok: true };
+}
+
+// Antes solo se podía reemplazar la foto principal subiendo otra —
+// no había forma de dejar el producto sin foto (ej. se subió una
+// equivocada, o se quiere volver al ícono de llama por defecto
+// mientras se consigue una mejor).
+export async function quitarFoto(
+  _estado: EstadoSubidaFoto,
+  formData: FormData
+): Promise<EstadoSubidaFoto> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+
+  try {
+    await quitarFotoProducto(productoId);
+  } catch {
+    return { error: 'No se pudo quitar la foto. Intenta de nuevo.' };
+  }
+
   revalidatePath('/admin');
   revalidatePath('/');
   revalidatePath(`/productos/${productoId}`);
