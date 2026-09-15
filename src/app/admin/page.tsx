@@ -15,6 +15,7 @@ import SubirLogoForm from '@/components/admin/SubirLogoForm';
 import ConfigWhatsAppForm from '@/components/admin/ConfigWhatsAppForm';
 import ConfigEnvioForm from '@/components/admin/ConfigEnvioForm';
 import ConfigCompraForm from '@/components/admin/ConfigCompraForm';
+import CambiarContrasenaForm from '@/components/admin/CambiarContrasenaForm';
 import ListaProductosAdmin from '@/components/admin/ListaProductosAdmin';
 
 // El proxy (src/proxy.ts) ya protege /admin/*, pero se vuelve a
@@ -106,6 +107,7 @@ export default async function AdminPage() {
         <ConfigWhatsAppForm numeroActual={numeroWhatsApp} />
         <ConfigEnvioForm configActual={configEnvio} />
         <ConfigCompraForm configActual={configCompra} />
+        <CambiarContrasenaForm />
       </div>
 
       <p className="mb-2 text-sm text-muted">

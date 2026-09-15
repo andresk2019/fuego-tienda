@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { credencialesValidas } from '@/lib/auth';
+import { credencialesValidas } from '@/lib/credenciales';
 import { crearSesion } from '@/lib/session';
 import {
   obtenerIpCliente,
@@ -33,7 +33,7 @@ export async function iniciarSesion(
     };
   }
 
-  if (!credencialesValidas(usuario, contrasena)) {
+  if (!(await credencialesValidas(usuario, contrasena))) {
     await registrarIntentoFallido(ip);
     return { error: 'Usuario o contraseña incorrectos.' };
   }

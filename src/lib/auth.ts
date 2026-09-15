@@ -1,15 +1,18 @@
 // Autenticación del panel de administración — mismo esquema que usa
 // Contabilidad Lady (ver `C:\Contabilidad Lady\lib\auth.js`): un solo
 // usuario/contraseña fijos por variable de entorno, sesión como cookie
-// firmada con HMAC (sin guardar nada en base de datos).
+// firmada con HMAC.
 //
 // A diferencia de Contabilidad Lady, aquí NO hay valores por defecto
 // para ADMIN_USER/ADMIN_PASSWORD/SESSION_SECRET — si faltan, se lanza
 // un error explícito en vez de dejar una contraseña adivinable.
 //
-// Se puede usar tanto desde Server Components/Actions como desde
-// `proxy.ts` (el proxy de Next.js 16 corre en runtime de Node.js por
-// defecto, así que el módulo nativo `crypto` funciona ahí también).
+// A propósito este archivo NO toca la base de datos (ver
+// credenciales.ts para eso): `proxy.ts` importa `verificarToken` de
+// acá en CADA visita a /admin/*, así que si este archivo arrastrara
+// admin-db.ts (y por lo tanto `pg`), ese peso extra viajaría con el
+// proxy en cada request, aunque el proxy nunca necesite consultar la
+// contraseña — solo verificar el token de la cookie de sesión.
 import 'server-only';
 import crypto from 'node:crypto';
 
@@ -53,8 +56,11 @@ export function verificarToken(token: string | undefined | null): boolean {
 }
 
 // Comparación en tiempo constante para no filtrar por timing cuánto
-// coincide el usuario/contraseña escrito con el real.
-function compararSeguro(a: string, b: string): boolean {
+// coincide el usuario/contraseña escrito con el real. Exportada:
+// credenciales.ts la reusa para comparar el usuario (ADMIN_USER, que
+// sigue siendo de la variable de entorno, nunca se pidió poder
+// cambiarlo).
+export function compararSeguro(a: string, b: string): boolean {
   const bufA = Buffer.from(a);
   const bufB = Buffer.from(b);
   if (bufA.length !== bufB.length) {
@@ -64,8 +70,36 @@ function compararSeguro(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-export function credencialesValidas(usuario: string, contrasena: string): boolean {
-  const usuarioValido = requerido(process.env.ADMIN_USER, 'ADMIN_USER');
-  const contrasenaValida = requerido(process.env.ADMIN_PASSWORD, 'ADMIN_PASSWORD');
-  return compararSeguro(usuario, usuarioValido) && compararSeguro(contrasena, contrasenaValida);
+// scrypt (nativo de Node, sin librería aparte) + una sal aleatoria
+// distinta por contraseña — así la misma contraseña guardada 2 veces
+// nunca produce el mismo hash. Se guarda como "sal:hash" (ambos en
+// hexadecimal) en un solo campo de texto.
+const LARGO_LLAVE = 64;
+
+export function hashearContrasena(contrasena: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const sal = crypto.randomBytes(16).toString('hex');
+    crypto.scrypt(contrasena, sal, LARGO_LLAVE, (error, llaveDerivada) => {
+      if (error) return reject(error);
+      resolve(`${sal}:${llaveDerivada.toString('hex')}`);
+    });
+  });
+}
+
+export function verificarContrasena(
+  contrasena: string,
+  hashGuardado: string
+): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const [sal, hashHex] = hashGuardado.split(':');
+    if (!sal || !hashHex) return resolve(false);
+    crypto.scrypt(contrasena, sal, LARGO_LLAVE, (error, llaveDerivada) => {
+      if (error) return reject(error);
+      const b = Buffer.from(hashHex, 'hex');
+      resolve(
+        llaveDerivada.length === b.length &&
+          crypto.timingSafeEqual(llaveDerivada, b)
+      );
+    });
+  });
 }

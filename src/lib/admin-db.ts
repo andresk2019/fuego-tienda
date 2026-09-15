@@ -99,6 +99,31 @@ export async function guardarNumeroWhatsApp(numero: string): Promise<void> {
   );
 }
 
+// Contraseña del panel de administración — antes SOLO podía ser la de
+// la variable de entorno ADMIN_PASSWORD (cambiarla exigía editarla en
+// Vercel y esperar un redeploy). Se guarda ya hasheada (scrypt, ver
+// hashearContrasena en auth.ts) — NUNCA en texto plano, ni siquiera
+// acá. Mientras no se haya guardado ninguna, esto devuelve null y
+// credencialesValidas (auth.ts) sigue comparando contra la variable
+// de entorno, como siempre — así este cambio no rompe nada para quien
+// no haya usado el formulario de cambiar contraseña todavía.
+export async function obtenerContrasenaAdminHash(): Promise<string | null> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    "SELECT valor FROM tienda_config WHERE clave = 'admin_contrasena_hash'"
+  );
+  return rows[0]?.valor ?? null;
+}
+
+export async function guardarContrasenaAdminHash(hash: string): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_config (clave, valor) VALUES ('admin_contrasena_hash', $1)
+     ON CONFLICT (clave) DO UPDATE SET valor = $1`,
+    [hash]
+  );
+}
+
 // Costo de envío — 2 tarifas fijas (decisión del dueño, 2026-09-14):
 // una para domicilios dentro de Medellín y otra para el resto del
 // país (ver ZonaEnvio en pedidos.ts), con envío gratis a partir de
