@@ -13,6 +13,7 @@
 // cadena de conexión a la base de datos) pueda terminar incluido por
 // error en el bundle que se manda al navegador.
 import 'server-only';
+import { cache } from 'react';
 import { getPool } from './pool';
 import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
@@ -97,7 +98,12 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
 // empresa = Fuego (no solo por id) para que no se pueda llegar, con
 // un id cualquiera en la URL, a un producto de otra marca (LadySoul,
 // Suave Capricho) que esta tienda no debe mostrar.
-export async function obtenerProductoFuego(
+//
+// `cache()` de React: tanto generateMetadata como la página misma
+// (productos/[id]/page.tsx) necesitan este mismo producto — sin esto,
+// cada visita haría la consulta 2 veces. `cache()` la deja memoizada
+// dentro de una misma petición (no entre peticiones distintas).
+export const obtenerProductoFuego = cache(async function obtenerProductoFuego(
   id: number
 ): Promise<ProductoCatalogo | null> {
   // Trae la meta de todos los productos aunque solo haga falta uno —
@@ -115,7 +121,7 @@ export async function obtenerProductoFuego(
   ]);
 
   return resultado.rows[0] ? filaAProducto(resultado.rows[0], meta) : null;
-}
+});
 
 export type ProblemaStock = {
   productoId: number;
