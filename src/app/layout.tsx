@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Playfair_Display } from "next/font/google";
 import { CarritoProvider } from "@/components/CarritoContext";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
   // Necesario para que el og:image (generado por convención de
   // archivo en opengraph-image.png) se anuncie con URL absoluta —
   // WhatsApp/Instagram/Facebook no cargan bien una ruta relativa.
-  metadataBase: new URL("https://fuego-tienda.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: TITULO,
   description: DESCRIPCION,
   openGraph: {
