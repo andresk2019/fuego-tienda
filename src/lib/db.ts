@@ -79,6 +79,19 @@ function filaAProducto(
   };
 }
 
+// Un producto sin precio todavía en Contabilidad Lady (precio_venta =
+// 0, ej. porque acaban de crearlo y no le han puesto valor) NO debe
+// verse en la tienda pública — mostrar "$0" confunde al cliente y
+// parece un error del sitio, no del inventario. Se filtra solo de
+// cara al público (catálogo, portada, sitemap, ficha de producto);
+// obtenerCatalogoFuego() en sí sigue devolviendo TODO sin filtrar,
+// porque /admin necesita verlo igual para poder ponerle precio y
+// subirle foto de una vez. En cuanto Contabilidad Lady le asigne un
+// precio real, vuelve a aparecer solo — nada que activar a mano acá.
+export function visibleEnTienda(producto: ProductoCatalogo): boolean {
+  return producto.precioVenta > 0;
+}
+
 export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
   const [resultado, meta] = await Promise.all([
     getPool().query(

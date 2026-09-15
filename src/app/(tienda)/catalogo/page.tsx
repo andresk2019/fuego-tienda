@@ -1,4 +1,4 @@
-import { obtenerCatalogoFuego } from "@/lib/db";
+import { obtenerCatalogoFuego, visibleEnTienda } from "@/lib/db";
 import { obtenerResumenResenasPorProducto } from "@/lib/resenas-db";
 import CatalogoPorSeccion from "@/components/CatalogoPorSeccion";
 
@@ -13,10 +13,11 @@ export const metadata = {
 };
 
 export default async function CatalogoPage() {
-  const [productos, resumenResenasPorProducto] = await Promise.all([
+  const [productosTodos, resumenResenasPorProducto] = await Promise.all([
     obtenerCatalogoFuego(),
     obtenerResumenResenasPorProducto(),
   ]);
+  const productos = productosTodos.filter(visibleEnTienda);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">

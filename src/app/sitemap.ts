@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { obtenerCatalogoFuego } from "@/lib/db";
+import { obtenerCatalogoFuego, visibleEnTienda } from "@/lib/db";
 import { productoHref } from "@/lib/slug";
 import { SITE_URL } from "@/lib/site";
 
@@ -37,11 +37,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const paginasProducto: MetadataRoute.Sitemap = productos.map((producto) => ({
-    url: `${SITE_URL}${productoHref(producto)}`,
-    changeFrequency: "weekly",
-    priority: 0.7,
-  }));
+  const paginasProducto: MetadataRoute.Sitemap = productos
+    .filter(visibleEnTienda)
+    .map((producto) => ({
+      url: `${SITE_URL}${productoHref(producto)}`,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    }));
 
   return [...paginasFijas, ...paginasProducto];
 }
