@@ -34,6 +34,12 @@ export default function SiteHeader() {
         >
           Catálogo
         </Link>
+        <Link
+          href="/cuidado-de-las-velas"
+          className="transition-colors hover:text-foreground"
+        >
+          Cuidado de velas
+        </Link>
         <CarritoIndicador />
       </nav>
     </header>

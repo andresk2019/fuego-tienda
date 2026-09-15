@@ -36,9 +36,19 @@ export const SECCIONES: {
 // de Sales Relajantes/Exfoliantes ya aparecieron en Contabilidad
 // Lady — cualquier id que no esté aquí cae por defecto en "velas"
 // (que es lo que ha sido el inventario de Fuego hasta ahora).
+//
+// 30/31 (mayúscula, precio $0 en Contabilidad Lady) parecen entradas
+// viejas sin usar; 34/35/36 son los productos reales que sí aparecen
+// hoy en el catálogo con precio — se agregaron acá el 2026-09-15 al
+// notar que caían en "velas" por no estar mapeados (aparecían en la
+// sección equivocada del catálogo y con el link de "cuidado de la
+// vela" sin corresponder).
 const SUBCATEGORIA_POR_ID: Record<number, SubcategoriaSlug> = {
   30: "sales-relajantes", // Sal Relajante
   31: "exfoliantes", // Exfoliante Coco
+  34: "sales-relajantes", // sal relajante
+  35: "difusores", // difusor
+  36: "exfoliantes", // exfoliante
 };
 
 export function subcategoriaDeProducto(id: number): SubcategoriaSlug {
