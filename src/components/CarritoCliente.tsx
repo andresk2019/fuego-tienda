@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
-import { ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
+import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
+import { UBICACIONES_COLOMBIA } from "@/lib/colombia-ubicaciones";
 import type { ProblemaStock } from "@/lib/db";
 import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
 import type { ConfigEnvio } from "@/lib/admin-db";
@@ -37,6 +38,8 @@ function construirMensajeWhatsApp(
   zonaEnvio: ZonaEnvio,
   nombreCliente: string,
   direccion: string,
+  departamento: string,
+  municipio: string,
   numero: string | null
 ): string {
   const lineas = items.map((item) => {
@@ -52,7 +55,7 @@ function construirMensajeWhatsApp(
     ZONAS_ENVIO.find((z) => z.valor === zonaEnvio)?.etiqueta ?? "";
   const lineaEnvio =
     costoEnvio > 0 ? formatoCOP.format(costoEnvio) : "Gratis";
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nDirección de entrega: ${direccion}`;
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nDirección de entrega: ${direccion}, ${municipio}, ${departamento}`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -63,9 +66,13 @@ function construirMensajeWhatsApp(
 // `configEnvio` también llega desde el servidor — 2 tarifas de
 // domicilio (dentro de Medellín / resto del país, decisión del dueño,
 // 2026-09-14), gratis a partir de cierto monto en cualquiera de las
-// 2. Lo mostrado acá es solo para que el cliente vea el total antes
-// de enviar; el que de verdad queda registrado en el pedido se vuelve
-// a calcular en el servidor con la tarifa vigente en ese momento (ver
+// 2. La zona ya NO se elige a mano con un radio: sale sola del
+// departamento y municipio que el cliente escoge (ver
+// determinarZonaEnvio en pedidos.ts y el listado en
+// colombia-ubicaciones.ts), así no depende de que elija bien la zona.
+// Lo mostrado acá es solo para que el cliente vea el total antes de
+// enviar; el que de verdad queda registrado en el pedido se vuelve a
+// calcular en el servidor con la tarifa vigente en ese momento (ver
 // crearPedidoDesdeCarrito), nunca confiando en lo que calculó el
 // navegador.
 export default function CarritoCliente({
@@ -82,18 +89,32 @@ export default function CarritoCliente({
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [direccion, setDireccion] = useState("");
-  const [zonaEnvio, setZonaEnvio] = useState<ZonaEnvio | null>(null);
+  const [departamento, setDepartamento] = useState("");
+  const [municipio, setMunicipio] = useState("");
   const [aceptaPolitica, setAceptaPolitica] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [problemasStock, setProblemasStock] = useState<ProblemaStock[] | null>(
     null
   );
 
-  const costoPorZona: Record<ZonaEnvio, number> = {
-    medellin: envioGratis ? 0 : configEnvio.costoLocal,
-    nacional: envioGratis ? 0 : configEnvio.costoNacional,
-  };
-  const costoEnvioMostrado = zonaEnvio ? costoPorZona[zonaEnvio] : null;
+  const municipiosDisponibles = useMemo(
+    () =>
+      UBICACIONES_COLOMBIA.find((d) => d.departamento === departamento)
+        ?.municipios ?? [],
+    [departamento]
+  );
+
+  const zonaEnvio =
+    departamento && municipio
+      ? determinarZonaEnvio(departamento, municipio)
+      : null;
+  const costoEnvioMostrado = zonaEnvio
+    ? envioGratis
+      ? 0
+      : zonaEnvio === "medellin"
+        ? configEnvio.costoLocal
+        : configEnvio.costoNacional
+    : null;
   const totalMostrado =
     costoEnvioMostrado !== null ? subtotal + costoEnvioMostrado : null;
 
@@ -127,7 +148,15 @@ export default function CarritoCliente({
   // el número de pedido.
   async function manejarContinuar(e: React.FormEvent) {
     e.preventDefault();
-    if (!numeroWhatsApp || enviando || !aceptaPolitica || !zonaEnvio) return;
+    if (
+      !numeroWhatsApp ||
+      enviando ||
+      !aceptaPolitica ||
+      !departamento ||
+      !municipio ||
+      !zonaEnvio
+    )
+      return;
 
     // Safari (sobre todo en iPhone) bloquea como "pop-up" cualquier
     // window.open que no ocurra en el mismo instante del clic. Antes,
@@ -147,16 +176,17 @@ export default function CarritoCliente({
     // calculado acá en el navegador (ver comentario del componente) —
     // no es exacto al 100% si justo en ese instante cambió la tarifa,
     // pero es mejor que dejar al cliente sin poder pedir.
-    let costoEnvio = costoPorZona[zonaEnvio];
+    let costoEnvio = costoEnvioMostrado ?? 0;
     try {
       const resultado = await crearPedidoDesdeCarrito({
         clienteNombre: nombre,
         clienteTelefono: telefono,
         clienteDireccion: direccion,
+        clienteDepartamento: departamento,
+        clienteMunicipio: municipio,
         aceptaTratamientoDatos: aceptaPolitica,
         items,
         subtotalProductos: subtotal,
-        zonaEnvio,
       });
       if (resultado.problemasStock && resultado.problemasStock.length > 0) {
         setEnviando(false);
@@ -178,6 +208,8 @@ export default function CarritoCliente({
       zonaEnvio,
       nombre,
       direccion,
+      departamento,
+      municipio,
       numero
     );
     const linkWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
@@ -245,47 +277,26 @@ export default function CarritoCliente({
           <span>Subtotal</span>
           <span>{formatoCOP.format(subtotal)}</span>
         </div>
-
-        <fieldset className="flex flex-col gap-1.5 py-1.5">
-          <legend className="text-sm font-medium text-foreground">
-            ¿A dónde se envía tu pedido?
-          </legend>
-          {ZONAS_ENVIO.map((zona) => (
-            <label
-              key={zona.valor}
-              className="flex items-center justify-between gap-2 text-sm text-foreground"
-            >
-              <span className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="zonaEnvio"
-                  checked={zonaEnvio === zona.valor}
-                  onChange={() => setZonaEnvio(zona.valor)}
-                  className="h-4 w-4 accent-ember"
-                />
-                {zona.etiqueta}
-              </span>
-              <span className="text-muted">
-                {costoPorZona[zona.valor] > 0
-                  ? formatoCOP.format(costoPorZona[zona.valor])
-                  : "Gratis"}
-              </span>
-            </label>
-          ))}
-        </fieldset>
+        <div className="flex items-center justify-between text-sm text-muted">
+          <span>Envío a domicilio</span>
+          <span>
+            {costoEnvioMostrado === null
+              ? "Elige tu departamento y municipio"
+              : costoEnvioMostrado > 0
+                ? formatoCOP.format(costoEnvioMostrado)
+                : "Gratis"}
+          </span>
+        </div>
         {envioGratis && (
           <p className="text-xs text-muted">
             Envío gratis por superar {formatoCOP.format(configEnvio.gratisDesde)}
             .
           </p>
         )}
-
         <div className="mt-1 flex items-center justify-between border-t border-border pt-2">
           <span className="font-medium text-foreground">Total</span>
           <span className="text-lg font-semibold text-foreground">
-            {totalMostrado !== null
-              ? formatoCOP.format(totalMostrado)
-              : "Elige a dónde se envía"}
+            {totalMostrado !== null ? formatoCOP.format(totalMostrado) : "—"}
           </span>
         </div>
       </div>
@@ -341,9 +352,57 @@ export default function CarritoCliente({
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
             />
           </label>
+
+          <div className="flex flex-wrap gap-3">
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1">
+              <span className="text-xs font-medium text-foreground">
+                Departamento
+              </span>
+              <select
+                required
+                value={departamento}
+                onChange={(e) => {
+                  setDepartamento(e.target.value);
+                  setMunicipio("");
+                }}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+              >
+                <option value="" disabled>
+                  Selecciona...
+                </option>
+                {UBICACIONES_COLOMBIA.map((d) => (
+                  <option key={d.departamento} value={d.departamento}>
+                    {d.departamento}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1">
+              <span className="text-xs font-medium text-foreground">
+                Municipio
+              </span>
+              <select
+                required
+                disabled={!departamento}
+                value={municipio}
+                onChange={(e) => setMunicipio(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              >
+                <option value="" disabled>
+                  {departamento ? "Selecciona..." : "Elige un departamento"}
+                </option>
+                {municipiosDisponibles.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
           <label className="flex flex-col gap-1">
             <span className="text-xs font-medium text-foreground">
-              Dirección de entrega
+              Dirección exacta
             </span>
             <textarea
               required
@@ -378,7 +437,9 @@ export default function CarritoCliente({
 
           <button
             type="submit"
-            disabled={enviando || !aceptaPolitica || !zonaEnvio}
+            disabled={
+              enviando || !aceptaPolitica || !departamento || !municipio
+            }
             className="mt-1 flex items-center justify-center gap-2 rounded-lg bg-whatsapp px-4 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-whatsapp-hover disabled:opacity-60"
           >
             <WhatsAppIcon className="h-4 w-4" />

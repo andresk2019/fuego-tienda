@@ -37,7 +37,9 @@ function asegurarEsquema(): Promise<void> {
          );
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_direccion TEXT;
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;
-         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS zona_envio TEXT;`
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS zona_envio TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_departamento TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;`
       )
       .then(() => undefined);
   }
@@ -48,6 +50,8 @@ export async function crearPedido(datos: {
   clienteNombre: string;
   clienteTelefono: string;
   clienteDireccion: string;
+  clienteDepartamento: string;
+  clienteMunicipio: string;
   items: ItemPedido[];
   total: number;
   costoEnvio: number;
@@ -55,13 +59,15 @@ export async function crearPedido(datos: {
 }): Promise<{ id: number; numero: string }> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio, zona_envio)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
     [
       datos.clienteNombre,
       datos.clienteTelefono,
       datos.clienteDireccion,
+      datos.clienteDepartamento,
+      datos.clienteMunicipio,
       JSON.stringify(datos.items),
       datos.total,
       datos.costoEnvio,
@@ -75,7 +81,7 @@ export async function crearPedido(datos: {
 export async function obtenerPedidos(): Promise<Pedido[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, items, total, costo_envio, zona_envio, estado, creado_en
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio, estado, creado_en
      FROM tienda_pedidos
      ORDER BY creado_en DESC`
   );
@@ -87,6 +93,8 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
     // Pedidos de antes de este campo quedan con '' (ver comentario en
     // pedidos.ts) en vez de null.
     clienteDireccion: r.cliente_direccion ?? '',
+    clienteDepartamento: r.cliente_departamento ?? null,
+    clienteMunicipio: r.cliente_municipio ?? null,
     // node-postgres ya devuelve JSONB parseado como objeto/arreglo JS.
     items: r.items as ItemPedido[],
     total: Number(r.total),

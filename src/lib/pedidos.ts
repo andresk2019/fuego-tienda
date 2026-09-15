@@ -18,14 +18,30 @@ export const ESTADOS_PEDIDO: { valor: EstadoPedido; etiqueta: string }[] = [
 ];
 
 // Zona de envío — el costo de domicilio es distinto dentro de
-// Medellín que al resto del país (decisión del dueño, 2026-09-14).
-// El cliente elige una de las dos en el carrito.
+// Medellín que al resto del país (decisión del dueño, 2026-09-14). Ya
+// NO se elige a mano con un radio: se calcula sola a partir del
+// departamento/municipio que el cliente selecciona en el carrito (ver
+// determinarZonaEnvio más abajo y el selector en colombia-ubicaciones.ts),
+// así no depende de que el cliente escoja bien la zona.
 export type ZonaEnvio = 'medellin' | 'nacional';
 
 export const ZONAS_ENVIO: { valor: ZonaEnvio; etiqueta: string }[] = [
   { valor: 'medellin', etiqueta: 'Medellín' },
   { valor: 'nacional', etiqueta: 'Resto del país' },
 ];
+
+// Única combinación que cuenta como "Medellín" para efectos de envío.
+// Si algún día el dueño quiere tratar el área metropolitana igual que
+// Medellín (Envigado, Itagüí, Sabaneta, Bello...), este es el único
+// lugar que hay que tocar.
+export function determinarZonaEnvio(
+  departamento: string,
+  municipio: string
+): ZonaEnvio {
+  return departamento === 'Antioquia' && municipio === 'Medellín'
+    ? 'medellin'
+    : 'nacional';
+}
 
 export type ItemPedido = {
   productoId: number;
@@ -44,7 +60,14 @@ export type Pedido = {
   clienteTelefono: string;
   // Vacío en pedidos de antes de este campo (no se pedía) — nunca
   // undefined, para no tener que revisar en cada pantalla si existe.
+  // A partir de las 2 zonas de envío, esto es solo el detalle (calle,
+  // número, barrio); el departamento/municipio quedan aparte, ver
+  // abajo.
   clienteDireccion: string;
+  // null en pedidos de antes de que existiera el selector de
+  // departamento/municipio (ver comentario de zonaEnvio más abajo).
+  clienteDepartamento: string | null;
+  clienteMunicipio: string | null;
   items: ItemPedido[];
   // `total` YA incluye el envío (ver costoEnvio) — es el valor real
   // que se le pidió pagar al cliente, no solo la suma de productos.

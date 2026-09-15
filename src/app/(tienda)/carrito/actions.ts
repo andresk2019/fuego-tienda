@@ -3,7 +3,8 @@
 import { validarStockCarrito, type ProblemaStock } from '@/lib/db';
 import { crearPedido } from '@/lib/pedidos-db';
 import { obtenerConfigEnvio } from '@/lib/admin-db';
-import { ZONAS_ENVIO, type ItemPedido, type ZonaEnvio } from '@/lib/pedidos';
+import { determinarZonaEnvio, type ItemPedido } from '@/lib/pedidos';
+import { UBICACIONES_COLOMBIA } from '@/lib/colombia-ubicaciones';
 
 export type ResultadoCrearPedido = {
   error?: string;
@@ -25,23 +26,36 @@ export async function crearPedidoDesdeCarrito(datos: {
   clienteNombre: string;
   clienteTelefono: string;
   clienteDireccion: string;
+  clienteDepartamento: string;
+  clienteMunicipio: string;
   aceptaTratamientoDatos: boolean;
   items: ItemPedido[];
   // Solo la suma de los productos — el envío se calcula acá abajo con
   // la tarifa configurada en /admin, nunca confiando en un valor que
   // mande el navegador (un Server Action es un endpoint público).
   subtotalProductos: number;
-  zonaEnvio: ZonaEnvio;
 }): Promise<ResultadoCrearPedido> {
   const clienteNombre = datos.clienteNombre.trim();
   const clienteTelefono = datos.clienteTelefono.trim();
   const clienteDireccion = datos.clienteDireccion.trim();
+  const clienteDepartamento = datos.clienteDepartamento.trim();
+  const clienteMunicipio = datos.clienteMunicipio.trim();
 
   if (!clienteNombre) return { error: 'Escribe tu nombre.' };
   if (!clienteTelefono) return { error: 'Escribe tu número de WhatsApp.' };
   if (!clienteDireccion) return { error: 'Escribe tu dirección de entrega.' };
-  if (!ZONAS_ENVIO.some((z) => z.valor === datos.zonaEnvio)) {
-    return { error: 'Selecciona a dónde se envía tu pedido.' };
+  // Se valida contra la lista real de departamentos/municipios (no
+  // solo que no vengan vacíos) — la zona de envío sale de este par,
+  // así que no puede ser cualquier texto que mande el navegador (un
+  // Server Action es un endpoint público).
+  const departamentoValido = UBICACIONES_COLOMBIA.find(
+    (d) => d.departamento === clienteDepartamento
+  );
+  if (
+    !departamentoValido ||
+    !departamentoValido.municipios.includes(clienteMunicipio)
+  ) {
+    return { error: 'Selecciona el departamento y el municipio de entrega.' };
   }
   // Igual que los campos de arriba: el checkbox del navegador ya lo
   // exige, pero un Server Action se trata como endpoint público —
@@ -70,14 +84,18 @@ export async function crearPedidoDesdeCarrito(datos: {
     return { problemasStock };
   }
 
+  // La zona de envío se calcula acá, a partir del departamento y
+  // municipio ya validados arriba — nunca se recibe directo del
+  // navegador, así el cliente no puede elegir "Medellín" con
+  // cualquier dirección para pagar la tarifa más barata.
+  const zonaEnvio = determinarZonaEnvio(clienteDepartamento, clienteMunicipio);
+
   // El envío se calcula acá, con la tarifa vigente en /admin — así no
   // importa cuánto haya calculado (o manipulado) el navegador, el
   // costo real siempre sale de la misma fuente que ve el dueño.
   const configEnvio = await obtenerConfigEnvio();
   const costoBase =
-    datos.zonaEnvio === 'medellin'
-      ? configEnvio.costoLocal
-      : configEnvio.costoNacional;
+    zonaEnvio === 'medellin' ? configEnvio.costoLocal : configEnvio.costoNacional;
   const costoEnvio =
     datos.subtotalProductos >= configEnvio.gratisDesde ? 0 : costoBase;
   const total = datos.subtotalProductos + costoEnvio;
@@ -87,10 +105,12 @@ export async function crearPedidoDesdeCarrito(datos: {
       clienteNombre,
       clienteTelefono,
       clienteDireccion,
+      clienteDepartamento,
+      clienteMunicipio,
       items: datos.items,
       total,
       costoEnvio,
-      zonaEnvio: datos.zonaEnvio,
+      zonaEnvio,
     });
     return { numero, costoEnvio, total };
   } catch {
