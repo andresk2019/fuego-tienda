@@ -67,9 +67,12 @@ export default function CarruselDestacados({
               className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
             >
               {producto.fotoUrl ? (
-                // object-contain — mismo arreglo que TarjetaProducto:
-                // object-cover recortaba fotos que no fueran cuadradas.
-                <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl bg-background">
+                // object-contain en marco cuadrado — mismo arreglo que
+                // TarjetaProducto: object-cover recortaba fotos que no
+                // fueran cuadradas, y un marco más ancho que alto (el
+                // h-32 anterior) dejaba franjas vacías notorias hasta
+                // con fotos cuadradas.
+                <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-background">
                   <Image
                     src={producto.fotoUrl}
                     alt={producto.nombre}

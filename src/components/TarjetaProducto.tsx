@@ -39,12 +39,18 @@ export default function TarjetaProducto({
   return (
     <div className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover">
       {fotoUrl ? (
-        // object-contain dentro de un marco con fondo (no
+        // object-contain dentro de un marco cuadrado con fondo (no
         // object-cover directo): una foto que no sea cuadrada se veía
         // recortada, sobre todo fotos verticales de celular. Con
         // contain se ve la foto completa, con el fondo asomando a los
-        // lados en vez de adivinar qué parte recortar.
-        <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl bg-background">
+        // lados en vez de adivinar qué parte recortar. El marco es
+        // aspect-square (no un h-32 fijo, que era más ancho que alto)
+        // porque la mayoría de fotos reales son cercanas a cuadradas
+        // — un marco cuadrado es el que menos espacio de sobra deja
+        // en general, y es el mismo que ya usa la ficha del producto
+        // (ImagenProducto.tsx), así que el recorte se ve consistente
+        // en todo el sitio.
+        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-background">
           <Image
             src={fotoUrl}
             alt={nombre}
