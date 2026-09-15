@@ -67,13 +67,17 @@ export default function CarruselDestacados({
               className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
             >
               {producto.fotoUrl ? (
-                <Image
-                  src={producto.fotoUrl}
-                  alt={producto.nombre}
-                  width={160}
-                  height={160}
-                  className="h-32 w-full rounded-xl object-cover"
-                />
+                // object-contain — mismo arreglo que TarjetaProducto:
+                // object-cover recortaba fotos que no fueran cuadradas.
+                <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl bg-background">
+                  <Image
+                    src={producto.fotoUrl}
+                    alt={producto.nombre}
+                    width={160}
+                    height={160}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
               ) : (
                 <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
               )}

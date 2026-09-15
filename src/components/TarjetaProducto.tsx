@@ -39,13 +39,20 @@ export default function TarjetaProducto({
   return (
     <div className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover">
       {fotoUrl ? (
-        <Image
-          src={fotoUrl}
-          alt={nombre}
-          width={200}
-          height={200}
-          className="h-32 w-full rounded-xl object-cover"
-        />
+        // object-contain dentro de un marco con fondo (no
+        // object-cover directo): una foto que no sea cuadrada se veía
+        // recortada, sobre todo fotos verticales de celular. Con
+        // contain se ve la foto completa, con el fondo asomando a los
+        // lados en vez de adivinar qué parte recortar.
+        <div className="flex h-32 w-full items-center justify-center overflow-hidden rounded-xl bg-background">
+          <Image
+            src={fotoUrl}
+            alt={nombre}
+            width={200}
+            height={200}
+            className="h-full w-full object-contain"
+          />
+        </div>
       ) : (
         <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
       )}
