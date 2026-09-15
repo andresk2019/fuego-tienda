@@ -33,7 +33,12 @@ export async function cerrarSesion() {
 
 export type EstadoSubidaFoto = { error?: string; ok?: boolean } | undefined;
 
-const LIMITE_MB = 5;
+// Antes era 5MB — de por sí ya quedaba corto contra una foto de
+// celular sin comprimir, y encima Next.js cortaba en 1MB por su
+// cuenta antes de que este número siquiera importara (ver
+// bodySizeLimit en next.config.ts). Ahora los dos límites están
+// alineados.
+const LIMITE_MB = 8;
 
 export async function subirFotoProducto(
   _estado: EstadoSubidaFoto,

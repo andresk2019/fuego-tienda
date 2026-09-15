@@ -47,6 +47,20 @@ const cspHeader = `
   .trim();
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Por defecto Next.js corta cualquier Server Action en 1MB —
+      // muy por debajo del límite de 8MB que ya validaba nuestro
+      // propio código en admin/actions.ts (LIMITE_MB). Una foto de
+      // celular casi siempre pesa más de 1MB, así que se rechazaba
+      // ANTES de que nuestro código llegara a verla, con un error
+      // genérico de Next en vez del mensaje claro que ya teníamos
+      // escrito. 10mb deja margen sobre los 8MB reales (el propio
+      // límite del multipart le suma peso de más por los separadores
+      // entre campos).
+      bodySizeLimit: "10mb",
+    },
+  },
   images: {
     // Fotos de producto subidas desde el panel de administración,
     // guardadas en el bucket público de Supabase Storage.
