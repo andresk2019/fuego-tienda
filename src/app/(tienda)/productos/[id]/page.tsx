@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { obtenerProductoFuego } from "@/lib/db";
@@ -18,6 +19,37 @@ import ResenasProducto from "@/components/ResenasProducto";
 // por una venta de mostrador en Contabilidad Lady, así que nunca se
 // sirve cacheada.
 export const dynamic = "force-dynamic";
+
+// Antes, TODAS las páginas de producto compartían el mismo título
+// genérico de la portada ("Fuego | Velas artesanales") — Google no
+// tenía forma de distinguir una vela de otra en los resultados de
+// búsqueda. Ahora cada una tiene su propio título y descripción (ver
+// generateMetadata, docs/01-app/.../generate-metadata.md).
+export async function generateMetadata(
+  props: PageProps<"/productos/[id]">
+): Promise<Metadata> {
+  const { id } = await props.params;
+  const idNumero = parseInt(id, 10);
+  if (!Number.isInteger(idNumero)) return {};
+
+  const producto = await obtenerProductoFuego(idNumero);
+  if (!producto) return {};
+
+  // Tope de ~155 caracteres: es lo que Google suele mostrar de un
+  // meta description antes de cortarlo — una descripción larga
+  // escrita desde /admin no debería romper el resultado de búsqueda.
+  const descripcion =
+    producto.descripcion.length > 155
+      ? `${producto.descripcion.slice(0, 152)}...`
+      : producto.descripcion;
+  const titulo = `${producto.nombre} | Fuego`;
+
+  return {
+    title: titulo,
+    description: descripcion,
+    openGraph: { title: titulo, description: descripcion },
+  };
+}
 
 export default async function ProductoPage(
   props: PageProps<"/productos/[id]">
