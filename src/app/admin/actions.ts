@@ -17,6 +17,7 @@ import {
   guardarCategoriaProducto,
   guardarNumeroWhatsApp,
   guardarConfigEnvio,
+  guardarConfigCompra,
   agregarFotoGaleria,
   eliminarFotoGaleria,
 } from '@/lib/admin-db';
@@ -229,6 +230,42 @@ export async function guardarEnvio(
 
   try {
     await guardarConfigEnvio({ costoLocal, costoNacional, gratisDesde });
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/carrito');
+
+  return { ok: true };
+}
+
+export type EstadoCompra = { error?: string; ok?: boolean } | undefined;
+
+// Antes el carrito no decía nada sobre cómo se paga ni cuánto tarda
+// la entrega — el cliente lo averiguaba recién por WhatsApp, después
+// de llenar todo el formulario. Texto libre (no números como envío),
+// así que solo se valida que no vengan vacíos.
+export async function guardarCompra(
+  _estado: EstadoCompra,
+  formData: FormData
+): Promise<EstadoCompra> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const formasPago = String(formData.get('formasPago') ?? '').trim();
+  const tiempoEntrega = String(formData.get('tiempoEntrega') ?? '').trim();
+
+  if (!formasPago) {
+    return { error: 'Escribe las formas de pago que aceptas.' };
+  }
+  if (!tiempoEntrega) {
+    return { error: 'Escribe el tiempo de entrega.' };
+  }
+
+  try {
+    await guardarConfigCompra({ formasPago, tiempoEntrega });
   } catch {
     return { error: 'No se pudo guardar. Intenta de nuevo.' };
   }

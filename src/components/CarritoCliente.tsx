@@ -8,7 +8,7 @@ import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos"
 import { UBICACIONES_COLOMBIA } from "@/lib/colombia-ubicaciones";
 import type { ProblemaStock } from "@/lib/db";
 import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
-import type { ConfigEnvio } from "@/lib/admin-db";
+import type { ConfigEnvio, ConfigCompra } from "@/lib/admin-db";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
@@ -78,9 +78,16 @@ function construirMensajeWhatsApp(
 export default function CarritoCliente({
   numeroWhatsApp,
   configEnvio,
+  configCompra,
 }: {
   numeroWhatsApp: string | null;
   configEnvio: ConfigEnvio;
+  // Formas de pago y tiempo de entrega — antes el cliente lo
+  // averiguaba recién por WhatsApp, después de llenar todo el
+  // formulario. Se muestra apenas entra al carrito, para que decida
+  // con esa info antes de escribir sus datos (ver ConfigCompraForm en
+  // /admin).
+  configCompra: ConfigCompra;
 }) {
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
   const subtotal = totalCarrito(items);
@@ -226,6 +233,11 @@ export default function CarritoCliente({
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
       <h1 className="font-serif text-2xl text-foreground">Tu carrito</h1>
+
+      <div className="mt-4 flex flex-col gap-1 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-muted">
+        <p>💳 {configCompra.formasPago}</p>
+        <p>🚚 {configCompra.tiempoEntrega}</p>
+      </div>
 
       <ul className="mt-6 flex flex-col gap-3">
         {items.map((item) => {
