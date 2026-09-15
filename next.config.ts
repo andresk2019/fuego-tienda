@@ -22,13 +22,21 @@ const esDev = process.env.NODE_ENV === "development";
 // (ver SubirFotoForm.tsx, URL.createObjectURL). Verificado sirviendo
 // un build de producción real en un puerto aparte: sin violaciones de
 // CSP en consola en portada, catálogo, producto, carrito y admin.
+// script-src/connect-src también abren los dominios de Google
+// Analytics (agregado 2026-09-15, ver analytics.ts): gtag.js se carga
+// desde googletagmanager.com, y desde ahí manda los datos de
+// navegación a los dominios de google-analytics.com/analytics.google.com
+// — sin esto la CSP bloquearía Analytics en silencio (el script ni
+// siquiera cargaría). Nada de esto abre la puerta a scripts de
+// cualquier dominio: sigue siendo una lista explícita, solo con estos
+// 2 dominios de Google agregados.
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline'${esDev ? " 'unsafe-eval'" : ""};
+  script-src 'self' 'unsafe-inline' https://www.googletagmanager.com${esDev ? " 'unsafe-eval'" : ""};
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data:;
   font-src 'self';
-  connect-src 'self'${esDev ? " ws:" : ""};
+  connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com${esDev ? " ws:" : ""};
   object-src 'none';
   base-uri 'self';
   form-action 'self';

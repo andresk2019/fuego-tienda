@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { sendGAEvent } from "@next/third-parties/google";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
 import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
@@ -227,6 +228,17 @@ export default function CarritoCliente({
       // este arreglo.
       window.open(linkWhatsApp, "_blank", "noopener,noreferrer");
     }
+
+    // Esta tienda no tiene "compra" dentro del sitio (se cierra por
+    // WhatsApp) — este es el evento que de verdad importa medir en
+    // Analytics: no cuántos visitan, sino cuántos llegan hasta acá.
+    // `value`/`currency` siguen la convención de GA4 para eventos de
+    // conversión con valor monetario.
+    sendGAEvent("event", "continuar_whatsapp", {
+      value: subtotal + costoEnvio,
+      currency: "COP",
+    });
+
     vaciar();
   }
 
