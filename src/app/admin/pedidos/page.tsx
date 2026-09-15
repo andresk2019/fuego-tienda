@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { haySesion } from '@/lib/session';
 import { obtenerPedidos } from '@/lib/pedidos-db';
 import ListaPedidos from '@/components/admin/ListaPedidos';
+import ResumenPedidos from '@/components/admin/ResumenPedidos';
 
 // Igual que /admin: el proxy ya protege /admin/*, pero se vuelve a
 // verificar aquí por si acaso.
@@ -33,6 +34,7 @@ export default async function PedidosPage() {
         eso lo sigues haciendo al registrar la venta en Contabilidad Lady.
       </p>
 
+      <ResumenPedidos pedidos={pedidos} />
       <ListaPedidos pedidos={pedidos} />
     </main>
   );

@@ -16,6 +16,7 @@ import {
   type EstadoPedido,
   type ItemPedido,
   type Pedido,
+  type ZonaEnvio,
 } from './pedidos';
 
 let esquemaListo: Promise<void> | undefined;
@@ -33,7 +34,12 @@ function asegurarEsquema(): Promise<void> {
            estado TEXT NOT NULL DEFAULT 'pendiente',
            creado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
            actualizado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-         );`
+         );
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_direccion TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS zona_envio TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_departamento TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;`
       )
       .then(() => undefined);
   }
@@ -43,19 +49,29 @@ function asegurarEsquema(): Promise<void> {
 export async function crearPedido(datos: {
   clienteNombre: string;
   clienteTelefono: string;
+  clienteDireccion: string;
+  clienteDepartamento: string;
+  clienteMunicipio: string;
   items: ItemPedido[];
   total: number;
+  costoEnvio: number;
+  zonaEnvio: ZonaEnvio;
 }): Promise<{ id: number; numero: string }> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, items, total)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id`,
     [
       datos.clienteNombre,
       datos.clienteTelefono,
+      datos.clienteDireccion,
+      datos.clienteDepartamento,
+      datos.clienteMunicipio,
       JSON.stringify(datos.items),
       datos.total,
+      datos.costoEnvio,
+      datos.zonaEnvio,
     ]
   );
   const id = rows[0].id as number;
@@ -65,7 +81,7 @@ export async function crearPedido(datos: {
 export async function obtenerPedidos(): Promise<Pedido[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, cliente_telefono, items, total, estado, creado_en
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio, estado, creado_en
      FROM tienda_pedidos
      ORDER BY creado_en DESC`
   );
@@ -74,9 +90,18 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
     numero: formatearNumeroPedido(r.id),
     clienteNombre: r.cliente_nombre,
     clienteTelefono: r.cliente_telefono,
+    // Pedidos de antes de este campo quedan con '' (ver comentario en
+    // pedidos.ts) en vez de null.
+    clienteDireccion: r.cliente_direccion ?? '',
+    clienteDepartamento: r.cliente_departamento ?? null,
+    clienteMunicipio: r.cliente_municipio ?? null,
     // node-postgres ya devuelve JSONB parseado como objeto/arreglo JS.
     items: r.items as ItemPedido[],
     total: Number(r.total),
+    // null real (no 0) en pedidos de antes de este campo — ver
+    // comentario en pedidos.ts.
+    costoEnvio: r.costo_envio !== null ? Number(r.costo_envio) : null,
+    zonaEnvio: (r.zona_envio as ZonaEnvio | null) ?? null,
     estado: r.estado as EstadoPedido,
     creadoEn: new Date(r.creado_en).toISOString(),
   }));

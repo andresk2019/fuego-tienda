@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import {
   agregarResena,
   actualizarVisibilidad,
@@ -200,16 +200,47 @@ export default function ListaResenas({
   productos: { id: number; nombre: string }[];
 }) {
   const nombrePorId = new Map(productos.map((p) => [p.id, p.nombre]));
+  const [busqueda, setBusqueda] = useState('');
+
+  // Busca por nombre del cliente, texto de la reseña, o la vela
+  // relacionada (si tiene una) — "General (toda la tienda)" también
+  // se puede buscar tal cual para encontrar solo las generales.
+  const resenasFiltradas = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    if (!termino) return resenas;
+    return resenas.filter((r) => {
+      const nombreProducto = r.productoId
+        ? (nombrePorId.get(r.productoId) ?? 'Vela eliminada')
+        : 'General (toda la tienda)';
+      return (
+        r.clienteNombre.toLowerCase().includes(termino) ||
+        r.texto.toLowerCase().includes(termino) ||
+        nombreProducto.toLowerCase().includes(termino)
+      );
+    });
+  }, [resenas, busqueda, nombrePorId]);
 
   return (
     <div className="flex flex-col gap-6">
       <FormularioNuevaResena productos={productos} />
 
+      <input
+        type="search"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        placeholder="Buscar por cliente, texto o vela relacionada..."
+        className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+      />
+
       {resenas.length === 0 ? (
         <p className="text-sm text-muted">Todavía no hay reseñas cargadas.</p>
+      ) : resenasFiltradas.length === 0 ? (
+        <p className="text-sm text-muted">
+          No hay reseñas que coincidan con &quot;{busqueda}&quot;.
+        </p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {resenas.map((resena) => (
+          {resenasFiltradas.map((resena) => (
             <FilaResena
               key={resena.id}
               resena={resena}

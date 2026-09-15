@@ -13,10 +13,13 @@ import {
   guardarDescripcionProducto,
   guardarLogoUrl,
   guardarDestacadoProducto,
+  guardarCategoriaProducto,
   guardarNumeroWhatsApp,
+  guardarConfigEnvio,
   agregarFotoGaleria,
   eliminarFotoGaleria,
 } from '@/lib/admin-db';
+import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
 
 export async function cerrarSesion() {
   await eliminarSesion();
@@ -168,6 +171,42 @@ export async function guardarWhatsApp(
   return { ok: true };
 }
 
+export type EstadoEnvio = { error?: string; ok?: boolean } | undefined;
+
+export async function guardarEnvio(
+  _estado: EstadoEnvio,
+  formData: FormData
+): Promise<EstadoEnvio> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const costoLocal = Number(formData.get('costoLocal'));
+  const costoNacional = Number(formData.get('costoNacional'));
+  const gratisDesde = Number(formData.get('gratisDesde'));
+
+  if (!Number.isFinite(costoLocal) || costoLocal < 0) {
+    return { error: 'El costo de envío dentro de Medellín no es válido.' };
+  }
+  if (!Number.isFinite(costoNacional) || costoNacional < 0) {
+    return { error: 'El costo de envío al resto del país no es válido.' };
+  }
+  if (!Number.isFinite(gratisDesde) || gratisDesde < 0) {
+    return { error: 'El monto para envío gratis no es válido.' };
+  }
+
+  try {
+    await guardarConfigEnvio({ costoLocal, costoNacional, gratisDesde });
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/carrito');
+
+  return { ok: true };
+}
+
 export type EstadoFotoGaleria = { error?: string; ok?: boolean } | undefined;
 
 // A diferencia de subir la foto principal (que siempre reemplaza a la
@@ -266,6 +305,46 @@ export async function guardarDestacado(
 
   revalidatePath('/admin');
   revalidatePath('/');
+
+  return { ok: true };
+}
+
+export type EstadoCategoria = { error?: string; ok?: boolean } | undefined;
+
+// Antes, la categoría de un producto (Día de la Madre, Navidad,
+// Clásicas...) solo se podía asignar editando categorias.ts en el
+// código — un producto nuevo caía en "Sin categoría" hasta el próximo
+// despliegue. Ahora se puede cambiar directo desde el panel (ver
+// guardarCategoriaProducto en admin-db.ts, que tiene prioridad sobre
+// el mapa fijo en código).
+export async function guardarCategoria(
+  _estado: EstadoCategoria,
+  formData: FormData
+): Promise<EstadoCategoria> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  const categoria = String(formData.get('categoria') ?? '');
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+  if (!CATEGORIAS.some((c) => c.slug === categoria)) {
+    return { error: 'Categoría inválida.' };
+  }
+
+  try {
+    await guardarCategoriaProducto(productoId, categoria as CategoriaSlug);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/');
+  revalidatePath('/catalogo');
+  revalidatePath(`/productos/${productoId}`);
 
   return { ok: true };
 }

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
+import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
+import { UBICACIONES_COLOMBIA } from "@/lib/colombia-ubicaciones";
 import type { ProblemaStock } from "@/lib/db";
 import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
+import type { ConfigEnvio } from "@/lib/admin-db";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
@@ -30,8 +33,13 @@ function detallesItem(item: ItemCarrito): string {
 // que es nuestro, no suyo.
 function construirMensajeWhatsApp(
   items: ItemCarrito[],
-  total: number,
+  subtotal: number,
+  costoEnvio: number,
+  zonaEnvio: ZonaEnvio,
   nombreCliente: string,
+  direccion: string,
+  departamento: string,
+  municipio: string,
   numero: string | null
 ): string {
   const lineas = items.map((item) => {
@@ -43,7 +51,11 @@ function construirMensajeWhatsApp(
   const encabezado = numero
     ? `Hola, soy ${nombreCliente}. Quiero hacer este pedido (#${numero}):`
     : `Hola, soy ${nombreCliente}. Quiero hacer este pedido:`;
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nTotal: ${formatoCOP.format(total)}`;
+  const etiquetaZona =
+    ZONAS_ENVIO.find((z) => z.valor === zonaEnvio)?.etiqueta ?? "";
+  const lineaEnvio =
+    costoEnvio > 0 ? formatoCOP.format(costoEnvio) : "Gratis";
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nDirección de entrega: ${direccion}, ${municipio}, ${departamento}`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -51,20 +63,60 @@ function construirMensajeWhatsApp(
 // NEXT_PUBLIC_WHATSAPP_NUMBER directo; ahora el número se puede
 // cambiar desde /admin sin necesidad de un nuevo despliegue (ver
 // obtenerNumeroWhatsApp en admin-db.ts).
+// `configEnvio` también llega desde el servidor — 2 tarifas de
+// domicilio (dentro de Medellín / resto del país, decisión del dueño,
+// 2026-09-14), gratis a partir de cierto monto en cualquiera de las
+// 2. La zona ya NO se elige a mano con un radio: sale sola del
+// departamento y municipio que el cliente escoge (ver
+// determinarZonaEnvio en pedidos.ts y el listado en
+// colombia-ubicaciones.ts), así no depende de que elija bien la zona.
+// Lo mostrado acá es solo para que el cliente vea el total antes de
+// enviar; el que de verdad queda registrado en el pedido se vuelve a
+// calcular en el servidor con la tarifa vigente en ese momento (ver
+// crearPedidoDesdeCarrito), nunca confiando en lo que calculó el
+// navegador.
 export default function CarritoCliente({
   numeroWhatsApp,
+  configEnvio,
 }: {
   numeroWhatsApp: string | null;
+  configEnvio: ConfigEnvio;
 }) {
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
-  const total = totalCarrito(items);
+  const subtotal = totalCarrito(items);
+  const envioGratis = subtotal >= configEnvio.gratisDesde;
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [departamento, setDepartamento] = useState("");
+  const [municipio, setMunicipio] = useState("");
+  const [aceptaPolitica, setAceptaPolitica] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [problemasStock, setProblemasStock] = useState<ProblemaStock[] | null>(
     null
   );
+
+  const municipiosDisponibles = useMemo(
+    () =>
+      UBICACIONES_COLOMBIA.find((d) => d.departamento === departamento)
+        ?.municipios ?? [],
+    [departamento]
+  );
+
+  const zonaEnvio =
+    departamento && municipio
+      ? determinarZonaEnvio(departamento, municipio)
+      : null;
+  const costoEnvioMostrado = zonaEnvio
+    ? envioGratis
+      ? 0
+      : zonaEnvio === "medellin"
+        ? configEnvio.costoLocal
+        : configEnvio.costoNacional
+    : null;
+  const totalMostrado =
+    costoEnvioMostrado !== null ? subtotal + costoEnvioMostrado : null;
 
   if (items.length === 0) {
     return (
@@ -96,7 +148,15 @@ export default function CarritoCliente({
   // el número de pedido.
   async function manejarContinuar(e: React.FormEvent) {
     e.preventDefault();
-    if (!numeroWhatsApp || enviando) return;
+    if (
+      !numeroWhatsApp ||
+      enviando ||
+      !aceptaPolitica ||
+      !departamento ||
+      !municipio ||
+      !zonaEnvio
+    )
+      return;
 
     // Safari (sobre todo en iPhone) bloquea como "pop-up" cualquier
     // window.open que no ocurra en el mismo instante del clic. Antes,
@@ -112,12 +172,21 @@ export default function CarritoCliente({
     setProblemasStock(null);
 
     let numero: string | null = null;
+    // Si el registro falla, el mensaje igual se arma con el envío
+    // calculado acá en el navegador (ver comentario del componente) —
+    // no es exacto al 100% si justo en ese instante cambió la tarifa,
+    // pero es mejor que dejar al cliente sin poder pedir.
+    let costoEnvio = costoEnvioMostrado ?? 0;
     try {
       const resultado = await crearPedidoDesdeCarrito({
         clienteNombre: nombre,
         clienteTelefono: telefono,
+        clienteDireccion: direccion,
+        clienteDepartamento: departamento,
+        clienteMunicipio: municipio,
+        aceptaTratamientoDatos: aceptaPolitica,
         items,
-        total,
+        subtotalProductos: subtotal,
       });
       if (resultado.problemasStock && resultado.problemasStock.length > 0) {
         setEnviando(false);
@@ -126,12 +195,23 @@ export default function CarritoCliente({
         return;
       }
       numero = resultado.numero ?? null;
+      if (resultado.costoEnvio !== undefined) costoEnvio = resultado.costoEnvio;
     } catch {
       // seguimos sin número — ver comentario arriba
     }
     setEnviando(false);
 
-    const mensaje = construirMensajeWhatsApp(items, total, nombre, numero);
+    const mensaje = construirMensajeWhatsApp(
+      items,
+      subtotal,
+      costoEnvio,
+      zonaEnvio,
+      nombre,
+      direccion,
+      departamento,
+      municipio,
+      numero
+    );
     const linkWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     if (ventanaWhatsApp) {
       ventanaWhatsApp.location.href = linkWhatsApp;
@@ -192,11 +272,33 @@ export default function CarritoCliente({
         })}
       </ul>
 
-      <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-        <span className="font-medium text-foreground">Total</span>
-        <span className="text-lg font-semibold text-foreground">
-          {formatoCOP.format(total)}
-        </span>
+      <div className="mt-6 flex flex-col gap-1.5 border-t border-border pt-4">
+        <div className="flex items-center justify-between text-sm text-muted">
+          <span>Subtotal</span>
+          <span>{formatoCOP.format(subtotal)}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm text-muted">
+          <span>Envío a domicilio</span>
+          <span>
+            {costoEnvioMostrado === null
+              ? "Elige tu departamento y municipio"
+              : costoEnvioMostrado > 0
+                ? formatoCOP.format(costoEnvioMostrado)
+                : "Gratis"}
+          </span>
+        </div>
+        {envioGratis && (
+          <p className="text-xs text-muted">
+            Envío gratis por superar {formatoCOP.format(configEnvio.gratisDesde)}
+            .
+          </p>
+        )}
+        <div className="mt-1 flex items-center justify-between border-t border-border pt-2">
+          <span className="font-medium text-foreground">Total</span>
+          <span className="text-lg font-semibold text-foreground">
+            {totalMostrado !== null ? formatoCOP.format(totalMostrado) : "—"}
+          </span>
+        </div>
       </div>
 
       {problemasStock && (
@@ -251,9 +353,93 @@ export default function CarritoCliente({
             />
           </label>
 
+          <div className="flex flex-wrap gap-3">
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1">
+              <span className="text-xs font-medium text-foreground">
+                Departamento
+              </span>
+              <select
+                required
+                value={departamento}
+                onChange={(e) => {
+                  setDepartamento(e.target.value);
+                  setMunicipio("");
+                }}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+              >
+                <option value="" disabled>
+                  Selecciona...
+                </option>
+                {UBICACIONES_COLOMBIA.map((d) => (
+                  <option key={d.departamento} value={d.departamento}>
+                    {d.departamento}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1">
+              <span className="text-xs font-medium text-foreground">
+                Municipio
+              </span>
+              <select
+                required
+                disabled={!departamento}
+                value={municipio}
+                onChange={(e) => setMunicipio(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-60"
+              >
+                <option value="" disabled>
+                  {departamento ? "Selecciona..." : "Elige un departamento"}
+                </option>
+                {municipiosDisponibles.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-foreground">
+              Dirección exacta
+            </span>
+            <textarea
+              required
+              rows={2}
+              value={direccion}
+              onChange={(e) => setDireccion(e.target.value)}
+              placeholder="Calle, número, barrio y algún punto de referencia"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+            />
+          </label>
+
+          <label className="flex items-start gap-2 text-xs text-muted">
+            <input
+              type="checkbox"
+              required
+              checked={aceptaPolitica}
+              onChange={(e) => setAceptaPolitica(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-ember"
+            />
+            <span>
+              He leído y acepto la{" "}
+              <Link
+                href="/politica-de-datos"
+                target="_blank"
+                className="font-medium text-ember transition-colors hover:text-ember-hover"
+              >
+                Política de tratamiento de datos personales
+              </Link>
+              .
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={enviando}
+            disabled={
+              enviando || !aceptaPolitica || !departamento || !municipio
+            }
             className="mt-1 flex items-center justify-center gap-2 rounded-lg bg-whatsapp px-4 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-whatsapp-hover disabled:opacity-60"
           >
             <WhatsAppIcon className="h-4 w-4" />

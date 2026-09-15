@@ -5,12 +5,14 @@ import { obtenerCatalogoFuego } from '@/lib/db';
 import {
   obtenerLogoUrl,
   obtenerNumeroWhatsApp,
+  obtenerConfigEnvio,
   obtenerGaleriaTodosLosProductos,
 } from '@/lib/admin-db';
 import { esPersonalizable } from '@/lib/personalizacion';
 import { cerrarSesion } from './actions';
 import SubirLogoForm from '@/components/admin/SubirLogoForm';
 import ConfigWhatsAppForm from '@/components/admin/ConfigWhatsAppForm';
+import ConfigEnvioForm from '@/components/admin/ConfigEnvioForm';
 import ListaProductosAdmin from '@/components/admin/ListaProductosAdmin';
 
 // El proxy (src/proxy.ts) ya protege /admin/*, pero se vuelve a
@@ -24,11 +26,12 @@ export default async function AdminPage() {
     redirect('/admin/login');
   }
 
-  const [productos, logoUrl, numeroWhatsApp, galeriasTodas] =
+  const [productos, logoUrl, numeroWhatsApp, configEnvio, galeriasTodas] =
     await Promise.all([
       obtenerCatalogoFuego(),
       obtenerLogoUrl(),
       obtenerNumeroWhatsApp(),
+      obtenerConfigEnvio(),
       obtenerGaleriaTodosLosProductos(),
     ]);
 
@@ -92,6 +95,7 @@ export default async function AdminPage() {
       <div className="mt-6">
         <SubirLogoForm logoUrl={logoUrl} />
         <ConfigWhatsAppForm numeroActual={numeroWhatsApp} />
+        <ConfigEnvioForm configActual={configEnvio} />
       </div>
 
       <p className="mb-2 text-sm text-muted">

@@ -53,7 +53,12 @@ function filaAProducto(
 ): ProductoCatalogo {
   const cantidad = Number(r.cantidad);
   const stockMinimo = Number(r.stock_minimo);
-  const categoria = categoriaDeProducto(r.id);
+  // La categoría elegida desde /admin tiene prioridad; si no se ha
+  // asignado ninguna, se usa el mapa fijo en código (ver
+  // categorias.ts) — así un producto nuevo ya no cae en "Sin
+  // categoría" hasta que alguien edite el código, se le puede asignar
+  // categoría directo desde el panel.
+  const categoria = meta.categorias[r.id] ?? categoriaDeProducto(r.id);
   // La descripción escrita desde el panel de administración tiene
   // prioridad; si no hay ninguna, se usa el texto genérico por
   // categoría (ver descripciones.ts).
