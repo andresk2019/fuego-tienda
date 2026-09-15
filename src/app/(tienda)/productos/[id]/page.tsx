@@ -10,6 +10,7 @@ import {
 import { AROMAS_DISPONIBLES, esPersonalizable } from "@/lib/personalizacion";
 import { obtenerDescripcionesAromas } from "@/lib/aromas-db";
 import GaleriaFotosProducto from "@/components/GaleriaFotosProducto";
+import RegistrarVistaProducto from "@/components/RegistrarVistaProducto";
 import FichaProducto from "@/components/FichaProducto";
 import PersonalizarVela from "@/components/PersonalizarVela";
 import AgregarAlCarrito from "@/components/AgregarAlCarrito";
@@ -85,6 +86,11 @@ export default async function ProductoPage(
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
+      <RegistrarVistaProducto
+        productoId={producto.id}
+        nombre={producto.nombre}
+        precioVenta={producto.precioVenta}
+      />
       <Link
         href="/catalogo"
         className="text-sm text-muted transition-colors hover:text-foreground"
