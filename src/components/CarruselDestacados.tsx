@@ -2,10 +2,9 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import type { ProductoCatalogo } from "@/lib/db";
 import { productoHref } from "@/lib/slug";
-import FlameIcon from "@/components/FlameIcon";
+import FotoProducto from "@/components/FotoProducto";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -66,24 +65,12 @@ export default function CarruselDestacados({
               href={productoHref(producto)}
               className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
             >
-              {producto.fotoUrl ? (
-                // object-contain en marco cuadrado — mismo arreglo que
-                // TarjetaProducto: object-cover recortaba fotos que no
-                // fueran cuadradas, y un marco más ancho que alto (el
-                // h-32 anterior) dejaba franjas vacías notorias hasta
-                // con fotos cuadradas.
-                <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-background">
-                  <Image
-                    src={producto.fotoUrl}
-                    alt={producto.nombre}
-                    width={160}
-                    height={160}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-              ) : (
-                <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
-              )}
+              <FotoProducto
+                fotoUrl={producto.fotoUrl}
+                alt={producto.nombre}
+                sizes="160px"
+                iconClassName="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember"
+              />
               <h3 className="font-serif text-base text-foreground">
                 {producto.nombre}
               </h3>

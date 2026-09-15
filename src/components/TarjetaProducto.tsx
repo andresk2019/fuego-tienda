@@ -1,5 +1,4 @@
-import Image from "next/image";
-import FlameIcon from "@/components/FlameIcon";
+import FotoProducto from "@/components/FotoProducto";
 import EstrellaIcon from "@/components/EstrellaIcon";
 import type { ResumenResenas } from "@/lib/resenas-db";
 
@@ -38,30 +37,12 @@ export default function TarjetaProducto({
 }) {
   return (
     <div className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover">
-      {fotoUrl ? (
-        // object-contain dentro de un marco cuadrado con fondo (no
-        // object-cover directo): una foto que no sea cuadrada se veía
-        // recortada, sobre todo fotos verticales de celular. Con
-        // contain se ve la foto completa, con el fondo asomando a los
-        // lados en vez de adivinar qué parte recortar. El marco es
-        // aspect-square (no un h-32 fijo, que era más ancho que alto)
-        // porque la mayoría de fotos reales son cercanas a cuadradas
-        // — un marco cuadrado es el que menos espacio de sobra deja
-        // en general, y es el mismo que ya usa la ficha del producto
-        // (ImagenProducto.tsx), así que el recorte se ve consistente
-        // en todo el sitio.
-        <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-background">
-          <Image
-            src={fotoUrl}
-            alt={nombre}
-            width={200}
-            height={200}
-            className="h-full w-full object-contain"
-          />
-        </div>
-      ) : (
-        <FlameIcon className="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember" />
-      )}
+      <FotoProducto
+        fotoUrl={fotoUrl}
+        alt={nombre}
+        sizes="(max-width: 640px) 45vw, 220px"
+        iconClassName="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember"
+      />
       <h2 className="font-serif text-lg text-foreground">{nombre}</h2>
       {resumenResenas && (
         <div className="-mt-1.5 flex items-center gap-1.5">
