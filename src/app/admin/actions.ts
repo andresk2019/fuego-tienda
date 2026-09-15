@@ -13,11 +13,13 @@ import {
   guardarDescripcionProducto,
   guardarLogoUrl,
   guardarDestacadoProducto,
+  guardarCategoriaProducto,
   guardarNumeroWhatsApp,
   guardarConfigEnvio,
   agregarFotoGaleria,
   eliminarFotoGaleria,
 } from '@/lib/admin-db';
+import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
 
 export async function cerrarSesion() {
   await eliminarSesion();
@@ -303,6 +305,46 @@ export async function guardarDestacado(
 
   revalidatePath('/admin');
   revalidatePath('/');
+
+  return { ok: true };
+}
+
+export type EstadoCategoria = { error?: string; ok?: boolean } | undefined;
+
+// Antes, la categoría de un producto (Día de la Madre, Navidad,
+// Clásicas...) solo se podía asignar editando categorias.ts en el
+// código — un producto nuevo caía en "Sin categoría" hasta el próximo
+// despliegue. Ahora se puede cambiar directo desde el panel (ver
+// guardarCategoriaProducto en admin-db.ts, que tiene prioridad sobre
+// el mapa fijo en código).
+export async function guardarCategoria(
+  _estado: EstadoCategoria,
+  formData: FormData
+): Promise<EstadoCategoria> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  const categoria = String(formData.get('categoria') ?? '');
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+  if (!CATEGORIAS.some((c) => c.slug === categoria)) {
+    return { error: 'Categoría inválida.' };
+  }
+
+  try {
+    await guardarCategoriaProducto(productoId, categoria as CategoriaSlug);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/');
+  revalidatePath('/catalogo');
+  revalidatePath(`/productos/${productoId}`);
 
   return { ok: true };
 }

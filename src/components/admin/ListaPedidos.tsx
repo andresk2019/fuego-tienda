@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import { actualizarEstado } from '@/app/admin/pedidos/actions';
 import { ESTADOS_PEDIDO, ZONAS_ENVIO, type Pedido } from '@/lib/pedidos';
 
@@ -107,6 +107,23 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
 }
 
 export default function ListaPedidos({ pedidos }: { pedidos: Pedido[] }) {
+  const [busqueda, setBusqueda] = useState('');
+
+  // Busca por número de pedido, nombre/teléfono del cliente, o el
+  // nombre de algún producto del pedido — así sirve tanto para "¿qué
+  // pidió Andrés?" como para "¿quién pidió una Bomba #1?".
+  const pedidosFiltrados = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    if (!termino) return pedidos;
+    return pedidos.filter(
+      (p) =>
+        p.numero.toLowerCase().includes(termino) ||
+        p.clienteNombre.toLowerCase().includes(termino) ||
+        p.clienteTelefono.toLowerCase().includes(termino) ||
+        p.items.some((item) => item.nombre.toLowerCase().includes(termino))
+    );
+  }, [pedidos, busqueda]);
+
   if (pedidos.length === 0) {
     return (
       <p className="mt-6 text-sm text-muted">
@@ -116,10 +133,26 @@ export default function ListaPedidos({ pedidos }: { pedidos: Pedido[] }) {
   }
 
   return (
-    <ul className="mt-6 flex flex-col gap-3">
-      {pedidos.map((pedido) => (
-        <FilaPedido key={pedido.id} pedido={pedido} />
-      ))}
-    </ul>
+    <div>
+      <input
+        type="search"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        placeholder="Buscar por número, cliente, teléfono o producto..."
+        className="mt-6 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+      />
+
+      {pedidosFiltrados.length === 0 ? (
+        <p className="mt-4 text-sm text-muted">
+          No hay pedidos que coincidan con &quot;{busqueda}&quot;.
+        </p>
+      ) : (
+        <ul className="mt-4 flex flex-col gap-3">
+          {pedidosFiltrados.map((pedido) => (
+            <FilaPedido key={pedido.id} pedido={pedido} />
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

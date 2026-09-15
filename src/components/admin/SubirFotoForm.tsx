@@ -6,8 +6,9 @@ import {
   subirFotoProducto,
   guardarDescripcion,
   guardarDestacado,
+  guardarCategoria,
 } from '@/app/admin/actions';
-import type { CategoriaSlug } from '@/lib/categorias';
+import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
 import FlameIcon from '@/components/FlameIcon';
 import TarjetaProducto from '@/components/TarjetaProducto';
 import FichaProducto from '@/components/FichaProducto';
@@ -52,6 +53,10 @@ export default function SubirFotoForm({
   );
   const [estadoDestacado, accionDestacado] = useActionState(
     guardarDestacado,
+    undefined
+  );
+  const [estadoCategoria, accionCategoria] = useActionState(
+    guardarCategoria,
     undefined
   );
 
@@ -151,6 +156,28 @@ export default function SubirFotoForm({
           </label>
         </form>
 
+        <form action={accionCategoria} className="contents">
+          <input type="hidden" name="productoId" value={productoId} />
+          <select
+            // `key` fuerza a remontar el <select> cuando `categoria`
+            // cambia tras guardar (mismo motivo que el <select> de
+            // estado en ListaPedidos.tsx): al ser "no controlado"
+            // (defaultValue), sin esto React lo deja tal cual quedó
+            // en el DOM en vez de reflejar el nuevo valor guardado.
+            key={categoria}
+            name="categoria"
+            defaultValue={categoria}
+            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
+          >
+            {CATEGORIAS.map((c) => (
+              <option key={c.slug} value={c.slug}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </form>
+
         <button
           type="button"
           onClick={() => setDescripcionAbierta((v) => !v)}
@@ -166,6 +193,9 @@ export default function SubirFotoForm({
       {estadoFoto?.ok && <p className="text-xs text-ember">¡Foto actualizada!</p>}
       {estadoDestacado?.error && (
         <p className="text-xs text-danger">{estadoDestacado.error}</p>
+      )}
+      {estadoCategoria?.error && (
+        <p className="text-xs text-danger">{estadoCategoria.error}</p>
       )}
 
       {/* Espejo de la tarjeta del catálogo — solo mientras haya un

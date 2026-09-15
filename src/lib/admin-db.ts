@@ -16,6 +16,7 @@
 // ya no es la única parte que escribe, solo la primera que hubo.)
 import 'server-only';
 import { getPool } from './pool';
+import { CATEGORIAS, type CategoriaSlug } from './categorias';
 
 let esquemaListo: Promise<void> | undefined;
 
@@ -37,6 +38,7 @@ function asegurarEsquema(): Promise<void> {
          );
          ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS descripcion TEXT;
          ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS destacado BOOLEAN NOT NULL DEFAULT false;
+         ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS categoria TEXT;
          CREATE TABLE IF NOT EXISTS tienda_config (
            clave TEXT PRIMARY KEY,
            valor TEXT
@@ -285,29 +287,43 @@ export type MetaProductos = {
   fotos: Record<number, string>;
   descripciones: Record<number, string>;
   destacados: Set<number>;
+  // Categoría elegida desde /admin — tiene prioridad sobre el mapa
+  // fijo en código (categorias.ts). Antes, un producto nuevo SIEMPRE
+  // caía en "Sin categoría" hasta que alguien editara el código; ahora
+  // se puede asignar desde el panel. Solo se llena con slugs válidos
+  // (ver categoriaDeProducto en categorias.ts) — un valor viejo o
+  // corrupto en la tabla simplemente se ignora, nunca rompe la
+  // página.
+  categorias: Record<number, CategoriaSlug>;
 };
 
-// Trae foto/descripción/destacado de TODOS los productos en una sola
-// consulta (antes eran 3 consultas separadas a la misma tabla) — son
-// pocos productos hoy, no vale la pena una consulta por producto ni
-// una por columna.
+const SLUGS_CATEGORIA = new Set(CATEGORIAS.map((c) => c.slug));
+
+// Trae foto/descripción/destacado/categoría de TODOS los productos en
+// una sola consulta (antes eran 3 consultas separadas a la misma
+// tabla) — son pocos productos hoy, no vale la pena una consulta por
+// producto ni una por columna.
 export async function obtenerMetaDeProductos(): Promise<MetaProductos> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    'SELECT producto_id, foto_url, descripcion, destacado FROM tienda_producto_meta'
+    'SELECT producto_id, foto_url, descripcion, destacado, categoria FROM tienda_producto_meta'
   );
 
   const fotos: Record<number, string> = {};
   const descripciones: Record<number, string> = {};
   const destacados = new Set<number>();
+  const categorias: Record<number, CategoriaSlug> = {};
 
   for (const fila of rows) {
     if (fila.foto_url) fotos[fila.producto_id] = fila.foto_url;
     if (fila.descripcion) descripciones[fila.producto_id] = fila.descripcion;
     if (fila.destacado) destacados.add(fila.producto_id);
+    if (fila.categoria && SLUGS_CATEGORIA.has(fila.categoria)) {
+      categorias[fila.producto_id] = fila.categoria as CategoriaSlug;
+    }
   }
 
-  return { fotos, descripciones, destacados };
+  return { fotos, descripciones, destacados, categorias };
 }
 
 export async function guardarFotoProducto(productoId: number, fotoUrl: string): Promise<void> {
@@ -346,6 +362,19 @@ export async function guardarDestacadoProducto(
      VALUES ($1, $2, now())
      ON CONFLICT (producto_id) DO UPDATE SET destacado = $2, actualizado_en = now()`,
     [productoId, destacado]
+  );
+}
+
+export async function guardarCategoriaProducto(
+  productoId: number,
+  categoria: CategoriaSlug
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_producto_meta (producto_id, categoria, actualizado_en)
+     VALUES ($1, $2, now())
+     ON CONFLICT (producto_id) DO UPDATE SET categoria = $2, actualizado_en = now()`,
+    [productoId, categoria]
   );
 }
 
