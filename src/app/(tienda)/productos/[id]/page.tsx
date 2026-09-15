@@ -107,6 +107,15 @@ export default async function ProductoPage(
             resumenResenas={resumenResenas}
           />
 
+          {esVela && (
+            <Link
+              href="/cuidado-de-las-velas"
+              className="-mt-2 w-fit text-sm text-muted underline-offset-2 transition-colors hover:text-foreground hover:underline"
+            >
+              🕯️ Cómo cuidar esta vela →
+            </Link>
+          )}
+
           {personalizable ? (
             <PersonalizarVela
               productoId={producto.id}
