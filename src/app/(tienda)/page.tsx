@@ -1,4 +1,4 @@
-import { obtenerCatalogoFuego } from "@/lib/db";
+import { obtenerCatalogoFuego, visibleEnTienda } from "@/lib/db";
 import { obtenerLogoUrl } from "@/lib/admin-db";
 import { obtenerResenasVisibles } from "@/lib/resenas-db";
 import Hero from "@/components/Hero";
@@ -18,7 +18,7 @@ export default async function Home() {
     obtenerResenasVisibles(),
   ]);
 
-  const destacados = productos.filter((p) => p.destacado);
+  const destacados = productos.filter((p) => p.destacado && visibleEnTienda(p));
   const nombresProductos = Object.fromEntries(
     productos.map((p) => [p.id, p.nombre])
   );

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { obtenerProductoFuego } from "@/lib/db";
+import { obtenerProductoFuego, visibleEnTienda } from "@/lib/db";
 import { obtenerGaleriaProducto } from "@/lib/admin-db";
 import {
   obtenerResumenResenasDeProducto,
@@ -33,7 +33,7 @@ export async function generateMetadata(
   if (!Number.isInteger(idNumero)) return {};
 
   const producto = await obtenerProductoFuego(idNumero);
-  if (!producto) return {};
+  if (!producto || !visibleEnTienda(producto)) return {};
 
   // Tope de ~155 caracteres: es lo que Google suele mostrar de un
   // meta description antes de cortarlo — una descripción larga
@@ -64,7 +64,10 @@ export default async function ProductoPage(
   if (!Number.isInteger(idNumero)) notFound();
 
   const producto = await obtenerProductoFuego(idNumero);
-  if (!producto) notFound();
+  // Sin precio todavía en Contabilidad Lady = no visible al público
+  // (ver visibleEnTienda en db.ts) — se trata igual que "no existe",
+  // así alguien con el link viejo no llega a una ficha con "$0".
+  if (!producto || !visibleEnTienda(producto)) notFound();
 
   const personalizable = esPersonalizable(producto.id);
   const esVela = producto.subcategoria === "velas";
