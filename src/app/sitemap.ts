@@ -25,9 +25,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.5,
     },
-    // /politica-de-datos todavía vive en una rama sin fusionar
-    // (politica-de-tratamiento-de-datos) — se agrega acá cuando esa
-    // rama llegue a main, para no listar una URL que hoy da 404.
+    {
+      url: `${SITE_URL}/politica-de-datos`,
+      changeFrequency: "yearly",
+      priority: 0.2,
+    },
   ];
 
   const paginasProducto: MetadataRoute.Sitemap = productos.map((producto) => ({
