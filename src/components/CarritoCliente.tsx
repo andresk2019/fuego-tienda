@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { sendGAEvent } from "@next/third-parties/google";
 import { useCarrito } from "@/components/CarritoContext";
@@ -93,6 +93,27 @@ export default function CarritoCliente({
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
   const subtotal = totalCarrito(items);
   const envioGratis = subtotal >= configEnvio.gratisDesde;
+
+  // Evento estándar de GA4 — entrar al carrito con algo adentro es el
+  // paso "empieza a pagar" del embudo (ver producto → agregar al
+  // carrito → empezar a pagar → continuar_whatsapp). Se dispara una
+  // sola vez al entrar, no cada vez que cambia una cantidad o se
+  // llena un campo del formulario — por eso el arreglo de
+  // dependencias vacío es a propósito.
+  useEffect(() => {
+    if (items.length === 0) return;
+    sendGAEvent("event", "begin_checkout", {
+      currency: "COP",
+      value: subtotal,
+      items: items.map((item) => ({
+        item_id: String(item.productoId),
+        item_name: item.nombre,
+        price: item.precioUnitario,
+        quantity: item.cantidad,
+      })),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");

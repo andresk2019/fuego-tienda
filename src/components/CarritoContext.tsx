@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { sendGAEvent } from '@next/third-parties/google';
 import { claveItem, type ItemCarrito } from '@/lib/carrito';
 
 const CLAVE_LOCALSTORAGE = 'fuego-carrito';
@@ -57,6 +58,25 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
         );
       }
       return [...actuales, { ...nuevo, clave }];
+    });
+
+    // Único lugar donde de verdad se agrega algo al carrito (lo usan
+    // tanto AgregarAlCarrito.tsx como PersonalizarVela.tsx) — evento
+    // estándar de GA4 para poder armar el embudo completo (ver
+    // producto → agregar al carrito → empezar a pagar →
+    // continuar_whatsapp) y así ver dónde se cae la gente, no solo
+    // cuánta compra.
+    sendGAEvent('event', 'add_to_cart', {
+      currency: 'COP',
+      value: nuevo.precioUnitario * nuevo.cantidad,
+      items: [
+        {
+          item_id: String(nuevo.productoId),
+          item_name: nuevo.nombre,
+          price: nuevo.precioUnitario,
+          quantity: nuevo.cantidad,
+        },
+      ],
     });
   }, []);
 
