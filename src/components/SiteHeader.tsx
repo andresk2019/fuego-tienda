@@ -39,7 +39,7 @@ export default function SiteHeader() {
 
         <nav
           aria-label="Principal"
-          className="mt-6 flex flex-wrap justify-center gap-6 text-sm font-medium text-muted"
+          className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-muted"
         >
           {ENLACES_NAV.map((enlace) => (
             <Link
@@ -50,8 +50,14 @@ export default function SiteHeader() {
               {enlace.etiqueta}
             </Link>
           ))}
-          <FavoritosIndicador />
-          <CarritoIndicador />
+          {/* Favoritos y carrito van agrupados aparte, con una línea
+              divisoria — son acciones sobre la compra, no páginas del
+              sitio, así que no deberían mezclarse visualmente con el
+              resto de los enlaces (decisión del dueño, 2026-09-16). */}
+          <div className="flex items-center gap-5 border-l border-border pl-6">
+            <FavoritosIndicador />
+            <CarritoIndicador />
+          </div>
         </nav>
       </div>
     </header>
