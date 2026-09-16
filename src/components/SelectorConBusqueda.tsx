@@ -25,11 +25,24 @@ export default function SelectorConBusqueda({
   valor,
   onCambiar,
   placeholder = "Escribe para buscar...",
+  etiqueta,
+  compacto = false,
 }: {
   opciones: readonly string[];
   valor: string;
   onCambiar: (valor: string) => void;
   placeholder?: string;
+  // Nombre accesible del campo — sin esto, un lector de pantalla no
+  // distingue entre los ~20 campos idénticos "Buscar aroma..." que
+  // aparecen a la vez en el catálogo (uno por tarjeta, ver
+  // TarjetaProducto.tsx); con esto, cada uno se anuncia como "Aroma de
+  // <nombre del producto>".
+  etiqueta?: string;
+  // Versión más chica (texto e íconos más pequeños, menos relleno) —
+  // para usarlo dentro de espacios angostos como la tarjeta del
+  // catálogo (ver TarjetaProducto.tsx), donde el desplegable completo
+  // no cabría igual de cómodo que en un formulario de página.
+  compacto?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState(valor);
@@ -72,6 +85,7 @@ export default function SelectorConBusqueda({
         role="combobox"
         aria-expanded={abierto}
         aria-autocomplete="list"
+        aria-label={etiqueta}
         value={texto}
         placeholder={placeholder}
         // Selecciona todo el texto existente al enfocar — sin esto, el
@@ -114,7 +128,9 @@ export default function SelectorConBusqueda({
             setTexto(valor);
           }
         }}
-        className="w-full rounded-lg border border-border bg-background py-2 pr-9 pl-3 text-foreground placeholder:text-muted/60"
+        className={`w-full rounded-lg border border-border bg-background text-foreground placeholder:text-muted/60 ${
+          compacto ? "py-1.5 pr-7 pl-2 text-xs" : "py-2 pr-9 pl-3"
+        }`}
       />
 
       {/* Flecha clickeable (antes solo decorativa) — al hacer clic
@@ -125,7 +141,9 @@ export default function SelectorConBusqueda({
         aria-label={abierto ? "Cerrar lista de aromas" : "Abrir lista de aromas"}
         onMouseDown={(e) => e.preventDefault()} // no le quita el foco al input
         onClick={() => setAbierto((a) => !a)}
-        className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted transition-colors hover:text-foreground"
+        className={`absolute top-1/2 -translate-y-1/2 rounded text-muted transition-colors hover:text-foreground ${
+          compacto ? "right-1 p-0.5" : "right-2 p-1"
+        }`}
       >
         <svg
           viewBox="0 0 24 24"
@@ -134,7 +152,9 @@ export default function SelectorConBusqueda({
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`h-4 w-4 transition-transform ${abierto ? "rotate-180" : ""}`}
+          className={`transition-transform ${abierto ? "rotate-180" : ""} ${
+            compacto ? "h-3 w-3" : "h-4 w-4"
+          }`}
           aria-hidden="true"
         >
           <path d="m6 9 6 6 6-6" />
@@ -142,7 +162,11 @@ export default function SelectorConBusqueda({
       </button>
 
       {abierto && (
-        <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg">
+        <ul
+          className={`absolute z-10 mt-1 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg ${
+            compacto ? "max-h-40" : "max-h-48"
+          }`}
+        >
           {filtradas.length > 0 ? (
             filtradas.map((opcion, i) => (
               <li key={opcion}>
@@ -152,7 +176,9 @@ export default function SelectorConBusqueda({
                   // lista) antes de que el clic llegue a registrarse.
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => elegir(opcion)}
-                  className={`block w-full px-3 py-2 text-left text-sm transition-colors ${
+                  className={`block w-full text-left transition-colors ${
+                    compacto ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
+                  } ${
                     i === resaltado
                       ? "bg-ember/10 text-ember"
                       : "text-foreground hover:bg-surface-hover"
@@ -163,7 +189,9 @@ export default function SelectorConBusqueda({
               </li>
             ))
           ) : (
-            <li className="px-3 py-2 text-sm text-muted">
+            <li
+              className={`text-muted ${compacto ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
+            >
               Ningún aroma empieza así.
             </li>
           )}
