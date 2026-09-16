@@ -26,8 +26,12 @@ export default async function Home() {
   return (
     <>
       <Hero logoUrl={logoUrl} />
-      <BadgesConfianza />
+      {/* Los productos van antes que la franja de confianza (decisión
+          del dueño, 2026-09-16) — lo primero que debe saltar a la
+          vista después del banner de bienvenida son las velas, no el
+          texto institucional. */}
       <CarruselDestacados productos={destacados} />
+      <BadgesConfianza />
       <Resenas resenas={resenas} nombresProductos={nombresProductos} />
     </>
   );
