@@ -155,7 +155,7 @@ export default async function ProductoPage(
             </div>
           )}
 
-          <ResenasProducto resenas={resenas} />
+          <ResenasProducto resenas={resenas} productoId={producto.id} />
         </div>
       </div>
     </main>
