@@ -6,6 +6,7 @@ import type { ProductoCatalogo } from "@/lib/db";
 import { productoHref } from "@/lib/slug";
 import FotoProducto from "@/components/FotoProducto";
 import EstrellaIcon from "@/components/EstrellaIcon";
+import FavoritoBoton from "@/components/FavoritoBoton";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -75,10 +76,13 @@ export default function CarruselDestacados({
           className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {productos.map((producto) => (
-            <li key={producto.id} className="w-56 shrink-0 snap-start">
+            <li
+              key={producto.id}
+              className="relative w-56 shrink-0 snap-start"
+            >
               <Link
                 href={productoHref(producto)}
-                className="group relative flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-ember/60 hover:shadow-lg"
+                className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-ember/60 hover:shadow-lg"
               >
                 <span className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-full bg-ember px-2 py-1 text-[10px] font-semibold text-on-ember shadow-sm">
                   <EstrellaIcon llena className="h-3 w-3" />
@@ -97,6 +101,7 @@ export default function CarruselDestacados({
                   {formatoCOP.format(producto.precioVenta)}
                 </p>
               </Link>
+              <FavoritoBoton productoId={producto.id} />
             </li>
           ))}
         </ul>

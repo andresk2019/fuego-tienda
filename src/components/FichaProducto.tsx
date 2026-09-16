@@ -1,6 +1,7 @@
 import { nombreCategoria, type CategoriaSlug } from "@/lib/categorias";
 import type { ResumenResenas } from "@/lib/resenas-db";
 import EstrellaIcon from "@/components/EstrellaIcon";
+import FavoritoBoton from "@/components/FavoritoBoton";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -22,6 +23,7 @@ export default function FichaProducto({
   pocasUnidades,
   descripcion,
   resumenResenas,
+  productoId,
 }: {
   categoria: CategoriaSlug;
   nombre: string;
@@ -32,6 +34,10 @@ export default function FichaProducto({
   // Opcional: solo las velas con al menos una reseña asociada tienen
   // esto — ver obtenerResumenResenasDeProducto en resenas-db.ts.
   resumenResenas?: ResumenResenas | null;
+  // Si no se pasa, no se muestra el corazón de favoritos — caso del
+  // espejo de vista previa en /admin (ver SubirFotoForm.tsx), donde no
+  // hay un producto real al que marcar.
+  productoId?: number;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -39,7 +45,15 @@ export default function FichaProducto({
         {nombreCategoria(categoria)}
       </span>
 
-      <h1 className="font-serif text-3xl text-foreground">{nombre}</h1>
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="font-serif text-3xl text-foreground">{nombre}</h1>
+        {productoId !== undefined && (
+          <FavoritoBoton
+            productoId={productoId}
+            className="shrink-0 rounded-full p-2 text-ember transition-colors hover:bg-ember/10"
+          />
+        )}
+      </div>
 
       {resumenResenas && (
         <div className="-mt-2 flex items-center gap-1.5">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AriesIcon from "@/components/AriesIcon";
 import CarritoIndicador from "@/components/CarritoIndicador";
+import FavoritosIndicador from "@/components/FavoritosIndicador";
 import MenuMovil from "@/components/MenuMovil";
 import { ENLACES_NAV } from "@/lib/navegacion";
 
@@ -8,15 +9,19 @@ export default function SiteHeader() {
   return (
     <header className="border-b border-border px-6 py-4 md:py-14">
       {/* Fila compacta, solo en móvil: menú lateral a la izquierda,
-          marca al centro, carrito a la derecha. Los enlaces ya no se
-          apretujan aquí — viven en el panel de MenuMovil.tsx. */}
+          marca al centro, favoritos y carrito a la derecha. Los
+          enlaces ya no se apretujan aquí — viven en el panel de
+          MenuMovil.tsx. */}
       <div className="flex items-center justify-between md:hidden">
         <MenuMovil />
         <Link href="/" className="flex items-center gap-2">
           <AriesIcon className="h-6 w-6 text-ember" />
           <span className="font-serif text-lg text-foreground">Fuego</span>
         </Link>
-        <CarritoIndicador compacto />
+        <div className="flex items-center gap-3">
+          <FavoritosIndicador compacto />
+          <CarritoIndicador compacto />
+        </div>
       </div>
 
       {/* Header clásico, solo en escritorio: todo visible de una vez,
@@ -45,6 +50,7 @@ export default function SiteHeader() {
               {enlace.etiqueta}
             </Link>
           ))}
+          <FavoritosIndicador />
           <CarritoIndicador />
         </nav>
       </div>

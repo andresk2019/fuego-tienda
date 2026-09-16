@@ -114,6 +114,7 @@ export default async function ProductoPage(
             pocasUnidades={producto.pocasUnidades}
             descripcion={producto.descripcion}
             resumenResenas={resumenResenas}
+            productoId={producto.id}
           />
 
           {esVela && (

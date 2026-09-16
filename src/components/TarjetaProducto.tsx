@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import FotoProducto from "@/components/FotoProducto";
 import EstrellaIcon from "@/components/EstrellaIcon";
+import FavoritoBoton from "@/components/FavoritoBoton";
 import { useCarrito } from "@/components/CarritoContext";
 import { AROMAS_DISPONIBLES } from "@/lib/personalizacion";
 import type { ResumenResenas } from "@/lib/resenas-db";
@@ -87,12 +88,15 @@ export default function TarjetaProducto({
 
   const contenido = (
     <>
-      <FotoProducto
-        fotoUrl={fotoUrl}
-        alt={nombre}
-        sizes="(max-width: 640px) 45vw, 220px"
-        iconClassName="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember"
-      />
+      <div className="relative">
+        <FotoProducto
+          fotoUrl={fotoUrl}
+          alt={nombre}
+          sizes="(max-width: 640px) 45vw, 220px"
+          iconClassName="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember"
+        />
+        {productoId !== undefined && <FavoritoBoton productoId={productoId} />}
+      </div>
       <h2 className="font-serif text-lg text-foreground">{nombre}</h2>
       {resumenResenas && (
         <div className="-mt-1.5 flex items-center gap-1.5">
