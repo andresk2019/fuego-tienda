@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { CATEGORIAS, type CategoriaSlug } from "@/lib/categorias";
 import { esPersonalizable } from "@/lib/personalizacion";
 import type { ProductoCatalogo } from "@/lib/db";
@@ -146,17 +145,18 @@ export default function CatalogoFiltrable({
         <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
           {productosFiltrados.map((producto) => (
             <li key={producto.id}>
-              <Link href={productoHref(producto)} className="block h-full">
-                <TarjetaProducto
-                  nombre={producto.nombre}
-                  precioVenta={producto.precioVenta}
-                  fotoUrl={producto.fotoUrl}
-                  disponible={producto.disponible}
-                  pocasUnidades={producto.pocasUnidades}
-                  personalizable={esPersonalizable(producto.id)}
-                  resumenResenas={resumenResenasPorProducto[producto.id] ?? null}
-                />
-              </Link>
+              <TarjetaProducto
+                href={productoHref(producto)}
+                productoId={producto.id}
+                nombre={producto.nombre}
+                precioVenta={producto.precioVenta}
+                fotoUrl={producto.fotoUrl}
+                disponible={producto.disponible}
+                pocasUnidades={producto.pocasUnidades}
+                personalizable={esPersonalizable(producto.id)}
+                esVela={producto.subcategoria === "velas"}
+                resumenResenas={resumenResenasPorProducto[producto.id] ?? null}
+              />
             </li>
           ))}
         </ul>
