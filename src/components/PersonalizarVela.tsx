@@ -44,8 +44,10 @@ export default function PersonalizarVela({
     AROMAS_DISPONIBLES[0]
   );
   const [nombreSecreto, setNombreSecreto] = useState("");
-  const [agregado, setAgregado] = useState(false);
 
+  // La confirmación de que sí quedó agregado ahora la da el carrito
+  // lateral, que se abre solo desde agregar() (ver CarritoContext.tsx
+  // y CarritoLateral.tsx) — ya no hace falta un estado local aquí.
   function agregarPersonalizada() {
     agregar({
       productoId,
@@ -55,8 +57,6 @@ export default function PersonalizarVela({
       aroma: aromaElegido || undefined,
       nombreSecreto: nombreSecreto.trim() || undefined,
     });
-    setAgregado(true);
-    setTimeout(() => setAgregado(false), 2000);
   }
 
   return (
@@ -136,7 +136,7 @@ export default function PersonalizarVela({
               onClick={agregarPersonalizada}
               className="w-fit rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover"
             >
-              {agregado ? "¡Agregado!" : "Agregar al carrito"}
+              Agregar al carrito
             </button>
           )}
         </div>

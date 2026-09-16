@@ -18,6 +18,11 @@ type ContextoCarrito = {
   quitar: (clave: string) => void;
   actualizarCantidad: (clave: string, cantidad: number) => void;
   vaciar: () => void;
+  // Carrito lateral (ver CarritoLateral.tsx): se abre solo al agregar
+  // un producto, para confirmarle al cliente que sí quedó adentro sin
+  // sacarlo de la página donde estaba comprando.
+  abierto: boolean;
+  cerrarCarrito: () => void;
 };
 
 const CarritoContext = createContext<ContextoCarrito | null>(null);
@@ -25,6 +30,7 @@ const CarritoContext = createContext<ContextoCarrito | null>(null);
 export function CarritoProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<ItemCarrito[]>([]);
   const [cargado, setCargado] = useState(false);
+  const [abierto, setAbierto] = useState(false);
 
   // Carga lo que haya guardado de una visita anterior. Puede fallar
   // (ventana privada, navegador que bloquea storage) — en ese caso
@@ -60,6 +66,11 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
       return [...actuales, { ...nuevo, clave }];
     });
 
+    // Abre el carrito lateral para confirmar que sí quedó agregado —
+    // reemplaza el "¡Agregado!" que antes solo cambiaba el texto del
+    // botón (fácil de no notar); ahora se ve el producto en el panel.
+    setAbierto(true);
+
     // Único lugar donde de verdad se agrega algo al carrito (lo usan
     // tanto AgregarAlCarrito.tsx como PersonalizarVela.tsx) — evento
     // estándar de GA4 para poder armar el embudo completo (ver
@@ -93,10 +104,19 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const vaciar = useCallback(() => setItems([]), []);
+  const cerrarCarrito = useCallback(() => setAbierto(false), []);
 
   return (
     <CarritoContext.Provider
-      value={{ items, agregar, quitar, actualizarCantidad, vaciar }}
+      value={{
+        items,
+        agregar,
+        quitar,
+        actualizarCantidad,
+        vaciar,
+        abierto,
+        cerrarCarrito,
+      }}
     >
       {children}
     </CarritoContext.Provider>

@@ -34,3 +34,17 @@ export function totalCarrito(items: ItemCarrito[]): number {
 export function cantidadTotalCarrito(items: ItemCarrito[]): number {
   return items.reduce((suma, item) => suma + item.cantidad, 0);
 }
+
+// Línea de detalle de un item (aroma/color/nombre secreto) — la usan
+// tanto la página del carrito como el carrito lateral (ver
+// CarritoCliente.tsx y CarritoLateral.tsx), para no repetir la misma
+// lógica en los dos.
+export function detallesItem(item: ItemCarrito): string {
+  return [
+    item.aroma && `Aroma: ${item.aroma}`,
+    item.color && `Color: ${item.color}`,
+    item.nombreSecreto && `Nombre secreto: "${item.nombreSecreto}"`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
