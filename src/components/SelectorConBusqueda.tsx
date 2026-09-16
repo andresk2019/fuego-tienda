@@ -74,13 +74,25 @@ export default function SelectorConBusqueda({
         aria-autocomplete="list"
         value={texto}
         placeholder={placeholder}
-        onFocus={() => setAbierto(true)}
+        // Selecciona todo el texto existente al enfocar — sin esto, el
+        // valor ya elegido (ej. "Frutos Rojos") se quedaba tal cual y
+        // escribir para buscar uno nuevo lo agregaba al final ("Frutos
+        // Rojoslav" en vez de "lav"), así que nunca encontraba nada.
+        // Con el texto ya seleccionado, escribir lo reemplaza — como
+        // en cualquier buscador.
+        onFocus={(e) => {
+          setAbierto(true);
+          e.target.select();
+        }}
         // `onFocus` no se repite si el campo ya estaba enfocado (ej.
         // justo después de elegir una opción, el foco se queda en el
         // input a propósito — ver el onMouseDown de abajo). Sin esto,
         // un segundo clic sobre un campo ya enfocado no volvía a abrir
         // la lista y parecía un simple campo de texto trabado.
-        onClick={() => setAbierto(true)}
+        onClick={(e) => {
+          setAbierto(true);
+          e.currentTarget.select();
+        }}
         onChange={(e) => {
           setTexto(e.target.value);
           setAbierto(true);
