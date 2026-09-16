@@ -27,11 +27,19 @@ export default function FormularioQuienesSomos({
         rows={4}
       />
       <CampoTextoBloqueable
-        etiqueta="Nuestra misión"
-        valorInicial={contenidoInicial.mision}
+        etiqueta="Mensaje de la creadora"
+        valorInicial={contenidoInicial.mensajeFundadora}
         accion={guardarCampoContenidoQuienesSomos}
-        camposOcultos={{ campo: 'mision' }}
+        camposOcultos={{ campo: 'mensajeFundadora' }}
         rows={4}
+      />
+      <CampoTextoBloqueable
+        etiqueta="Nombre de la creadora"
+        valorInicial={contenidoInicial.nombreFundadora}
+        accion={guardarCampoContenidoQuienesSomos}
+        camposOcultos={{ campo: 'nombreFundadora' }}
+        placeholder="Ej. Laura Uchima"
+        rows={1}
       />
       <CampoTextoBloqueable
         etiqueta="Contacto"

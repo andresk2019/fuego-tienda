@@ -10,7 +10,12 @@ import {
 } from '@/lib/admin-db';
 import { limpiarUsuarioRed } from '@/lib/redes-sociales';
 
-const CAMPOS_VALIDOS: CampoQuienesSomos[] = ['historia', 'mision', 'contacto'];
+const CAMPOS_VALIDOS: CampoQuienesSomos[] = [
+  'historia',
+  'mensajeFundadora',
+  'nombreFundadora',
+  'contacto',
+];
 const REDES_VALIDAS: RedSocial[] = ['instagram', 'tiktok'];
 
 export type EstadoQuienesSomos = { error?: string; ok?: boolean } | undefined;

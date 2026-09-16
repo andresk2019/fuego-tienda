@@ -12,18 +12,21 @@ export const metadata = {
   description: "Quiénes somos — Fuego, velas artesanales.",
 };
 
-// El texto (historia, misión, contacto) se edita desde
-// /admin/quienes-somos y puede cambiar en cualquier momento, así que
-// nunca se sirve cacheado.
+// El texto (historia, mensaje de la creadora, contacto) se edita
+// desde /admin/quienes-somos y puede cambiar en cualquier momento, así
+// que nunca se sirve cacheado.
 export const dynamic = "force-dynamic";
 
 export default async function QuienesSomosPage() {
-  const [{ historia, mision, contacto }, redes, numeroWhatsApp] =
-    await Promise.all([
-      obtenerContenidoQuienesSomos(),
-      obtenerRedesSociales(),
-      obtenerNumeroWhatsApp(),
-    ]);
+  const [
+    { historia, mensajeFundadora, nombreFundadora, contacto },
+    redes,
+    numeroWhatsApp,
+  ] = await Promise.all([
+    obtenerContenidoQuienesSomos(),
+    obtenerRedesSociales(),
+    obtenerNumeroWhatsApp(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
@@ -46,12 +49,19 @@ export default async function QuienesSomosPage() {
           </p>
         </section>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="font-serif text-xl text-foreground">
-            Nuestra misión
-          </h2>
-          <p className="leading-relaxed whitespace-pre-line text-muted">
-            {mision}
+        {/* Reemplaza la antigua sección "Nuestra misión" (decisión del
+            dueño, 2026-09-16): un párrafo institucional de "misión" se
+            sentía frío — una reseña breve y personal de quien hace las
+            velas se lee más cercana. */}
+        <section className="flex flex-col gap-3 rounded-2xl border border-ember/20 bg-gradient-to-b from-ember/10 to-transparent p-6">
+          <span aria-hidden="true" className="font-serif text-5xl leading-none text-ember/30">
+            &ldquo;
+          </span>
+          <p className="-mt-4 font-serif text-lg leading-relaxed text-foreground italic whitespace-pre-line">
+            {mensajeFundadora}
+          </p>
+          <p className="text-sm font-semibold text-ember">
+            {nombreFundadora}, creadora de Fuego
           </p>
         </section>
 
