@@ -56,7 +56,7 @@ export default function CatalogoPorSeccion({
             type="button"
             onClick={() => elegirSeccion(seccion)}
             aria-pressed={seccionActiva.slug === seccion.slug}
-            className={`-mb-px border-b-2 pb-3 font-serif text-base transition-colors ${
+            className={`-mb-px border-b-2 pb-3 font-serif text-base font-semibold transition-colors ${
               seccionActiva.slug === seccion.slug
                 ? "border-ember text-foreground"
                 : "border-transparent text-muted hover:text-foreground"

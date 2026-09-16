@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Playfair_Display } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { CarritoProvider } from "@/components/CarritoContext";
+import { FavoritosProvider } from "@/components/FavoritosContext";
 import { SITE_URL } from "@/lib/site";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import "./globals.css";
@@ -48,7 +49,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <CarritoProvider>{children}</CarritoProvider>
+        <CarritoProvider>
+          <FavoritosProvider>{children}</FavoritosProvider>
+        </CarritoProvider>
       </body>
       <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />
     </html>
