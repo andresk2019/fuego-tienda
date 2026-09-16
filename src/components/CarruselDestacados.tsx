@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ProductoCatalogo } from "@/lib/db";
 import { productoHref } from "@/lib/slug";
 import FotoProducto from "@/components/FotoProducto";
+import EstrellaIcon from "@/components/EstrellaIcon";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -16,6 +17,13 @@ const formatoCOP = new Intl.NumberFormat("es-CO", {
 // de administración (checkbox "Destacar" en cada producto) — todavía
 // no hay ventas reales en la tienda para calcular esto solo, así que
 // es una selección manual.
+//
+// Va envuelto en su propia franja con fondo distinto (no el mismo
+// crema del resto de la página) y las tarjetas son más grandes que
+// las del catálogo — a propósito, para que sea lo primero que salte a
+// la vista después del banner de bienvenida, antes que la franja de
+// confianza (decisión del dueño, 2026-09-16: los productos deben
+// captar la atención primero).
 export default function CarruselDestacados({
   productos,
 }: {
@@ -26,61 +34,73 @@ export default function CarruselDestacados({
   if (productos.length === 0) return null;
 
   function desplazar(direccion: 1 | -1) {
-    listaRef.current?.scrollBy({ left: direccion * 260, behavior: "smooth" });
+    listaRef.current?.scrollBy({ left: direccion * 280, behavior: "smooth" });
   }
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-6 py-12">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-serif text-2xl text-foreground">
-          Las más vendidas
-        </h2>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => desplazar(-1)}
-            aria-label="Anterior"
-            className="rounded-full border border-border p-2 text-muted transition-colors hover:border-ember/60 hover:text-foreground"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            onClick={() => desplazar(1)}
-            aria-label="Siguiente"
-            className="rounded-full border border-border p-2 text-muted transition-colors hover:border-ember/60 hover:text-foreground"
-          >
-            →
-          </button>
-        </div>
-      </div>
-
-      <ul
-        ref={listaRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {productos.map((producto) => (
-          <li key={producto.id} className="w-48 shrink-0 snap-start">
-            <Link
-              href={productoHref(producto)}
-              className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover"
+    <section className="border-b border-border bg-gradient-to-b from-ember/10 via-ember/5 to-background px-6 py-14">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="mb-7 flex items-end justify-between gap-4">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ember/15 px-3 py-1 text-xs font-semibold tracking-wide text-ember uppercase">
+              <EstrellaIcon llena className="h-3.5 w-3.5" />
+              Elegidas por nuestros clientes
+            </span>
+            <h2 className="mt-3 font-serif text-3xl text-foreground">
+              Las más vendidas
+            </h2>
+          </div>
+          <div className="hidden shrink-0 gap-2 sm:flex">
+            <button
+              type="button"
+              onClick={() => desplazar(-1)}
+              aria-label="Anterior"
+              className="rounded-full border border-ember/30 bg-surface p-2.5 text-ember transition-colors hover:border-ember hover:bg-ember hover:text-on-ember"
             >
-              <FotoProducto
-                fotoUrl={producto.fotoUrl}
-                alt={producto.nombre}
-                sizes="160px"
-                iconClassName="h-5 w-5 text-ember/70 transition-colors group-hover:text-ember"
-              />
-              <h3 className="font-serif text-base text-foreground">
-                {producto.nombre}
-              </h3>
-              <p className="text-sm font-semibold text-foreground">
-                {formatoCOP.format(producto.precioVenta)}
-              </p>
-            </Link>
-          </li>
-        ))}
-      </ul>
+              ←
+            </button>
+            <button
+              type="button"
+              onClick={() => desplazar(1)}
+              aria-label="Siguiente"
+              className="rounded-full border border-ember/30 bg-surface p-2.5 text-ember transition-colors hover:border-ember hover:bg-ember hover:text-on-ember"
+            >
+              →
+            </button>
+          </div>
+        </div>
+
+        <ul
+          ref={listaRef}
+          className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {productos.map((producto) => (
+            <li key={producto.id} className="w-56 shrink-0 snap-start">
+              <Link
+                href={productoHref(producto)}
+                className="group relative flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-ember/60 hover:shadow-lg"
+              >
+                <span className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-full bg-ember px-2 py-1 text-[10px] font-semibold text-on-ember shadow-sm">
+                  <EstrellaIcon llena className="h-3 w-3" />
+                  Destacado
+                </span>
+                <FotoProducto
+                  fotoUrl={producto.fotoUrl}
+                  alt={producto.nombre}
+                  sizes="224px"
+                  iconClassName="h-6 w-6 text-ember/70 transition-colors group-hover:text-ember"
+                />
+                <h3 className="font-serif text-lg text-foreground">
+                  {producto.nombre}
+                </h3>
+                <p className="text-base font-semibold text-ember">
+                  {formatoCOP.format(producto.precioVenta)}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
