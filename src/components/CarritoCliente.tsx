@@ -11,12 +11,18 @@ import type { ProblemaStock } from "@/lib/db";
 import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
 import type { ConfigEnvio, ConfigCompra } from "@/lib/admin-db";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
+import SelectorConBusqueda from "@/components/SelectorConBusqueda";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,
 });
+
+// Lista plana de nombres de departamento, para el buscador (ver
+// SelectorConBusqueda) — se calcula una sola vez, UBICACIONES_COLOMBIA
+// no cambia en tiempo de ejecución.
+const DEPARTAMENTOS = UBICACIONES_COLOMBIA.map((d) => d.departamento);
 
 // `numero` puede venir vacío si el pedido no se alcanzó a registrar
 // (ver manejarContinuar) — el mensaje sigue armándose igual, solo sin
@@ -28,7 +34,6 @@ function construirMensajeWhatsApp(
   costoEnvio: number,
   zonaEnvio: ZonaEnvio,
   nombreCliente: string,
-  direccion: string,
   departamento: string,
   municipio: string,
   numero: string | null
@@ -46,7 +51,11 @@ function construirMensajeWhatsApp(
     ZONAS_ENVIO.find((z) => z.valor === zonaEnvio)?.etiqueta ?? "";
   const lineaEnvio =
     costoEnvio > 0 ? formatoCOP.format(costoEnvio) : "Gratis";
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nDirección de entrega: ${direccion}, ${municipio}, ${departamento}`;
+  // Ya no se pide la dirección exacta en el formulario (decisión del
+  // dueño, 2026-09-16) — el municipio/departamento alcanza para saber
+  // la zona y la tarifa; la calle y el barrio se coordinan directo por
+  // WhatsApp, donde de todas formas hay que confirmar el pedido.
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nEntrega en: ${municipio}, ${departamento}`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -107,7 +116,6 @@ export default function CarritoCliente({
 
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [direccion, setDireccion] = useState("");
   const [departamento, setDepartamento] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [aceptaPolitica, setAceptaPolitica] = useState(false);
@@ -200,7 +208,6 @@ export default function CarritoCliente({
       const resultado = await crearPedidoDesdeCarrito({
         clienteNombre: nombre,
         clienteTelefono: telefono,
-        clienteDireccion: direccion,
         clienteDepartamento: departamento,
         clienteMunicipio: municipio,
         aceptaTratamientoDatos: aceptaPolitica,
@@ -225,7 +232,6 @@ export default function CarritoCliente({
       costoEnvio,
       zonaEnvio,
       nombre,
-      direccion,
       departamento,
       municipio,
       numero
@@ -387,66 +393,43 @@ export default function CarritoCliente({
             />
           </label>
 
-          <div className="flex flex-wrap gap-3">
-            <label className="flex min-w-[140px] flex-1 flex-col gap-1">
-              <span className="text-xs font-medium text-foreground">
-                Departamento
-              </span>
-              <select
-                required
-                value={departamento}
-                onChange={(e) => {
-                  setDepartamento(e.target.value);
-                  setMunicipio("");
-                }}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              >
-                <option value="" disabled>
-                  Selecciona...
-                </option>
-                {UBICACIONES_COLOMBIA.map((d) => (
-                  <option key={d.departamento} value={d.departamento}>
-                    {d.departamento}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex min-w-[140px] flex-1 flex-col gap-1">
-              <span className="text-xs font-medium text-foreground">
-                Municipio
-              </span>
-              <select
-                required
-                disabled={!departamento}
-                value={municipio}
-                onChange={(e) => setMunicipio(e.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-60"
-              >
-                <option value="" disabled>
-                  {departamento ? "Selecciona..." : "Elige un departamento"}
-                </option>
-                {municipiosDisponibles.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1">
+          {/* Departamento y municipio agrupados en su propia caja, con
+              buscador en vez de un <select> nativo (mucho más cómodo
+              en departamentos con decenas de municipios, ej.
+              Antioquia) — antes iba seguido de "Dirección exacta"; ese
+              campo se quitó (decisión del dueño, 2026-09-16), la calle
+              y el barrio se confirman directo por WhatsApp. */}
+          <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
             <span className="text-xs font-medium text-foreground">
-              Dirección exacta
+              Ciudad de entrega
             </span>
-            <textarea
-              required
-              rows={2}
-              value={direccion}
-              onChange={(e) => setDireccion(e.target.value)}
-              placeholder="Calle, número, barrio y algún punto de referencia"
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
-            />
-          </label>
+            <div className="flex flex-wrap gap-3">
+              <div className="min-w-[140px] flex-1">
+                <SelectorConBusqueda
+                  opciones={DEPARTAMENTOS}
+                  valor={departamento}
+                  onCambiar={(valor) => {
+                    setDepartamento(valor);
+                    setMunicipio("");
+                  }}
+                  placeholder="Departamento..."
+                  etiqueta="Departamento"
+                />
+              </div>
+              <div className="min-w-[140px] flex-1">
+                <SelectorConBusqueda
+                  opciones={municipiosDisponibles}
+                  valor={municipio}
+                  onCambiar={setMunicipio}
+                  placeholder={
+                    departamento ? "Municipio..." : "Elige un departamento"
+                  }
+                  etiqueta="Municipio"
+                  deshabilitado={!departamento}
+                />
+              </div>
+            </div>
+          </div>
 
           <label className="flex items-start gap-2 text-xs text-muted">
             <input

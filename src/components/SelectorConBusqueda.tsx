@@ -27,6 +27,7 @@ export default function SelectorConBusqueda({
   placeholder = "Escribe para buscar...",
   etiqueta,
   compacto = false,
+  deshabilitado = false,
 }: {
   opciones: readonly string[];
   valor: string;
@@ -43,6 +44,10 @@ export default function SelectorConBusqueda({
   // catálogo (ver TarjetaProducto.tsx), donde el desplegable completo
   // no cabría igual de cómodo que en un formulario de página.
   compacto?: boolean;
+  // Ej. el selector de municipio antes de elegir un departamento (ver
+  // CarritoCliente.tsx) — no tiene sentido dejarlo abrir una lista
+  // vacía.
+  deshabilitado?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState(valor);
@@ -88,6 +93,7 @@ export default function SelectorConBusqueda({
         aria-label={etiqueta}
         value={texto}
         placeholder={placeholder}
+        disabled={deshabilitado}
         // Selecciona todo el texto existente al enfocar — sin esto, el
         // valor ya elegido (ej. "Frutos Rojos") se quedaba tal cual y
         // escribir para buscar uno nuevo lo agregaba al final ("Frutos
@@ -128,7 +134,7 @@ export default function SelectorConBusqueda({
             setTexto(valor);
           }
         }}
-        className={`w-full rounded-lg border border-border bg-background text-foreground placeholder:text-muted/60 ${
+        className={`w-full rounded-lg border border-border bg-background text-foreground placeholder:text-muted/60 disabled:cursor-not-allowed disabled:opacity-60 ${
           compacto ? "py-1.5 pr-7 pl-2 text-xs" : "py-2 pr-9 pl-3"
         }`}
       />
@@ -138,10 +144,11 @@ export default function SelectorConBusqueda({
       <button
         type="button"
         tabIndex={-1}
-        aria-label={abierto ? "Cerrar lista de aromas" : "Abrir lista de aromas"}
+        disabled={deshabilitado}
+        aria-label={abierto ? "Cerrar lista de opciones" : "Abrir lista de opciones"}
         onMouseDown={(e) => e.preventDefault()} // no le quita el foco al input
         onClick={() => setAbierto((a) => !a)}
-        className={`absolute top-1/2 -translate-y-1/2 rounded text-muted transition-colors hover:text-foreground ${
+        className={`absolute top-1/2 -translate-y-1/2 rounded text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed ${
           compacto ? "right-1 p-0.5" : "right-2 p-1"
         }`}
       >
@@ -161,7 +168,7 @@ export default function SelectorConBusqueda({
         </svg>
       </button>
 
-      {abierto && (
+      {abierto && !deshabilitado && (
         <ul
           className={`absolute z-10 mt-1 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg ${
             compacto ? "max-h-40" : "max-h-48"
@@ -192,7 +199,7 @@ export default function SelectorConBusqueda({
             <li
               className={`text-muted ${compacto ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"}`}
             >
-              Ningún aroma empieza así.
+              Ninguna opción empieza así.
             </li>
           )}
         </ul>

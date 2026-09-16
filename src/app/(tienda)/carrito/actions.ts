@@ -25,7 +25,6 @@ export type ResultadoCrearPedido = {
 export async function crearPedidoDesdeCarrito(datos: {
   clienteNombre: string;
   clienteTelefono: string;
-  clienteDireccion: string;
   clienteDepartamento: string;
   clienteMunicipio: string;
   aceptaTratamientoDatos: boolean;
@@ -33,13 +32,11 @@ export async function crearPedidoDesdeCarrito(datos: {
 }): Promise<ResultadoCrearPedido> {
   const clienteNombre = datos.clienteNombre.trim();
   const clienteTelefono = datos.clienteTelefono.trim();
-  const clienteDireccion = datos.clienteDireccion.trim();
   const clienteDepartamento = datos.clienteDepartamento.trim();
   const clienteMunicipio = datos.clienteMunicipio.trim();
 
   if (!clienteNombre) return { error: 'Escribe tu nombre.' };
   if (!clienteTelefono) return { error: 'Escribe tu número de WhatsApp.' };
-  if (!clienteDireccion) return { error: 'Escribe tu dirección de entrega.' };
   // Se valida contra la lista real de departamentos/municipios (no
   // solo que no vengan vacíos) — la zona de envío sale de este par,
   // así que no puede ser cualquier texto que mande el navegador (un
@@ -107,7 +104,11 @@ export async function crearPedidoDesdeCarrito(datos: {
     const { numero } = await crearPedido({
       clienteNombre,
       clienteTelefono,
-      clienteDireccion,
+      // Ya no se pide en el formulario (decisión del dueño,
+      // 2026-09-16) — la columna se deja vacía en vez de quitarla de
+      // la tabla, igual que quedaron vacíos los pedidos de ANTES de
+      // que este campo existiera (ver comentario en pedidos.ts).
+      clienteDireccion: '',
       clienteDepartamento,
       clienteMunicipio,
       items: datos.items,
