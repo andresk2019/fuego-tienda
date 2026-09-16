@@ -1,5 +1,6 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import CarritoLateral from "@/components/CarritoLateral";
 
 // Header/footer públicos — solo para las páginas de la tienda
 // (portada, catálogo, producto, quiénes somos, carrito). El panel de
@@ -17,6 +18,7 @@ export default function TiendaLayout({
       <SiteHeader />
       {children}
       <SiteFooter />
+      <CarritoLateral />
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { sendGAEvent } from "@next/third-parties/google";
 import { useCarrito } from "@/components/CarritoContext";
-import { totalCarrito, type ItemCarrito } from "@/lib/carrito";
+import { totalCarrito, detallesItem, type ItemCarrito } from "@/lib/carrito";
 import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
 import { UBICACIONES_COLOMBIA } from "@/lib/colombia-ubicaciones";
 import type { ProblemaStock } from "@/lib/db";
@@ -17,16 +17,6 @@ const formatoCOP = new Intl.NumberFormat("es-CO", {
   currency: "COP",
   maximumFractionDigits: 0,
 });
-
-function detallesItem(item: ItemCarrito): string {
-  return [
-    item.aroma && `Aroma: ${item.aroma}`,
-    item.color && `Color: ${item.color}`,
-    item.nombreSecreto && `Nombre secreto: "${item.nombreSecreto}"`,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
 
 // `numero` puede venir vacío si el pedido no se alcanzó a registrar
 // (ver manejarContinuar) — el mensaje sigue armándose igual, solo sin

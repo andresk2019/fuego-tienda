@@ -31,10 +31,12 @@ export default function AgregarAlCarrito({
   const { agregar } = useCarrito();
   const [cantidad, setCantidad] = useState(1);
   const [aromaElegido, setAromaElegido] = useState<string>(aromas?.[0] ?? '');
-  const [agregado, setAgregado] = useState(false);
 
   if (!disponible) return null;
 
+  // La confirmación de que sí quedó agregado ahora la da el carrito
+  // lateral, que se abre solo desde agregar() (ver CarritoContext.tsx
+  // y CarritoLateral.tsx) — ya no hace falta un estado local aquí.
   function manejarAgregar() {
     agregar({
       productoId,
@@ -43,8 +45,6 @@ export default function AgregarAlCarrito({
       cantidad,
       aroma: aromaElegido || undefined,
     });
-    setAgregado(true);
-    setTimeout(() => setAgregado(false), 2000);
   }
 
   return (
@@ -77,7 +77,7 @@ export default function AgregarAlCarrito({
           onClick={manejarAgregar}
           className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover"
         >
-          {agregado ? '¡Agregado!' : 'Agregar al carrito'}
+          Agregar al carrito
         </button>
       </div>
     </div>
