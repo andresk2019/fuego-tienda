@@ -132,6 +132,7 @@ export default async function ProductoPage(
               precioUnitario={producto.precioVenta}
               disponible={producto.disponible}
               descripcionesAromas={descripcionesAromas}
+              fotoUrl={producto.fotoUrl}
             />
           ) : (
             <div className="mt-2 border-t border-border pt-6">
@@ -143,6 +144,7 @@ export default async function ProductoPage(
                   disponible={producto.disponible}
                   aromas={esVela ? AROMAS_DISPONIBLES : undefined}
                   descripcionesAromas={descripcionesAromas}
+                  fotoUrl={producto.fotoUrl}
                 />
               ) : (
                 <p className="text-sm text-danger">

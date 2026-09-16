@@ -127,3 +127,26 @@ body {
 .animar-parpadeo {
   animation: parpadeo-llama 1.4s ease-in-out infinite;
 }
+
+/* Carrito lateral (CarritoLateral.tsx): cada producto entra con un
+   pequeño deslizamiento + aparición, en cascada (cada `<li>` recibe su
+   propio animation-delay por índice) — le da sensación de "vivo" al
+   panel en vez de aparecer todo de golpe. Como la animación corre solo
+   al MONTAR el elemento (la key de React es la clave del item), subir
+   o bajar la cantidad de un producto que ya estaba no la repite; solo
+   se ve en productos nuevos. El mismo truco (key distinta = nuevo
+   montaje) se reusa para el badge de cantidad y el subtotal, así se
+   nota el cambio con solo pasarle una key que cambie con el valor. */
+@keyframes entrada-item-carrito {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animar-entrada-carrito {
+  animation: entrada-item-carrito 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

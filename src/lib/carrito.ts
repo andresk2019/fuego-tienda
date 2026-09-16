@@ -10,6 +10,11 @@ export type ItemCarrito = {
   aroma?: string;
   color?: string;
   nombreSecreto?: string;
+  // Para mostrar una miniatura en el carrito lateral (ver
+  // CarritoLateral.tsx) — opcional porque el producto puede no tener
+  // foto todavía (se ve el ícono de llama por defecto, igual que en el
+  // catálogo).
+  fotoUrl?: string | null;
 };
 
 // Dos líneas del mismo producto con las mismas opciones se combinan
