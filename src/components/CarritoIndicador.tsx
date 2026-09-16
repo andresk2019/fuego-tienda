@@ -9,13 +9,21 @@ import CarritoIcon from '@/components/CarritoIcon';
 // texto como antes) — es el patrón que cualquiera reconoce de una
 // tienda online, y hace que el carrito "salte a la vista" apenas
 // tiene algo adentro.
-export default function CarritoIndicador() {
+export default function CarritoIndicador({
+  compacto = false,
+}: {
+  // Sin el texto "Carrito" al lado — para la barra superior de móvil
+  // (ver SiteHeader.tsx), donde solo cabe el ícono junto al menú y la
+  // marca.
+  compacto?: boolean;
+}) {
   const { items } = useCarrito();
   const cantidad = cantidadTotalCarrito(items);
 
   return (
     <Link
       href="/carrito"
+      aria-label="Ver carrito"
       className="flex items-center gap-1.5 transition-colors hover:text-foreground"
     >
       <span className="relative">
@@ -26,7 +34,7 @@ export default function CarritoIndicador() {
           </span>
         )}
       </span>
-      Carrito
+      {!compacto && "Carrito"}
     </Link>
   );
 }
