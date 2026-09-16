@@ -153,12 +153,24 @@ export async function crearResena(datos: {
   calificacion: number;
   // null = reseña general de la tienda, no de una vela en particular.
   productoId: number | null;
+  // Explícito (no se deja al DEFAULT true de la columna): el dueño
+  // cargándola a mano desde /admin ya la dio por buena (visible desde
+  // ya), pero una reseña enviada por un cliente desde la ficha del
+  // producto (ver (tienda)/productos/[id]/actions.ts) debe quedar
+  // oculta hasta que el dueño la revise y la marque como visible.
+  visible: boolean;
 }): Promise<void> {
   await asegurarEsquema();
   await getPool().query(
-    `INSERT INTO tienda_resenas (cliente_nombre, texto, calificacion, producto_id)
-     VALUES ($1, $2, $3, $4)`,
-    [datos.clienteNombre, datos.texto, datos.calificacion, datos.productoId]
+    `INSERT INTO tienda_resenas (cliente_nombre, texto, calificacion, producto_id, visible)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [
+      datos.clienteNombre,
+      datos.texto,
+      datos.calificacion,
+      datos.productoId,
+      datos.visible,
+    ]
   );
 }
 

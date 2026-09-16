@@ -42,7 +42,11 @@ export async function agregarResena(
   }
 
   try {
-    await crearResena({ clienteNombre, texto, calificacion, productoId });
+    // El dueño la carga a mano porque ya sabe que es buena (ej. algo
+    // que un cliente le escribió por WhatsApp) — visible desde ya, a
+    // diferencia de las que llegan por el formulario público (ver
+    // enviarResenaCliente en (tienda)/productos/[id]/actions.ts).
+    await crearResena({ clienteNombre, texto, calificacion, productoId, visible: true });
   } catch {
     return { error: 'No se pudo guardar la reseña. Intenta de nuevo.' };
   }

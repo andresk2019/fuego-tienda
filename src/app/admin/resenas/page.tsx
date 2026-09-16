@@ -37,8 +37,10 @@ export default async function ResenasPage() {
 
       <p className="mt-2 mb-6 text-sm text-muted">
         Cárgalas a mano cuando un cliente te escriba algo bueno (ej. por
-        WhatsApp) — solo las que marques &ldquo;Visible en portada&rdquo;
-        aparecen en el inicio de la tienda.
+        WhatsApp), o revisa las que los clientes ya enviaron ellos mismos
+        desde la ficha de cada producto — llegan marcadas
+        &ldquo;Pendiente de aprobación&rdquo; y no se publican hasta que
+        marques &ldquo;Visible en portada&rdquo;.
       </p>
 
       <ListaResenas resenas={resenas} productos={productosParaSelector} />

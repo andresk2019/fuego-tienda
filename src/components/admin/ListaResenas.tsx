@@ -8,37 +8,11 @@ import {
 } from '@/app/admin/resenas/actions';
 import { CALIFICACION_MAXIMA, type Resena } from '@/lib/resenas';
 import EstrellaIcon from '@/components/EstrellaIcon';
+import SelectorCalificacion from '@/components/SelectorCalificacion';
 
 const formatoFecha = new Intl.DateTimeFormat('es-CO', {
   dateStyle: 'medium',
 });
-
-// Selector de calificación con estrellas clickeables — más rápido que
-// escribir un número, y de una vez muestra cómo se va a ver en la
-// portada.
-function SelectorCalificacion({
-  valor,
-  onCambiar,
-}: {
-  valor: number;
-  onCambiar: (valor: number) => void;
-}) {
-  return (
-    <div className="flex gap-1 text-ember">
-      {Array.from({ length: CALIFICACION_MAXIMA }).map((_, i) => (
-        <button
-          key={i}
-          type="button"
-          onClick={() => onCambiar(i + 1)}
-          aria-label={`${i + 1} estrellas`}
-          className="cursor-pointer"
-        >
-          <EstrellaIcon llena={i < valor} className="h-5 w-5" />
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function FormularioNuevaResena({
   productos,
@@ -121,17 +95,34 @@ function FilaResena({
   const [confirmandoBorrar, setConfirmandoBorrar] = useState(false);
 
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
+    <li
+      className={`flex flex-col gap-2 rounded-xl border p-4 ${
+        resena.visible
+          ? 'border-border bg-surface'
+          : 'border-gold/40 bg-gold/5'
+      }`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex gap-0.5 text-ember">
-            {Array.from({ length: CALIFICACION_MAXIMA }).map((_, i) => (
-              <EstrellaIcon
-                key={i}
-                llena={i < resena.calificacion}
-                className="h-4 w-4"
-              />
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-0.5 text-ember">
+              {Array.from({ length: CALIFICACION_MAXIMA }).map((_, i) => (
+                <EstrellaIcon
+                  key={i}
+                  llena={i < resena.calificacion}
+                  className="h-4 w-4"
+                />
+              ))}
+            </div>
+            {/* No distingue por qué está oculta (el dueño la ocultó a
+                propósito vs. todavía no la revisa) — de cualquier
+                forma no está publicada, así que vale la pena que
+                salte a la vista en la lista. */}
+            {!resena.visible && (
+              <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase">
+                Pendiente de aprobación
+              </span>
+            )}
           </div>
           <p className="mt-1 text-sm text-foreground">{resena.texto}</p>
           <p className="mt-1 text-xs text-muted">
