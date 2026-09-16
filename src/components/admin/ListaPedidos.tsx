@@ -37,11 +37,12 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
           <p className="text-sm text-muted">
             {pedido.clienteNombre} · {pedido.clienteTelefono}
           </p>
-          {pedido.clienteDireccion && (
+          {(pedido.clienteDireccion || pedido.clienteMunicipio) && (
             <p className="text-sm text-muted">
               📍 {pedido.clienteDireccion}
+              {pedido.clienteDireccion && pedido.clienteMunicipio && ", "}
               {pedido.clienteMunicipio &&
-                `, ${pedido.clienteMunicipio}, ${pedido.clienteDepartamento}`}
+                `${pedido.clienteMunicipio}, ${pedido.clienteDepartamento}`}
             </p>
           )}
           <p className="text-xs text-muted">

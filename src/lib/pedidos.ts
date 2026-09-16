@@ -58,11 +58,12 @@ export type Pedido = {
   numero: string;
   clienteNombre: string;
   clienteTelefono: string;
-  // Vacío en pedidos de antes de este campo (no se pedía) — nunca
-  // undefined, para no tener que revisar en cada pantalla si existe.
-  // A partir de las 2 zonas de envío, esto es solo el detalle (calle,
-  // número, barrio); el departamento/municipio quedan aparte, ver
-  // abajo.
+  // Vacío en pedidos de antes de este campo (no se pedía) Y en
+  // pedidos de después de quitarlo del formulario (decisión del
+  // dueño, 2026-09-16: la calle/barrio se confirma directo por
+  // WhatsApp) — nunca undefined, para no tener que revisar en cada
+  // pantalla si existe. El departamento/municipio quedan aparte, ver
+  // abajo, y esos SÍ se siguen pidiendo.
   clienteDireccion: string;
   // null en pedidos de antes de que existiera el selector de
   // departamento/municipio (ver comentario de zonaEnvio más abajo).
