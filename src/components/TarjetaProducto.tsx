@@ -5,6 +5,7 @@ import { useState } from "react";
 import FotoProducto from "@/components/FotoProducto";
 import EstrellaIcon from "@/components/EstrellaIcon";
 import FavoritoBoton from "@/components/FavoritoBoton";
+import SelectorConBusqueda from "@/components/SelectorConBusqueda";
 import { useCarrito } from "@/components/CarritoContext";
 import { AROMAS_DISPONIBLES } from "@/lib/personalizacion";
 import type { ResumenResenas } from "@/lib/resenas-db";
@@ -153,18 +154,14 @@ export default function TarjetaProducto({
       {puedeAgregarRapido && (
         <div className="mt-auto flex flex-col gap-2">
           {esVela && (
-            <select
-              value={aroma}
-              onChange={(e) => setAroma(e.target.value)}
-              aria-label={`Aroma de ${nombre}`}
-              className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-foreground"
-            >
-              {AROMAS_DISPONIBLES.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
+            <SelectorConBusqueda
+              opciones={AROMAS_DISPONIBLES}
+              valor={aroma}
+              onCambiar={setAroma}
+              placeholder="Buscar aroma..."
+              etiqueta={`Aroma de ${nombre}`}
+              compacto
+            />
           )}
           <button
             type="button"
