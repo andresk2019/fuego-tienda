@@ -20,8 +20,11 @@ type ContextoCarrito = {
   vaciar: () => void;
   // Carrito lateral (ver CarritoLateral.tsx): se abre solo al agregar
   // un producto, para confirmarle al cliente que sí quedó adentro sin
-  // sacarlo de la página donde estaba comprando.
+  // sacarlo de la página donde estaba comprando. También se puede
+  // abrir a mano desde el botón flotante (ver CarritoFlotante.tsx),
+  // para verlo en cualquier momento sin haber agregado nada nuevo.
   abierto: boolean;
+  abrirCarrito: () => void;
   cerrarCarrito: () => void;
 };
 
@@ -104,6 +107,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const vaciar = useCallback(() => setItems([]), []);
+  const abrirCarrito = useCallback(() => setAbierto(true), []);
   const cerrarCarrito = useCallback(() => setAbierto(false), []);
 
   return (
@@ -115,6 +119,7 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
         actualizarCantidad,
         vaciar,
         abierto,
+        abrirCarrito,
         cerrarCarrito,
       }}
     >

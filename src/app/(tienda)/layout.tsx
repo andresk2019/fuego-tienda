@@ -1,6 +1,7 @@
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import CarritoLateral from "@/components/CarritoLateral";
+import CarritoFlotante from "@/components/CarritoFlotante";
 import WhatsAppFlotante from "@/components/WhatsAppFlotante";
 import { obtenerNumeroWhatsApp } from "@/lib/admin-db";
 
@@ -31,6 +32,7 @@ export default async function TiendaLayout({
       {children}
       <SiteFooter />
       <CarritoLateral />
+      <CarritoFlotante />
       <WhatsAppFlotante numeroWhatsApp={numeroWhatsApp} />
     </>
   );
