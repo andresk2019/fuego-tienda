@@ -242,11 +242,18 @@ export async function guardarConfigCompra(config: ConfigCompra): Promise<void> {
   );
 }
 
-// Texto de "Quiénes somos" (historia, misión, contacto) — antes vivía
-// escrito directo en el archivo de la página, marcado como "contenido
-// de prueba" mientras el dueño definía el texto real. Ahora se guarda
-// en tienda_config (mismo patrón que el logo y el número de
-// WhatsApp), editable desde /admin/quienes-somos.
+// Texto de "Quiénes somos" (historia, mensaje de la creadora, contacto)
+// — antes vivía escrito directo en el archivo de la página, marcado
+// como "contenido de prueba" mientras el dueño definía el texto real.
+// Ahora se guarda en tienda_config (mismo patrón que el logo y el
+// número de WhatsApp), editable desde /admin/quienes-somos.
+//
+// La sección "Nuestra misión" se reemplazó por una reseña breve en
+// primera persona de quien creó Fuego (decisión del dueño,
+// 2026-09-16) — se ve más cercana que un párrafo institucional de
+// "misión". `mensajeFundadora` y `nombreFundadora` van sueltos (no un
+// solo bloque de texto) para poder mostrar el nombre con su propio
+// estilo en la tarjeta de la reseña (ver quienes-somos/page.tsx).
 //
 // El valor por defecto es el mismo texto de relleno que ya se
 // mostraba antes de este cambio — así la página no se queda vacía
@@ -254,22 +261,25 @@ export async function guardarConfigCompra(config: ConfigCompra): Promise<void> {
 // el texto real todavía.
 export type ContenidoQuienesSomos = {
   historia: string;
-  mision: string;
+  mensajeFundadora: string;
+  nombreFundadora: string;
   contacto: string;
 };
 
 const CONTENIDO_QUIENES_SOMOS_POR_DEFECTO: ContenidoQuienesSomos = {
   historia:
     'Este es un texto de prueba. Aquí va la historia real de Fuego: cómo empezó la marca, quién la hace y qué la hace especial. Reemplazar por el contenido definitivo.',
-  mision:
-    'Otro texto de prueba. Aquí puede ir qué hace únicas a las velas de Fuego: materiales, proceso artesanal, valores de la marca.',
+  mensajeFundadora:
+    'Este es un texto de prueba. Aquí puede ir un mensaje breve y personal contando cómo empezó Fuego, qué te inspiró a crearlo y qué le pones a cada vela. Reemplazar por tus propias palabras desde este mismo panel.',
+  nombreFundadora: 'Nombre de la creadora',
   contacto:
     'Texto de prueba también — aquí podría ir el WhatsApp, redes sociales o correo de contacto de Fuego, más adelante.',
 };
 
 const CLAVES_QUIENES_SOMOS = {
   historia: 'quienes_somos_historia',
-  mision: 'quienes_somos_mision',
+  mensajeFundadora: 'quienes_somos_mensaje_fundadora',
+  nombreFundadora: 'quienes_somos_nombre_fundadora',
   contacto: 'quienes_somos_contacto',
 } as const;
 
@@ -287,9 +297,12 @@ export async function obtenerContenidoQuienesSomos(): Promise<ContenidoQuienesSo
     historia:
       guardado[CLAVES_QUIENES_SOMOS.historia] ||
       CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.historia,
-    mision:
-      guardado[CLAVES_QUIENES_SOMOS.mision] ||
-      CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.mision,
+    mensajeFundadora:
+      guardado[CLAVES_QUIENES_SOMOS.mensajeFundadora] ||
+      CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.mensajeFundadora,
+    nombreFundadora:
+      guardado[CLAVES_QUIENES_SOMOS.nombreFundadora] ||
+      CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.nombreFundadora,
     contacto:
       guardado[CLAVES_QUIENES_SOMOS.contacto] ||
       CONTENIDO_QUIENES_SOMOS_POR_DEFECTO.contacto,
