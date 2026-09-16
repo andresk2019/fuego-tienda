@@ -12,6 +12,7 @@ export default function AgregarAlCarrito({
   disponible,
   aromas,
   descripcionesAromas,
+  fotoUrl,
 }: {
   productoId: number;
   nombre: string;
@@ -27,6 +28,9 @@ export default function AgregarAlCarrito({
   // /admin/aromas), para mostrar la del aroma elegido justo debajo
   // del selector — ver DescripcionAroma.tsx.
   descripcionesAromas?: Record<string, string>;
+  // Para que el carrito lateral pueda mostrar una miniatura (ver
+  // CarritoLateral.tsx).
+  fotoUrl?: string | null;
 }) {
   const { agregar } = useCarrito();
   const [cantidad, setCantidad] = useState(1);
@@ -44,6 +48,7 @@ export default function AgregarAlCarrito({
       precioUnitario,
       cantidad,
       aroma: aromaElegido || undefined,
+      fotoUrl,
     });
   }
 

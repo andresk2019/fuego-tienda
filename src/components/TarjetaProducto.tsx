@@ -81,6 +81,7 @@ export default function TarjetaProducto({
       precioUnitario: precioVenta,
       cantidad: 1,
       aroma: esVela ? aroma : undefined,
+      fotoUrl,
     });
   }
 

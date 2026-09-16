@@ -29,6 +29,7 @@ export default function PersonalizarVela({
   precioUnitario,
   disponible,
   descripcionesAromas,
+  fotoUrl,
 }: {
   productoId: number;
   nombre: string;
@@ -37,6 +38,9 @@ export default function PersonalizarVela({
   // Descripción de cada aroma (la carga el dueño en /admin/aromas) —
   // ver DescripcionAroma.tsx.
   descripcionesAromas?: Record<string, string>;
+  // Para que el carrito lateral pueda mostrar una miniatura (ver
+  // CarritoLateral.tsx).
+  fotoUrl?: string | null;
 }) {
   const { agregar } = useCarrito();
   const [modo, setModo] = useState<"stock" | "personalizar">("stock");
@@ -56,6 +60,7 @@ export default function PersonalizarVela({
       cantidad: 1,
       aroma: aromaElegido || undefined,
       nombreSecreto: nombreSecreto.trim() || undefined,
+      fotoUrl,
     });
   }
 
@@ -91,6 +96,7 @@ export default function PersonalizarVela({
           disponible={disponible}
           aromas={AROMAS_DISPONIBLES}
           descripcionesAromas={descripcionesAromas}
+          fotoUrl={fotoUrl}
         />
       )}
 
