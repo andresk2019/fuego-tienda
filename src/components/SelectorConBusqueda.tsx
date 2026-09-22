@@ -191,12 +191,16 @@ export default function SelectorConBusqueda({
                   // lista) antes de que el clic llegue a registrarse.
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => elegir(opcion)}
+                  // El resaltado (fondo naranja) antes solo seguía las
+                  // flechas del teclado y se quedaba fijo en el índice
+                  // 0 aunque el mouse pasara por otras opciones — con
+                  // esto también sigue al mouse, para que se vea
+                  // claramente cuál opción se está a punto de elegir.
+                  onMouseEnter={() => setResaltado(i)}
                   className={`block w-full cursor-pointer text-left transition-colors ${
                     compacto ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
                   } ${
-                    i === resaltado
-                      ? "bg-ember/10 text-ember"
-                      : "text-foreground hover:bg-surface-hover"
+                    i === resaltado ? "bg-ember/10 text-ember" : "text-foreground"
                   }`}
                 >
                   {opcion}
