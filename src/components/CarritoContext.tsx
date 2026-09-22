@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { sendGAEvent } from '@next/third-parties/google';
 import { claveItem, type ItemCarrito } from '@/lib/carrito';
+import { obtenerFotosProductosVigentes } from '@/app/(tienda)/carrito/actions';
 
 const CLAVE_LOCALSTORAGE = 'fuego-carrito';
 
@@ -47,6 +48,31 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     }
     setCargado(true);
   }, []);
+
+  // La foto de cada item quedó "congelada" en localStorage desde el
+  // momento en que se agregó (ver ItemCarrito en lib/carrito.ts) — si
+  // el dueño subió o cambió la foto después, el carrito se quedaba
+  // pegado con la vieja. Al cargar, se refresca contra la foto vigente
+  // de cada producto; si el productoId ya no tiene foto (o nunca la
+  // tuvo), queda en null igual que en el catálogo.
+  useEffect(() => {
+    if (!cargado || items.length === 0) return;
+    obtenerFotosProductosVigentes()
+      .then((fotos) => {
+        setItems((actuales) =>
+          actuales.map((item) =>
+            item.fotoUrl === (fotos[item.productoId] ?? null)
+              ? item
+              : { ...item, fotoUrl: fotos[item.productoId] ?? null }
+          )
+        );
+      })
+      .catch(() => {
+        // sin conexión momentánea: el carrito sigue con la foto que
+        // ya tenía, no vale la pena bloquear nada por esto.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargado]);
 
   useEffect(() => {
     if (!cargado) return; // evita pisar lo guardado con [] antes de cargarlo

@@ -2,9 +2,23 @@
 
 import { validarStockCarrito, calcularSubtotalReal, type ProblemaStock } from '@/lib/db';
 import { crearPedido } from '@/lib/pedidos-db';
-import { obtenerConfigEnvio } from '@/lib/admin-db';
+import { obtenerConfigEnvio, obtenerMetaDeProductos } from '@/lib/admin-db';
 import { determinarZonaEnvio, type ItemPedido } from '@/lib/pedidos';
 import { UBICACIONES_COLOMBIA } from '@/lib/colombia-ubicaciones';
+
+// El carrito guarda la foto de cada producto "congelada" en el
+// momento en que se agrega (ver ItemCarrito en lib/carrito.ts),
+// porque vive en localStorage y no puede consultar la base de datos
+// por su cuenta. Si el dueño sube o cambia la foto DESPUÉS de que un
+// cliente ya agregó ese producto, el carrito se queda con la foto
+// vieja (o sin foto) hasta que algo la actualice — ver
+// CarritoContext.tsx, que llama esto al cargar el carrito guardado.
+export async function obtenerFotosProductosVigentes(): Promise<
+  Record<number, string | null>
+> {
+  const { fotos } = await obtenerMetaDeProductos();
+  return fotos;
+}
 
 export type ResultadoCrearPedido = {
   error?: string;
