@@ -5,9 +5,10 @@ export type SubcategoriaSlug =
   | "velas"
   | "difusores"
   | "sales-relajantes"
-  | "exfoliantes";
+  | "exfoliantes"
+  | "accesorios";
 
-export type SeccionSlug = "aromas-hogar" | "cuidado-cuerpo";
+export type SeccionSlug = "aromas-hogar" | "cuidado-cuerpo" | "otros-productos";
 
 export const SECCIONES: {
   slug: SeccionSlug;
@@ -30,6 +31,16 @@ export const SECCIONES: {
       { slug: "exfoliantes", nombre: "Exfoliantes" },
     ],
   },
+  // Para lo que no es una vela ni tiene aroma propio (fósforos,
+  // apagavelas, pebeteros, etc. — pedido explícito del dueño,
+  // 2026-09-22): antes caían por defecto en "velas" solo por no estar
+  // mapeados, lo que además les mostraba de forma incorrecta el
+  // selector de aroma (ver esVela más abajo).
+  {
+    slug: "otros-productos",
+    nombre: "Otros Productos",
+    subcategorias: [{ slug: "accesorios", nombre: "Accesorios" }],
+  },
 ];
 
 // id de `inventario` -> subcategoría. Los primeros productos reales
@@ -49,6 +60,7 @@ const SUBCATEGORIA_POR_ID: Record<number, SubcategoriaSlug> = {
   34: "sales-relajantes", // sal relajante
   35: "difusores", // difusor
   36: "exfoliantes", // exfoliante
+  39: "accesorios", // Fósforos
 };
 
 export function subcategoriaDeProducto(id: number): SubcategoriaSlug {
