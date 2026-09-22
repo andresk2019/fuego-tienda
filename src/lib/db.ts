@@ -19,6 +19,7 @@ import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
 import { subcategoriaDeProducto, type SubcategoriaSlug } from './secciones';
 import { obtenerMetaDeProductos, type MetaProductos } from './admin-db';
+import { formatearNombreProducto } from './texto';
 
 // DTO (Data Transfer Object): solo los campos seguros para mostrar en
 // público. A propósito NO incluye `costo_unitario` (margen/costo
@@ -66,7 +67,10 @@ function filaAProducto(
   const descripcion = meta.descripciones[r.id] ?? descripcionDeProducto(r.id, categoria);
   return {
     id: r.id,
-    nombre: r.nombre,
+    // Contabilidad Lady no tiene un criterio fijo de mayúsculas para
+    // el nombre ("vela chispa", "EDICION MADRES", etc.) — se formatea
+    // solo para mostrarlo, nunca se reescribe en la base de datos.
+    nombre: formatearNombreProducto(r.nombre),
     precioVenta: Number(r.precio_venta),
     unidad: r.unidad,
     disponible: cantidad > 0,
