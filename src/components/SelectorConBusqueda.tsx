@@ -169,8 +169,16 @@ export default function SelectorConBusqueda({
       </button>
 
       {abierto && !deshabilitado && (
+        // z-30 (no z-10): en la tarjeta del catálogo, este desplegable
+        // vive dentro de una tarjeta y puede caer visualmente sobre la
+        // tarjeta de al lado o de abajo — con el mismo z-10 que el
+        // corazón de favoritos (ver FavoritoBoton.tsx), quien ganaba
+        // el empate era quien apareciera después en el HTML (la
+        // tarjeta siguiente), tapando el desplegable justo abierto y
+        // haciendo que un clic en una opción de aroma en realidad le
+        // diera al corazón de esa otra tarjeta.
         <ul
-          className={`absolute z-10 mt-1 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg ${
+          className={`absolute z-30 mt-1 w-full overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg ${
             compacto ? "max-h-40" : "max-h-48"
           }`}
         >
