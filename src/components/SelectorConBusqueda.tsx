@@ -148,7 +148,7 @@ export default function SelectorConBusqueda({
         aria-label={abierto ? "Cerrar lista de opciones" : "Abrir lista de opciones"}
         onMouseDown={(e) => e.preventDefault()} // no le quita el foco al input
         onClick={() => setAbierto((a) => !a)}
-        className={`absolute top-1/2 -translate-y-1/2 rounded text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed ${
+        className={`absolute top-1/2 -translate-y-1/2 cursor-pointer rounded text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed ${
           compacto ? "right-1 p-0.5" : "right-2 p-1"
         }`}
       >
@@ -191,7 +191,7 @@ export default function SelectorConBusqueda({
                   // lista) antes de que el clic llegue a registrarse.
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => elegir(opcion)}
-                  className={`block w-full text-left transition-colors ${
+                  className={`block w-full cursor-pointer text-left transition-colors ${
                     compacto ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
                   } ${
                     i === resaltado
