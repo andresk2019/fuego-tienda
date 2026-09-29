@@ -6,13 +6,27 @@ import MenuMovil from "@/components/MenuMovil";
 import { ENLACES_NAV } from "@/lib/navegacion";
 
 export default function SiteHeader() {
+  // Ninguna de las 2 barras de abajo puede vivir anidada dentro de un
+  // <header> propio: `position: sticky` solo se queda pegado
+  // mientras el CONTENEDOR DIRECTO del elemento siga a la vista — un
+  // <header> que solo envuelve el logo/lema (un bloque bajito) se
+  // termina de desplazar casi enseguida, así que el sticky se
+  // "soltaba" apenas se bajaba un poco. Al quedar como hermanas
+  // sueltas directas de <body> (que sí mide lo que mide toda la
+  // página), tienen de sobra dónde quedarse fijas mientras se
+  // recorre el resto del catálogo.
   return (
-    <header className="border-b border-border px-6 py-4 md:py-14">
+    <>
       {/* Fila compacta, solo en móvil: menú lateral a la izquierda,
           marca al centro, favoritos y carrito a la derecha. Los
           enlaces ya no se apretujan aquí — viven en el panel de
-          MenuMovil.tsx. */}
-      <div className="flex items-center justify-between md:hidden">
+          MenuMovil.tsx.
+          `sticky top-0`: antes, al bajar a ver el catálogo, esta fila
+          (y con ella el botón del menú, favoritos y carrito) se
+          perdía de vista y había que volver a subir hasta el inicio
+          para acceder a cualquiera de los 3 — ahora se queda fija
+          arriba todo el tiempo. */}
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background px-6 py-4 md:hidden">
         <MenuMovil />
         <Link href="/" className="flex items-center gap-2">
           <AriesIcon className="h-6 w-6 text-ember" />
@@ -24,9 +38,11 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {/* Header clásico, solo en escritorio: todo visible de una vez,
-          sin necesidad de un menú lateral. */}
-      <div className="hidden text-center md:block">
+      {/* Bloque de marca, solo en escritorio (logo, nombre, lema): se
+          ve una sola vez arriba de todo y se pierde de vista al
+          bajar, a propósito — lo que se queda fijo es solo el <nav>
+          de aquí abajo, sin arrastrar este logo grande con él. */}
+      <div className="hidden px-6 pt-14 pb-6 text-center md:block">
         <Link href="/" className="mx-auto flex flex-col items-center gap-3">
           <AriesIcon className="h-8 w-8 text-ember" />
           <h1 className="font-serif text-4xl tracking-tight text-foreground">
@@ -36,30 +52,33 @@ export default function SiteHeader() {
             Velas artesanales
           </p>
         </Link>
-
-        <nav
-          aria-label="Principal"
-          className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-muted"
-        >
-          {ENLACES_NAV.map((enlace) => (
-            <Link
-              key={enlace.href}
-              href={enlace.href}
-              className="transition-colors hover:text-foreground"
-            >
-              {enlace.etiqueta}
-            </Link>
-          ))}
-          {/* Favoritos y carrito van agrupados aparte, con una línea
-              divisoria — son acciones sobre la compra, no páginas del
-              sitio, así que no deberían mezclarse visualmente con el
-              resto de los enlaces (decisión del dueño, 2026-09-16). */}
-          <div className="flex items-center gap-5 border-l border-border pl-6">
-            <FavoritosIndicador />
-            <CarritoIndicador />
-          </div>
-        </nav>
       </div>
-    </header>
+
+      {/* <nav> de escritorio: sticky por su cuenta, así el cliente
+          siempre tiene a mano el menú, favoritos y carrito sin tener
+          que subir hasta el inicio de la página. */}
+      <nav
+        aria-label="Principal"
+        className="sticky top-0 z-30 hidden flex-wrap items-center justify-center gap-6 border-b border-border bg-background px-6 py-4 text-sm font-medium text-muted md:flex"
+      >
+        {ENLACES_NAV.map((enlace) => (
+          <Link
+            key={enlace.href}
+            href={enlace.href}
+            className="transition-colors hover:text-foreground"
+          >
+            {enlace.etiqueta}
+          </Link>
+        ))}
+        {/* Favoritos y carrito van agrupados aparte, con una línea
+            divisoria — son acciones sobre la compra, no páginas del
+            sitio, así que no deberían mezclarse visualmente con el
+            resto de los enlaces (decisión del dueño, 2026-09-16). */}
+        <div className="flex items-center gap-5 border-l border-border pl-6">
+          <FavoritosIndicador />
+          <CarritoIndicador />
+        </div>
+      </nav>
+    </>
   );
 }
