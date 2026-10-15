@@ -66,7 +66,7 @@ export default async function AdminPage() {
         <h1 className="font-serif text-2xl text-foreground">
           Panel de administración
         </h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1">
           <Link
             href="/admin/pedidos"
             className="text-sm text-muted transition-colors hover:text-foreground"
@@ -78,6 +78,12 @@ export default async function AdminPage() {
             className="text-sm text-muted transition-colors hover:text-foreground"
           >
             Reseñas
+          </Link>
+          <Link
+            href="/admin/promociones"
+            className="text-sm text-muted transition-colors hover:text-foreground"
+          >
+            Promociones
           </Link>
           <Link
             href="/admin/aromas"

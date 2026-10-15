@@ -62,6 +62,18 @@ export async function subirFotoGaleriaAStorage(
   return subirArchivo(`productos/${productoId}-galeria-${sufijo}.${extension}`, archivo);
 }
 
+// Imagen de una promoción (banner). Cada promo lleva su propia imagen
+// con ruta única, así que cambiar o borrar una promo nunca pisa la de
+// otra. La extensión sale del tipo real del archivo (ya validado por
+// quien llama), no del nombre que trae.
+export async function subirImagenPromocionAStorage(
+  archivo: File,
+  extension: string
+): Promise<string> {
+  const sufijo = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  return subirArchivo(`promociones/${sufijo}.${extension}`, archivo);
+}
+
 export async function subirLogoAStorage(archivo: File): Promise<string> {
   const extension = (archivo.name.split('.').pop() || 'png').toLowerCase();
   return subirArchivo(`sitio/logo.${extension}`, archivo);
