@@ -1,7 +1,9 @@
 import { obtenerCatalogoFuego, visibleEnTienda } from "@/lib/db";
 import { obtenerLogoUrl } from "@/lib/admin-db";
 import { obtenerResenasVisibles } from "@/lib/resenas-db";
+import { obtenerPromocionesPortada } from "@/lib/promociones-db";
 import Hero from "@/components/Hero";
+import BannersPromocion from "@/components/BannersPromocion";
 import BadgesConfianza from "@/components/BadgesConfianza";
 import CarruselDestacados from "@/components/CarruselDestacados";
 import Resenas from "@/components/Resenas";
@@ -12,10 +14,11 @@ import Resenas from "@/components/Resenas";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [productos, logoUrl, resenas] = await Promise.all([
+  const [productos, logoUrl, resenas, promocionesPortada] = await Promise.all([
     obtenerCatalogoFuego(),
     obtenerLogoUrl(),
     obtenerResenasVisibles(),
+    obtenerPromocionesPortada(),
   ]);
 
   const destacados = productos.filter((p) => p.destacado && visibleEnTienda(p));
@@ -26,6 +29,7 @@ export default async function Home() {
   return (
     <>
       <Hero logoUrl={logoUrl} />
+      <BannersPromocion promociones={promocionesPortada} />
       {/* Los productos van antes que la franja de confianza (decisión
           del dueño, 2026-09-16) — lo primero que debe saltar a la
           vista después del banner de bienvenida son las velas, no el

@@ -3,7 +3,9 @@ import SiteFooter from "@/components/SiteFooter";
 import CarritoLateral from "@/components/CarritoLateral";
 import CarritoFlotante from "@/components/CarritoFlotante";
 import WhatsAppFlotante from "@/components/WhatsAppFlotante";
+import FranjaPromocion from "@/components/FranjaPromocion";
 import { obtenerNumeroWhatsApp } from "@/lib/admin-db";
+import { obtenerPromocionFranja } from "@/lib/promociones-db";
 
 // Header/footer públicos — solo para las páginas de la tienda
 // (portada, catálogo, producto, quiénes somos, carrito). El panel de
@@ -24,10 +26,14 @@ export default async function TiendaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const numeroWhatsApp = await obtenerNumeroWhatsApp();
+  const [numeroWhatsApp, promocionFranja] = await Promise.all([
+    obtenerNumeroWhatsApp(),
+    obtenerPromocionFranja(),
+  ]);
 
   return (
     <>
+      <FranjaPromocion promocion={promocionFranja} />
       <SiteHeader />
       {children}
       <SiteFooter />
