@@ -37,7 +37,9 @@ export default async function AdminPage() {
     configCompra,
     galeriasTodas,
   ] = await Promise.all([
-    obtenerCatalogoFuego(),
+    // El panel ve el precio real de Contabilidad Lady, no el rebajado
+    // por una promoción.
+    obtenerCatalogoFuego({ conDescuento: false }),
     obtenerLogoUrl(),
     obtenerNumeroWhatsApp(),
     obtenerConfigEnvio(),

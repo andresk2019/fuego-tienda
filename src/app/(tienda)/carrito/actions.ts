@@ -1,23 +1,45 @@
 'use server';
 
-import { validarStockCarrito, calcularSubtotalReal, type ProblemaStock } from '@/lib/db';
+import {
+  obtenerCatalogoFuego,
+  validarStockCarrito,
+  obtenerPreciosReales,
+  type ProblemaStock,
+} from '@/lib/db';
 import { crearPedido } from '@/lib/pedidos-db';
-import { obtenerConfigEnvio, obtenerMetaDeProductos } from '@/lib/admin-db';
+import { obtenerConfigEnvio } from '@/lib/admin-db';
 import { determinarZonaEnvio, type ItemPedido } from '@/lib/pedidos';
 import { UBICACIONES_COLOMBIA } from '@/lib/colombia-ubicaciones';
 
-// El carrito guarda la foto de cada producto "congelada" en el
-// momento en que se agrega (ver ItemCarrito en lib/carrito.ts),
-// porque vive en localStorage y no puede consultar la base de datos
-// por su cuenta. Si el dueño sube o cambia la foto DESPUÉS de que un
-// cliente ya agregó ese producto, el carrito se queda con la foto
-// vieja (o sin foto) hasta que algo la actualice — ver
-// CarritoContext.tsx, que llama esto al cargar el carrito guardado.
-export async function obtenerFotosProductosVigentes(): Promise<
-  Record<number, string | null>
+// El carrito guarda foto y precio de cada producto "congelados" en el
+// momento en que se agrega (ver ItemCarrito en lib/carrito.ts), porque
+// vive en localStorage y no puede consultar la base de datos por su
+// cuenta. Si el dueño cambia la foto, o empieza/termina una promo con
+// descuento DESPUÉS de que un cliente ya agregó ese producto, el carrito
+// se queda con lo viejo hasta que algo lo actualice — ver
+// CarritoContext.tsx, que llama esto al cargar el carrito guardado. (El
+// precio que de verdad se cobra siempre se recalcula en el servidor al
+// registrar el pedido; esto es para que lo que el cliente ve coincida.)
+export type DatosVigentesProducto = {
+  fotoUrl: string | null;
+  precioUnitario: number;
+  precioOriginal: number | null;
+};
+
+export async function obtenerDatosVigentesProductos(): Promise<
+  Record<number, DatosVigentesProducto>
 > {
-  const { fotos } = await obtenerMetaDeProductos();
-  return fotos;
+  const productos = await obtenerCatalogoFuego();
+  return Object.fromEntries(
+    productos.map((p) => [
+      p.id,
+      {
+        fotoUrl: p.fotoUrl,
+        precioUnitario: p.precioVenta,
+        precioOriginal: p.precioOriginal,
+      },
+    ])
+  );
 }
 
 export type ResultadoCrearPedido = {
@@ -82,22 +104,34 @@ export async function crearPedidoDesdeCarrito(datos: {
   // le avisa en el carrito para que ajuste cantidades, en vez de
   // dejarlo llegar a WhatsApp a pedir algo que no se le puede cumplir.
   //
-  // El subtotal se calcula en paralelo, con el precio real del
-  // catálogo — nunca con lo que sume el navegador (ver comentario de
-  // calcularSubtotalReal en db.ts). Antes este Server Action recibía
-  // `subtotalProductos` directo del cliente y lo daba por bueno:
-  // cualquiera podía llamarlo con un total inventado.
+  // Los precios se leen en paralelo, con el precio real del catálogo
+  // y el descuento vigente ahora mismo — nunca con lo que sume el
+  // navegador (ver obtenerPreciosReales en db.ts). Antes este Server
+  // Action recibía `subtotalProductos` directo del cliente y lo daba
+  // por bueno: cualquiera podía llamarlo con un total inventado.
   const itemsParaValidar = datos.items.map((item) => ({
     productoId: item.productoId,
     cantidad: item.cantidad,
   }));
-  const [problemasStock, subtotalReal] = await Promise.all([
+  const [problemasStock, preciosReales] = await Promise.all([
     validarStockCarrito(itemsParaValidar),
-    calcularSubtotalReal(itemsParaValidar),
+    obtenerPreciosReales(itemsParaValidar.map((item) => item.productoId)),
   ]);
   if (problemasStock.length > 0) {
     return { problemasStock };
   }
+
+  // El pedido guarda el precio real de cada línea, no el que haya
+  // mandado el navegador: si la promo cambió mientras el cliente tenía
+  // el carrito abierto, lo registrado y el total siempre coinciden.
+  const itemsConPrecioReal = datos.items.map((item) => ({
+    ...item,
+    precioUnitario: preciosReales.get(item.productoId) ?? 0,
+  }));
+  const subtotalReal = itemsConPrecioReal.reduce(
+    (suma, item) => suma + item.precioUnitario * item.cantidad,
+    0
+  );
 
   // La zona de envío se calcula acá, a partir del departamento y
   // municipio ya validados arriba — nunca se recibe directo del
@@ -109,9 +143,10 @@ export async function crearPedidoDesdeCarrito(datos: {
   // importa cuánto haya calculado (o manipulado) el navegador, el
   // costo real siempre sale de la misma fuente que ve el dueño.
   const configEnvio = await obtenerConfigEnvio();
-  const costoBase =
+  // Sin envío gratis por monto de compra (decisión del dueño,
+  // 2026-11-16): siempre se cobra la tarifa de la zona.
+  const costoEnvio =
     zonaEnvio === 'medellin' ? configEnvio.costoLocal : configEnvio.costoNacional;
-  const costoEnvio = subtotalReal >= configEnvio.gratisDesde ? 0 : costoBase;
   const total = subtotalReal + costoEnvio;
 
   try {
@@ -125,7 +160,7 @@ export async function crearPedidoDesdeCarrito(datos: {
       clienteDireccion: '',
       clienteDepartamento,
       clienteMunicipio,
-      items: datos.items,
+      items: itemsConPrecioReal,
       total,
       costoEnvio,
       zonaEnvio,

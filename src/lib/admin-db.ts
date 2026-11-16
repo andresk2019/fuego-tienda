@@ -126,26 +126,25 @@ export async function guardarContrasenaAdminHash(hash: string): Promise<void> {
 
 // Costo de envío — 2 tarifas fijas (decisión del dueño, 2026-09-14):
 // una para domicilios dentro de Medellín y otra para el resto del
-// país (ver ZonaEnvio en pedidos.ts), con envío gratis a partir de
-// cierto monto de compra en cualquiera de las dos. Los valores por
-// defecto son los que el dueño pidió al construir esto — sirven de
-// respaldo hasta que se guarde algo distinto desde /admin.
+// país (ver ZonaEnvio en pedidos.ts). Ya NO hay envío gratis por
+// monto de compra (decisión del dueño, 2026-11-16): el costo se cobra
+// siempre. La clave vieja 'envio_gratis_desde' queda sin usar en
+// tienda_config, inofensiva. Los valores por defecto son los que el
+// dueño pidió al construir esto — sirven de respaldo hasta que se
+// guarde algo distinto desde /admin.
 export type ConfigEnvio = {
   costoLocal: number; // Medellín
   costoNacional: number; // resto del país
-  gratisDesde: number;
 };
 
 const CONFIG_ENVIO_POR_DEFECTO: ConfigEnvio = {
   costoLocal: 15000,
   costoNacional: 20000,
-  gratisDesde: 100000,
 };
 
 const CLAVES_ENVIO = {
   costoLocal: 'envio_costo_local',
   costoNacional: 'envio_costo_nacional',
-  gratisDesde: 'envio_gratis_desde',
 } as const;
 
 export async function obtenerConfigEnvio(): Promise<ConfigEnvio> {
@@ -165,24 +164,19 @@ export async function obtenerConfigEnvio(): Promise<ConfigEnvio> {
     costoNacional: guardado[CLAVES_ENVIO.costoNacional]
       ? Number(guardado[CLAVES_ENVIO.costoNacional])
       : CONFIG_ENVIO_POR_DEFECTO.costoNacional,
-    gratisDesde: guardado[CLAVES_ENVIO.gratisDesde]
-      ? Number(guardado[CLAVES_ENVIO.gratisDesde])
-      : CONFIG_ENVIO_POR_DEFECTO.gratisDesde,
   };
 }
 
 export async function guardarConfigEnvio(config: ConfigEnvio): Promise<void> {
   await asegurarEsquema();
   await getPool().query(
-    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4), ($5, $6)
+    `INSERT INTO tienda_config (clave, valor) VALUES ($1, $2), ($3, $4)
      ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
     [
       CLAVES_ENVIO.costoLocal,
       String(config.costoLocal),
       CLAVES_ENVIO.costoNacional,
       String(config.costoNacional),
-      CLAVES_ENVIO.gratisDesde,
-      String(config.gratisDesde),
     ]
   );
 }

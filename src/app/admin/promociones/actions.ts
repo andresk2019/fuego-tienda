@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { haySesion } from '@/lib/session';
 import {
   crearPromocion,
+  actualizarPromocion,
   actualizarActivaPromocion,
   eliminarPromocion,
 } from '@/lib/promociones-db';
@@ -12,6 +13,8 @@ import {
   enlaceValido,
   LONGITUD_MAXIMA_TITULO,
   LONGITUD_MAXIMA_TEXTO,
+  DESCUENTO_MINIMO,
+  DESCUENTO_MAXIMO,
 } from '@/lib/promociones';
 
 export type EstadoCrearPromocion = { error?: string; ok?: boolean } | undefined;
@@ -27,19 +30,27 @@ const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 function revalidarTienda() {
   revalidatePath('/admin/promociones');
+  // El descuento cambia precios en el catálogo, las fichas y el carrito.
   revalidatePath('/', 'layout');
 }
 
-export async function agregarPromocion(
-  _estado: EstadoCrearPromocion,
-  formData: FormData
-): Promise<EstadoCrearPromocion> {
-  // Server Actions se tratan como endpoints públicos — nunca hay que
-  // confiar en que la página que los llama ya esté protegida.
-  if (!(await haySesion())) {
-    return { error: 'Tu sesión expiró, vuelve a entrar.' };
-  }
+type DatosPromocion = {
+  titulo: string;
+  texto: string;
+  enlace: string | null;
+  inicio: string | null;
+  fin: string | null;
+  enFranja: boolean;
+  enPortada: boolean;
+  descuentoPorcentaje: number | null;
+  productosExcluidos: number[];
+};
 
+// Lee y valida los campos del formulario — el MISMO código para crear
+// y para editar, así las dos formas no pueden aceptar cosas distintas.
+function leerDatosPromocion(
+  formData: FormData
+): { error: string } | { datos: DatosPromocion } {
   const titulo = String(formData.get('titulo') ?? '').trim();
   const texto = String(formData.get('texto') ?? '').trim();
   const enlace = String(formData.get('enlace') ?? '').trim();
@@ -47,7 +58,7 @@ export async function agregarPromocion(
   const fin = String(formData.get('fin') ?? '').trim();
   const enFranja = formData.get('enFranja') === 'on';
   const enPortada = formData.get('enPortada') === 'on';
-  const imagen = formData.get('imagen');
+  const descuentoCrudo = String(formData.get('descuento') ?? '').trim();
 
   if (!titulo) return { error: 'Escribe el título de la promoción.' };
   if (titulo.length > LONGITUD_MAXIMA_TITULO) {
@@ -70,35 +81,121 @@ export async function agregarPromocion(
     return { error: 'Elige dónde se muestra: franja superior, portada, o ambas.' };
   }
 
-  let imagenUrl: string | null = null;
-  if (imagen instanceof File && imagen.size > 0) {
-    const extension = EXTENSION_POR_TIPO[imagen.type];
-    if (!extension) {
-      return { error: 'La imagen debe ser JPG, PNG, WebP o GIF.' };
+  // Campo vacío = promo solo informativa, sin descuento. Con valor,
+  // tiene que ser un porcentaje entero razonable: este número rebaja
+  // de verdad los precios de la tienda (ver porcentajeDescuentoDe).
+  let descuentoPorcentaje: number | null = null;
+  if (descuentoCrudo) {
+    const descuento = Number(descuentoCrudo);
+    if (
+      !Number.isInteger(descuento) ||
+      descuento < DESCUENTO_MINIMO ||
+      descuento > DESCUENTO_MAXIMO
+    ) {
+      return {
+        error: `El descuento debe ser un número entero entre ${DESCUENTO_MINIMO} y ${DESCUENTO_MAXIMO}.`,
+      };
     }
-    if (imagen.size > LIMITE_MB * 1024 * 1024) {
-      return { error: `La imagen no puede pesar más de ${LIMITE_MB}MB.` };
-    }
-    try {
-      imagenUrl = await subirImagenPromocionAStorage(imagen, extension);
-    } catch {
-      return { error: 'No se pudo subir la imagen. Intenta de nuevo.' };
-    }
+    descuentoPorcentaje = descuento;
   }
+  const productosExcluidos = descuentoPorcentaje
+    ? [...new Set(formData.getAll('productosExcluidos').map(Number))].filter(
+        (id) => Number.isInteger(id) && id > 0
+      )
+    : [];
 
-  try {
-    await crearPromocion({
+  return {
+    datos: {
       titulo,
       texto,
-      imagenUrl,
       enlace: enlace || null,
       inicio: inicio || null,
       fin: fin || null,
       enFranja,
       enPortada,
-    });
+      descuentoPorcentaje,
+      productosExcluidos,
+    },
+  };
+}
+
+// Sube la imagen del formulario si se eligió una. Devuelve url null si
+// no se eligió ninguna (no es un error).
+async function subirImagenDelFormulario(
+  imagen: FormDataEntryValue | null
+): Promise<{ error: string } | { url: string | null }> {
+  if (!(imagen instanceof File) || imagen.size === 0) return { url: null };
+
+  const extension = EXTENSION_POR_TIPO[imagen.type];
+  if (!extension) return { error: 'La imagen debe ser JPG, PNG, WebP o GIF.' };
+  if (imagen.size > LIMITE_MB * 1024 * 1024) {
+    return { error: `La imagen no puede pesar más de ${LIMITE_MB}MB.` };
+  }
+  try {
+    return { url: await subirImagenPromocionAStorage(imagen, extension) };
+  } catch {
+    return { error: 'No se pudo subir la imagen. Intenta de nuevo.' };
+  }
+}
+
+export async function agregarPromocion(
+  _estado: EstadoCrearPromocion,
+  formData: FormData
+): Promise<EstadoCrearPromocion> {
+  // Server Actions se tratan como endpoints públicos — nunca hay que
+  // confiar en que la página que los llama ya esté protegida.
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const leido = leerDatosPromocion(formData);
+  if ('error' in leido) return { error: leido.error };
+
+  const imagen = await subirImagenDelFormulario(formData.get('imagen'));
+  if ('error' in imagen) return { error: imagen.error };
+
+  try {
+    await crearPromocion({ ...leido.datos, imagenUrl: imagen.url });
   } catch {
     return { error: 'No se pudo guardar la promoción. Intenta de nuevo.' };
+  }
+
+  revalidarTienda();
+  return { ok: true };
+}
+
+export async function editarPromocion(
+  _estado: EstadoCrearPromocion,
+  formData: FormData
+): Promise<EstadoCrearPromocion> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const promocionId = Number(formData.get('promocionId'));
+  if (!Number.isInteger(promocionId) || promocionId <= 0) {
+    return { error: 'Promoción inválida.' };
+  }
+
+  const leido = leerDatosPromocion(formData);
+  if ('error' in leido) return { error: leido.error };
+
+  // Imagen: una nueva reemplaza a la actual; si no se elige ninguna,
+  // "Quitar la imagen actual" la deja sin imagen; si no, queda como
+  // estaba (undefined = no tocar).
+  const imagen = await subirImagenDelFormulario(formData.get('imagen'));
+  if ('error' in imagen) return { error: imagen.error };
+  const imagenUrl =
+    imagen.url !== null
+      ? imagen.url
+      : formData.get('quitarImagen') === 'on'
+        ? null
+        : undefined;
+
+  try {
+    await actualizarPromocion(promocionId, { ...leido.datos, imagenUrl });
+  } catch {
+    return { error: 'No se pudieron guardar los cambios. Intenta de nuevo.' };
   }
 
   revalidarTienda();

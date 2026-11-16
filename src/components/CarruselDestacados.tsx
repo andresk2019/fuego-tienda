@@ -7,12 +7,7 @@ import { productoHref } from "@/lib/slug";
 import FotoProducto from "@/components/FotoProducto";
 import EstrellaIcon from "@/components/EstrellaIcon";
 import FavoritoBoton from "@/components/FavoritoBoton";
-
-const formatoCOP = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
+import PrecioProducto from "@/components/PrecioProducto";
 
 // Los productos que aparecen aquí los elige el dueño desde el panel
 // de administración (checkbox "Destacar" en cada producto) — todavía
@@ -97,9 +92,12 @@ export default function CarruselDestacados({
                 <h3 className="font-serif text-lg text-foreground">
                   {producto.nombre}
                 </h3>
-                <p className="text-base font-semibold text-ember">
-                  {formatoCOP.format(producto.precioVenta)}
-                </p>
+                <PrecioProducto
+                  precioVenta={producto.precioVenta}
+                  precioOriginal={producto.precioOriginal}
+                  descuentoPorcentaje={producto.descuentoPorcentaje}
+                  className="text-base font-semibold text-ember"
+                />
               </Link>
               <FavoritoBoton productoId={producto.id} />
             </li>

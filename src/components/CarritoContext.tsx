@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { sendGAEvent } from '@next/third-parties/google';
 import { claveItem, type ItemCarrito } from '@/lib/carrito';
-import { obtenerFotosProductosVigentes } from '@/app/(tienda)/carrito/actions';
+import { obtenerDatosVigentesProductos } from '@/app/(tienda)/carrito/actions';
 
 const CLAVE_LOCALSTORAGE = 'fuego-carrito';
 
@@ -49,27 +49,39 @@ export function CarritoProvider({ children }: { children: React.ReactNode }) {
     setCargado(true);
   }, []);
 
-  // La foto de cada item quedó "congelada" en localStorage desde el
-  // momento en que se agregó (ver ItemCarrito en lib/carrito.ts) — si
-  // el dueño subió o cambió la foto después, el carrito se quedaba
-  // pegado con la vieja. Al cargar, se refresca contra la foto vigente
-  // de cada producto; si el productoId ya no tiene foto (o nunca la
-  // tuvo), queda en null igual que en el catálogo.
+  // La foto y el precio de cada item quedaron "congelados" en
+  // localStorage desde el momento en que se agregó (ver ItemCarrito en
+  // lib/carrito.ts) — si el dueño cambió la foto, o empezó/terminó una
+  // promo con descuento después, el carrito se quedaba pegado con lo
+  // viejo. Al cargar, se refresca contra lo vigente de cada producto;
+  // si el productoId ya no aparece (producto retirado), el item queda
+  // como estaba.
   useEffect(() => {
     if (!cargado || items.length === 0) return;
-    obtenerFotosProductosVigentes()
-      .then((fotos) => {
+    obtenerDatosVigentesProductos()
+      .then((vigentes) => {
         setItems((actuales) =>
-          actuales.map((item) =>
-            item.fotoUrl === (fotos[item.productoId] ?? null)
+          actuales.map((item) => {
+            const datos = vigentes[item.productoId];
+            if (!datos) return item;
+            const sinCambios =
+              item.fotoUrl === datos.fotoUrl &&
+              item.precioUnitario === datos.precioUnitario &&
+              (item.precioOriginal ?? null) === datos.precioOriginal;
+            return sinCambios
               ? item
-              : { ...item, fotoUrl: fotos[item.productoId] ?? null }
-          )
+              : {
+                  ...item,
+                  fotoUrl: datos.fotoUrl,
+                  precioUnitario: datos.precioUnitario,
+                  precioOriginal: datos.precioOriginal,
+                };
+          })
         );
       })
       .catch(() => {
-        // sin conexión momentánea: el carrito sigue con la foto que
-        // ya tenía, no vale la pena bloquear nada por esto.
+        // sin conexión momentánea: el carrito sigue con lo que ya
+        // tenía, no vale la pena bloquear nada por esto.
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargado]);

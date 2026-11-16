@@ -163,12 +163,19 @@ export default function CarritoLateral() {
                           +
                         </button>
                       </div>
-                      <span
-                        key={item.cantidad}
-                        className="animar-entrada-carrito text-sm font-semibold text-foreground"
-                      >
-                        {formatoCOP.format(item.precioUnitario * item.cantidad)}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        <span
+                          key={item.cantidad}
+                          className="animar-entrada-carrito text-sm font-semibold text-foreground"
+                        >
+                          {formatoCOP.format(item.precioUnitario * item.cantidad)}
+                        </span>
+                        {item.precioOriginal ? (
+                          <span className="text-xs text-muted line-through">
+                            {formatoCOP.format(item.precioOriginal * item.cantidad)}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
 

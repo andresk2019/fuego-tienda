@@ -42,7 +42,11 @@ function construirMensajeWhatsApp(
     const detalles = detallesItem(item);
     return `- ${item.cantidad}x ${item.nombre}${
       detalles ? ` (${detalles})` : ""
-    } — ${formatoCOP.format(item.precioUnitario * item.cantidad)}`;
+    } — ${formatoCOP.format(item.precioUnitario * item.cantidad)}${
+      item.precioOriginal
+        ? ` (antes ${formatoCOP.format(item.precioOriginal * item.cantidad)})`
+        : ""
+    }`;
   });
   const encabezado = numero
     ? `Hola, soy ${nombreCliente}. Quiero hacer este pedido (#${numero}):`
@@ -91,7 +95,6 @@ export default function CarritoCliente({
 }) {
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
   const subtotal = totalCarrito(items);
-  const envioGratis = subtotal >= configEnvio.gratisDesde;
 
   // Evento estándar de GA4 — entrar al carrito con algo adentro es el
   // paso "empieza a pagar" del embudo (ver producto → agregar al
@@ -136,11 +139,9 @@ export default function CarritoCliente({
       ? determinarZonaEnvio(departamento, municipio)
       : null;
   const costoEnvioMostrado = zonaEnvio
-    ? envioGratis
-      ? 0
-      : zonaEnvio === "medellin"
-        ? configEnvio.costoLocal
-        : configEnvio.costoNacional
+    ? zonaEnvio === "medellin"
+      ? configEnvio.costoLocal
+      : configEnvio.costoNacional
     : null;
   const totalMostrado =
     costoEnvioMostrado !== null ? subtotal + costoEnvioMostrado : null;
@@ -285,6 +286,11 @@ export default function CarritoCliente({
                 )}
                 <p className="text-sm text-muted">
                   {formatoCOP.format(item.precioUnitario)} c/u
+                  {item.precioOriginal ? (
+                    <span className="ml-2 line-through">
+                      {formatoCOP.format(item.precioOriginal)}
+                    </span>
+                  ) : null}
                 </p>
               </div>
               <input
@@ -327,12 +333,6 @@ export default function CarritoCliente({
                 : "Gratis"}
           </span>
         </div>
-        {envioGratis && (
-          <p className="text-xs text-muted">
-            Envío gratis por superar {formatoCOP.format(configEnvio.gratisDesde)}
-            .
-          </p>
-        )}
         <div className="mt-1 flex items-center justify-between border-t border-border pt-2">
           <span className="font-medium text-foreground">Total</span>
           <span className="text-lg font-semibold text-foreground">

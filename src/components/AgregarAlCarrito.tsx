@@ -9,6 +9,7 @@ export default function AgregarAlCarrito({
   productoId,
   nombre,
   precioUnitario,
+  precioOriginal,
   disponible,
   aromas,
   descripcionesAromas,
@@ -17,6 +18,7 @@ export default function AgregarAlCarrito({
   productoId: number;
   nombre: string;
   precioUnitario: number;
+  precioOriginal?: number | null;
   disponible: boolean;
   // Si se pasa (ver AROMAS_DISPONIBLES en personalizacion.ts), se
   // muestra un selector de aroma antes de agregar al carrito — aplica
@@ -46,6 +48,7 @@ export default function AgregarAlCarrito({
       productoId,
       nombre,
       precioUnitario,
+      precioOriginal,
       cantidad,
       aroma: aromaElegido || undefined,
       fotoUrl,

@@ -19,6 +19,12 @@ import { categoriaDeProducto, type CategoriaSlug } from './categorias';
 import { descripcionDeProducto } from './descripciones';
 import { subcategoriaDeProducto, type SubcategoriaSlug } from './secciones';
 import { obtenerMetaDeProductos, type MetaProductos } from './admin-db';
+import { obtenerPromocionesVigentes } from './promociones-db';
+import {
+  aplicarDescuento,
+  porcentajeDescuentoDe,
+  type Promocion,
+} from './promociones';
 import { formatearNombreProducto } from './texto';
 
 // DTO (Data Transfer Object): solo los campos seguros para mostrar en
@@ -29,7 +35,13 @@ import { formatearNombreProducto } from './texto';
 export type ProductoCatalogo = {
   id: number;
   nombre: string;
+  // Lo que de verdad paga el cliente: ya con el descuento de la promo
+  // vigente, si la hay.
   precioVenta: number;
+  // El precio normal (el de Contabilidad Lady), solo cuando hay un
+  // descuento aplicado — para mostrarlo tachado. null = sin descuento.
+  precioOriginal: number | null;
+  descuentoPorcentaje: number | null;
   unidad: string | null;
   disponible: boolean;
   pocasUnidades: boolean;
@@ -51,9 +63,15 @@ function filaAProducto(
     cantidad: string | number;
     stock_minimo: string | number;
   },
-  meta: MetaProductos
+  meta: MetaProductos,
+  promociones: Promocion[]
 ): ProductoCatalogo {
   const cantidad = Number(r.cantidad);
+  const precioBase = Number(r.precio_venta);
+  // Un producto sin precio todavía (precio 0) no se rebaja: sigue
+  // oculto para el público (ver visibleEnTienda).
+  const porcentaje =
+    precioBase > 0 ? porcentajeDescuentoDe(promociones, r.id) : 0;
   const stockMinimo = Number(r.stock_minimo);
   // La categoría elegida desde /admin tiene prioridad; si no se ha
   // asignado ninguna, se usa el mapa fijo en código (ver
@@ -71,7 +89,9 @@ function filaAProducto(
     // el nombre ("vela chispa", "EDICION MADRES", etc.) — se formatea
     // solo para mostrarlo, nunca se reescribe en la base de datos.
     nombre: formatearNombreProducto(r.nombre),
-    precioVenta: Number(r.precio_venta),
+    precioVenta: aplicarDescuento(precioBase, porcentaje),
+    precioOriginal: porcentaje > 0 ? precioBase : null,
+    descuentoPorcentaje: porcentaje > 0 ? porcentaje : null,
     unidad: r.unidad,
     disponible: cantidad > 0,
     pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
@@ -96,8 +116,12 @@ export function visibleEnTienda(producto: ProductoCatalogo): boolean {
   return producto.precioVenta > 0;
 }
 
-export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
-  const [resultado, meta] = await Promise.all([
+// `conDescuento: false` es para el panel de administración, que debe
+// ver el precio real de Contabilidad Lady, no el rebajado.
+export async function obtenerCatalogoFuego(
+  opciones: { conDescuento?: boolean } = {}
+): Promise<ProductoCatalogo[]> {
+  const [resultado, meta, promociones] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -106,9 +130,10 @@ export async function obtenerCatalogoFuego(): Promise<ProductoCatalogo[]> {
        ORDER BY i.nombre`
     ),
     obtenerMetaDeProductos(),
+    opciones.conDescuento === false ? [] : obtenerPromocionesVigentes(),
   ]);
 
-  return resultado.rows.map((r) => filaAProducto(r, meta));
+  return resultado.rows.map((r) => filaAProducto(r, meta, promociones));
 }
 
 // Para la página de detalle de un producto. Filtra también por
@@ -126,7 +151,7 @@ export const obtenerProductoFuego = cache(async function obtenerProductoFuego(
   // Trae la meta de todos los productos aunque solo haga falta uno —
   // son pocos productos hoy, no vale la pena una consulta separada
   // solo para eso.
-  const [resultado, meta] = await Promise.all([
+  const [resultado, meta, promociones] = await Promise.all([
     getPool().query(
       `SELECT ${CAMPOS_PRODUCTO}
        FROM inventario i
@@ -135,9 +160,12 @@ export const obtenerProductoFuego = cache(async function obtenerProductoFuego(
       [id]
     ),
     obtenerMetaDeProductos(),
+    obtenerPromocionesVigentes(),
   ]);
 
-  return resultado.rows[0] ? filaAProducto(resultado.rows[0], meta) : null;
+  return resultado.rows[0]
+    ? filaAProducto(resultado.rows[0], meta, promociones)
+    : null;
 });
 
 export type ProblemaStock = {
@@ -195,33 +223,36 @@ export async function validarStockCarrito(
 }
 
 // Se llama junto con validarStockCarrito, justo antes de registrar un
-// pedido — el subtotal del pedido se calcula ACÁ, con el precio real
-// del catálogo, nunca con lo que el navegador diga que suma (un
-// Server Action es un endpoint público: nada impide llamarlo directo
-// con un `subtotalProductos` inventado). Un id que no aparece (borrado
-// o de otra marca) suma $0 en vez de tronar — en la práctica nunca
-// pasa, porque validarStockCarrito ya habría bloqueado ese mismo ítem
-// antes de llegar a calcular el subtotal.
-export async function calcularSubtotalReal(
-  items: { productoId: number; cantidad: number }[]
-): Promise<number> {
-  if (items.length === 0) return 0;
+// pedido — los precios del pedido se calculan ACÁ, con el precio real
+// del catálogo y el descuento vigente en este momento, nunca con lo
+// que el navegador diga que cuestan (un Server Action es un endpoint
+// público: nada impide llamarlo directo con precios inventados). Un
+// id que no aparece (borrado o de otra marca) simplemente no está en
+// el resultado — en la práctica nunca pasa, porque validarStockCarrito
+// ya habría bloqueado ese mismo ítem antes de llegar acá.
+export async function obtenerPreciosReales(
+  productoIds: number[]
+): Promise<Map<number, number>> {
+  if (productoIds.length === 0) return new Map();
 
-  const { rows } = await getPool().query(
-    `SELECT i.id, i.precio_venta
-     FROM inventario i
-     JOIN empresas e ON e.id = i.empresa_id
-     WHERE e.nombre = 'Fuego' AND i.es_informativo = false
-       AND i.id = ANY($1::int[])`,
-    [items.map((item) => item.productoId)]
-  );
+  const [{ rows }, promociones] = await Promise.all([
+    getPool().query(
+      `SELECT i.id, i.precio_venta
+       FROM inventario i
+       JOIN empresas e ON e.id = i.empresa_id
+       WHERE e.nombre = 'Fuego' AND i.es_informativo = false
+         AND i.id = ANY($1::int[])`,
+      [productoIds]
+    ),
+    obtenerPromocionesVigentes(),
+  ]);
 
-  const precioPorId = new Map(
-    rows.map((r) => [r.id as number, Number(r.precio_venta)])
-  );
-
-  return items.reduce(
-    (suma, item) => suma + (precioPorId.get(item.productoId) ?? 0) * item.cantidad,
-    0
+  return new Map(
+    rows.map((r) => {
+      const precioBase = Number(r.precio_venta);
+      const porcentaje =
+        precioBase > 0 ? porcentajeDescuentoDe(promociones, r.id as number) : 0;
+      return [r.id as number, aplicarDescuento(precioBase, porcentaje)];
+    })
   );
 }

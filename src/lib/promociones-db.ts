@@ -1,10 +1,10 @@
-// Promociones (banners y franja superior) — otra tabla propia de la
-// tienda, igual que tienda_resenas: vive en el mismo Postgres pero
-// nunca toca las tablas de Contabilidad Lady.
-//
-// Es solo visual: no cambia ningún precio ni el cálculo del pedido
-// (ver calcularSubtotalReal en db.ts, que siempre usa el precio real).
+// Promociones (banners, franja superior y descuentos) — otra tabla
+// propia de la tienda, igual que tienda_resenas: vive en el mismo
+// Postgres pero nunca toca las tablas de Contabilidad Lady (el precio
+// real sigue siendo el de `inventario`; el descuento se calcula encima,
+// al leerlo — nunca se escribe de vuelta).
 import 'server-only';
+import { cache } from 'react';
 import { getPool } from './pool';
 import type { Promocion } from './promociones';
 
@@ -26,7 +26,9 @@ function asegurarEsquema(): Promise<void> {
            en_franja BOOLEAN NOT NULL DEFAULT true,
            en_portada BOOLEAN NOT NULL DEFAULT true,
            creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
-         )`
+         );
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS descuento_porcentaje INTEGER;
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS productos_excluidos INTEGER[] NOT NULL DEFAULT '{}';`
       )
       .then(() => undefined);
   }
@@ -44,6 +46,7 @@ const COLUMNAS = `
   to_char(inicio, 'YYYY-MM-DD') AS inicio,
   to_char(fin, 'YYYY-MM-DD') AS fin,
   activa, en_franja, en_portada,
+  descuento_porcentaje, productos_excluidos,
   CASE
     WHEN NOT activa THEN 'desactivada'
     WHEN inicio IS NOT NULL AND inicio > ${HOY} THEN 'programada'
@@ -62,6 +65,8 @@ function filaAPromocion(r: {
   activa: boolean;
   en_franja: boolean;
   en_portada: boolean;
+  descuento_porcentaje: number | null;
+  productos_excluidos: number[];
   estado: Promocion['estado'];
 }): Promocion {
   return {
@@ -75,6 +80,8 @@ function filaAPromocion(r: {
     activa: r.activa,
     enFranja: r.en_franja,
     enPortada: r.en_portada,
+    descuentoPorcentaje: r.descuento_porcentaje,
+    productosExcluidos: r.productos_excluidos,
     estado: r.estado,
   };
 }
@@ -88,27 +95,32 @@ export async function obtenerPromociones(): Promise<Promocion[]> {
   return rows.map(filaAPromocion);
 }
 
+// Las promos vigentes (más reciente primero). De acá salen la franja,
+// los banners y los descuentos — una sola consulta por petición
+// (`cache`), porque el layout, la página y el catálogo la piden a la
+// vez.
+export const obtenerPromocionesVigentes = cache(
+  async (): Promise<Promocion[]> => {
+    await asegurarEsquema();
+    const { rows } = await getPool().query(
+      `SELECT * FROM (SELECT ${COLUMNAS}, creado_en FROM tienda_promociones) p
+       WHERE estado = 'vigente'
+       ORDER BY creado_en DESC`
+    );
+    return rows.map(filaAPromocion);
+  }
+);
+
 // La franja superior solo muestra UNA promo (la vigente más reciente):
 // es una línea de texto, no cabe más de una.
 export async function obtenerPromocionFranja(): Promise<Promocion | null> {
-  await asegurarEsquema();
-  const { rows } = await getPool().query(
-    `SELECT * FROM (SELECT ${COLUMNAS}, creado_en FROM tienda_promociones) p
-     WHERE estado = 'vigente' AND en_franja
-     ORDER BY creado_en DESC
-     LIMIT 1`
-  );
-  return rows[0] ? filaAPromocion(rows[0]) : null;
+  const vigentes = await obtenerPromocionesVigentes();
+  return vigentes.find((p) => p.enFranja) ?? null;
 }
 
 export async function obtenerPromocionesPortada(): Promise<Promocion[]> {
-  await asegurarEsquema();
-  const { rows } = await getPool().query(
-    `SELECT * FROM (SELECT ${COLUMNAS}, creado_en FROM tienda_promociones) p
-     WHERE estado = 'vigente' AND en_portada
-     ORDER BY creado_en DESC`
-  );
-  return rows.map(filaAPromocion);
+  const vigentes = await obtenerPromocionesVigentes();
+  return vigentes.filter((p) => p.enPortada);
 }
 
 export async function crearPromocion(datos: {
@@ -120,12 +132,15 @@ export async function crearPromocion(datos: {
   fin: string | null;
   enFranja: boolean;
   enPortada: boolean;
+  descuentoPorcentaje: number | null;
+  productosExcluidos: number[];
 }): Promise<void> {
   await asegurarEsquema();
   await getPool().query(
     `INSERT INTO tienda_promociones
-       (titulo, texto, imagen_url, enlace, inicio, fin, en_franja, en_portada)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+       (titulo, texto, imagen_url, enlace, inicio, fin, en_franja, en_portada,
+        descuento_porcentaje, productos_excluidos)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       datos.titulo,
       datos.texto,
@@ -135,6 +150,51 @@ export async function crearPromocion(datos: {
       datos.fin,
       datos.enFranja,
       datos.enPortada,
+      datos.descuentoPorcentaje,
+      datos.productosExcluidos,
+    ]
+  );
+}
+
+// `imagenUrl`: undefined = dejar la imagen como está; null = quitarla;
+// un texto = reemplazarla por esa. Lo demás siempre se sobrescribe con
+// lo que llega del formulario de edición.
+export async function actualizarPromocion(
+  id: number,
+  datos: {
+    titulo: string;
+    texto: string;
+    imagenUrl: string | null | undefined;
+    enlace: string | null;
+    inicio: string | null;
+    fin: string | null;
+    enFranja: boolean;
+    enPortada: boolean;
+    descuentoPorcentaje: number | null;
+    productosExcluidos: number[];
+  }
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `UPDATE tienda_promociones SET
+       titulo = $2, texto = $3, enlace = $4, inicio = $5, fin = $6,
+       en_franja = $7, en_portada = $8,
+       descuento_porcentaje = $9, productos_excluidos = $10,
+       imagen_url = CASE WHEN $11::boolean THEN $12::text ELSE imagen_url END
+     WHERE id = $1`,
+    [
+      id,
+      datos.titulo,
+      datos.texto,
+      datos.enlace,
+      datos.inicio,
+      datos.fin,
+      datos.enFranja,
+      datos.enPortada,
+      datos.descuentoPorcentaje,
+      datos.productosExcluidos,
+      datos.imagenUrl !== undefined,
+      datos.imagenUrl ?? null,
     ]
   );
 }

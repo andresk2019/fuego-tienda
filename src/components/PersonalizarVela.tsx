@@ -27,6 +27,7 @@ export default function PersonalizarVela({
   productoId,
   nombre,
   precioUnitario,
+  precioOriginal,
   disponible,
   descripcionesAromas,
   fotoUrl,
@@ -34,6 +35,7 @@ export default function PersonalizarVela({
   productoId: number;
   nombre: string;
   precioUnitario: number;
+  precioOriginal?: number | null;
   disponible: boolean;
   // Descripción de cada aroma (la carga el dueño en /admin/aromas) —
   // ver DescripcionAroma.tsx.
@@ -57,6 +59,7 @@ export default function PersonalizarVela({
       productoId,
       nombre,
       precioUnitario,
+      precioOriginal,
       cantidad: 1,
       aroma: aromaElegido || undefined,
       nombreSecreto: nombreSecreto.trim() || undefined,
@@ -93,6 +96,7 @@ export default function PersonalizarVela({
           productoId={productoId}
           nombre={nombre}
           precioUnitario={precioUnitario}
+          precioOriginal={precioOriginal}
           disponible={disponible}
           aromas={AROMAS_DISPONIBLES}
           descripcionesAromas={descripcionesAromas}
