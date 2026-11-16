@@ -5,16 +5,11 @@ import { useState } from "react";
 import FotoProducto from "@/components/FotoProducto";
 import EstrellaIcon from "@/components/EstrellaIcon";
 import FavoritoBoton from "@/components/FavoritoBoton";
+import PrecioProducto from "@/components/PrecioProducto";
 import SelectorConBusqueda from "@/components/SelectorConBusqueda";
 import { useCarrito } from "@/components/CarritoContext";
 import { AROMAS_DISPONIBLES } from "@/lib/personalizacion";
 import type { ResumenResenas } from "@/lib/resenas-db";
-
-const formatoCOP = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
 
 // La tarjeta de producto tal cual se ve en el catálogo público (el
 // link a la ficha vive DENTRO de este componente, no envolviéndolo
@@ -29,6 +24,8 @@ export default function TarjetaProducto({
   productoId,
   nombre,
   precioVenta,
+  precioOriginal = null,
+  descuentoPorcentaje = null,
   fotoUrl,
   disponible,
   pocasUnidades,
@@ -44,6 +41,10 @@ export default function TarjetaProducto({
   productoId?: number;
   nombre: string;
   precioVenta: number;
+  // Solo si el producto tiene un descuento vigente (ver
+  // ProductoCatalogo en db.ts) — se muestra el precio normal tachado.
+  precioOriginal?: number | null;
+  descuentoPorcentaje?: number | null;
   fotoUrl: string | null;
   disponible: boolean;
   pocasUnidades: boolean;
@@ -81,6 +82,7 @@ export default function TarjetaProducto({
       productoId,
       nombre,
       precioUnitario: precioVenta,
+      precioOriginal,
       cantidad: 1,
       aroma: esVela ? aroma : undefined,
       fotoUrl,
@@ -115,9 +117,12 @@ export default function TarjetaProducto({
           </span>
         </div>
       )}
-      <p className="text-lg font-semibold text-foreground">
-        {formatoCOP.format(precioVenta)}
-      </p>
+      <PrecioProducto
+        precioVenta={precioVenta}
+        precioOriginal={precioOriginal}
+        descuentoPorcentaje={descuentoPorcentaje}
+        className="text-lg font-semibold text-foreground"
+      />
       {!disponible && (
         <span className="inline-flex w-fit rounded-full bg-danger/10 px-2.5 py-0.5 text-xs font-medium text-danger">
           Agotado

@@ -2,12 +2,7 @@ import { nombreCategoria, type CategoriaSlug } from "@/lib/categorias";
 import type { ResumenResenas } from "@/lib/resenas-db";
 import EstrellaIcon from "@/components/EstrellaIcon";
 import FavoritoBoton from "@/components/FavoritoBoton";
-
-const formatoCOP = new Intl.NumberFormat("es-CO", {
-  style: "currency",
-  currency: "COP",
-  maximumFractionDigits: 0,
-});
+import PrecioProducto from "@/components/PrecioProducto";
 
 // La "ficha" de texto del producto (categoría, nombre, precio,
 // disponibilidad, descripción) tal cual aparece en la columna derecha
@@ -19,6 +14,8 @@ export default function FichaProducto({
   categoria,
   nombre,
   precioVenta,
+  precioOriginal,
+  descuentoPorcentaje,
   disponible,
   pocasUnidades,
   descripcion,
@@ -28,6 +25,8 @@ export default function FichaProducto({
   categoria: CategoriaSlug;
   nombre: string;
   precioVenta: number;
+  precioOriginal?: number | null;
+  descuentoPorcentaje?: number | null;
   disponible: boolean;
   pocasUnidades: boolean;
   descripcion: string;
@@ -73,9 +72,12 @@ export default function FichaProducto({
         </div>
       )}
 
-      <p className="text-2xl font-semibold text-foreground">
-        {formatoCOP.format(precioVenta)}
-      </p>
+      <PrecioProducto
+        precioVenta={precioVenta}
+        precioOriginal={precioOriginal}
+        descuentoPorcentaje={descuentoPorcentaje}
+        className="text-2xl font-semibold text-foreground"
+      />
 
       {!disponible && (
         <span className="inline-flex w-fit rounded-full bg-danger/10 px-3 py-1 text-sm font-medium text-danger">

@@ -26,8 +26,40 @@ export type Promocion = {
   activa: boolean;
   enFranja: boolean;
   enPortada: boolean;
+  // Porcentaje que se rebaja del precio de los productos mientras la
+  // promo esté vigente (null = promo solo informativa, sin descuento).
+  descuentoPorcentaje: number | null;
+  // Productos que NO entran en el descuento (ej. accesorios baratos
+  // donde un 20% se comería el margen).
+  productosExcluidos: number[];
   estado: EstadoPromocion;
 };
+
+export const DESCUENTO_MINIMO = 1;
+export const DESCUENTO_MAXIMO = 90;
+
+// Si hay varias promos con descuento vigentes a la vez, NO se suman:
+// a cada producto le toca el mayor porcentaje que no lo excluya.
+export function porcentajeDescuentoDe(
+  promociones: Pick<Promocion, "descuentoPorcentaje" | "productosExcluidos">[],
+  productoId: number
+): number {
+  let mayor = 0;
+  for (const promo of promociones) {
+    if (promo.descuentoPorcentaje === null) continue;
+    if (promo.productosExcluidos.includes(productoId)) continue;
+    if (promo.descuentoPorcentaje > mayor) mayor = promo.descuentoPorcentaje;
+  }
+  return mayor;
+}
+
+// Pesos colombianos enteros: se redondea al peso más cercano. Es la
+// única fórmula de precio con descuento — la usan tanto el catálogo
+// como el servidor al registrar el pedido, para que siempre coincidan.
+export function aplicarDescuento(precio: number, porcentaje: number): number {
+  if (porcentaje <= 0) return precio;
+  return Math.round((precio * (100 - porcentaje)) / 100);
+}
 
 // El enlace lo escribe el dueño en el panel, pero igual se valida: solo
 // una ruta de la propia tienda ("/catalogo") o una dirección https —

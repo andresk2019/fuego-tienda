@@ -110,6 +110,8 @@ export default async function ProductoPage(
             categoria={producto.categoria}
             nombre={producto.nombre}
             precioVenta={producto.precioVenta}
+            precioOriginal={producto.precioOriginal}
+            descuentoPorcentaje={producto.descuentoPorcentaje}
             disponible={producto.disponible}
             pocasUnidades={producto.pocasUnidades}
             descripcion={producto.descripcion}
@@ -131,6 +133,7 @@ export default async function ProductoPage(
               productoId={producto.id}
               nombre={producto.nombre}
               precioUnitario={producto.precioVenta}
+              precioOriginal={producto.precioOriginal}
               disponible={producto.disponible}
               descripcionesAromas={descripcionesAromas}
               fotoUrl={producto.fotoUrl}
@@ -142,6 +145,7 @@ export default async function ProductoPage(
                   productoId={producto.id}
                   nombre={producto.nombre}
                   precioUnitario={producto.precioVenta}
+                  precioOriginal={producto.precioOriginal}
                   disponible={producto.disponible}
                   aromas={esVela ? AROMAS_DISPONIBLES : undefined}
                   descripcionesAromas={descripcionesAromas}

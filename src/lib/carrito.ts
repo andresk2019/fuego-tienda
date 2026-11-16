@@ -5,7 +5,11 @@ export type ItemCarrito = {
   clave: string;
   productoId: number;
   nombre: string;
+  // Ya con el descuento de la promo vigente al momento de agregarlo
+  // (se refresca al cargar el carrito, ver CarritoContext.tsx).
   precioUnitario: number;
+  // El precio normal, solo si había descuento — para mostrarlo tachado.
+  precioOriginal?: number | null;
   cantidad: number;
   aroma?: string;
   color?: string;

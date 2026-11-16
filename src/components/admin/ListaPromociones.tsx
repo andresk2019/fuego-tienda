@@ -8,6 +8,8 @@ import {
   borrarPromocion,
 } from '@/app/admin/promociones/actions';
 import {
+  DESCUENTO_MAXIMO,
+  DESCUENTO_MINIMO,
   ETIQUETA_ESTADO,
   LONGITUD_MAXIMA_TEXTO,
   LONGITUD_MAXIMA_TITULO,
@@ -40,12 +42,18 @@ function describirFechas(p: Promocion): string {
   return 'Sin fechas (se muestra mientras esté activa)';
 }
 
-function FormularioNuevaPromocion() {
+type ProductoSelector = { id: number; nombre: string };
+
+function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[] }) {
+  const [conDescuento, setConDescuento] = useState(false);
   const [estado, accion, guardando] = useActionState(agregarPromocion, undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (estado?.ok) formRef.current?.reset();
+    if (estado?.ok) {
+      formRef.current?.reset();
+      setConDescuento(false);
+    }
   }, [estado]);
 
   return (
@@ -109,6 +117,54 @@ function FormularioNuevaPromocion() {
         </label>
       </div>
 
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-background/50 p-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-foreground">
+            Descuento en productos, % (opcional)
+          </span>
+          <input
+            type="number"
+            name="descuento"
+            min={DESCUENTO_MINIMO}
+            max={DESCUENTO_MAXIMO}
+            step={1}
+            inputMode="numeric"
+            placeholder="Ej. 20"
+            onChange={(e) => setConDescuento(e.target.value.trim() !== '')}
+            className={`w-32 ${CLASE_CAMPO}`}
+          />
+          <span className="text-xs text-muted">
+            Si lo llenas, ese porcentaje se rebaja de verdad del precio de
+            todos los productos mientras la promo esté vigente (con el
+            precio normal tachado). Vacío = la promo solo anuncia, no cambia
+            precios. No incluye el envío.
+          </span>
+        </label>
+
+        {conDescuento && (
+          <details className="text-sm">
+            <summary className="cursor-pointer font-medium text-foreground">
+              Productos que NO entran en el descuento (opcional)
+            </summary>
+            <ul className="mt-2 grid max-h-48 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
+              {productos.map((p) => (
+                <li key={p.id}>
+                  <label className="flex items-center gap-2 text-foreground">
+                    <input
+                      type="checkbox"
+                      name="productosExcluidos"
+                      value={p.id}
+                      className="h-4 w-4 rounded border-border accent-ember"
+                    />
+                    {p.nombre}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
+
       <fieldset className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-foreground">
         <legend className="mb-1 font-medium">Dónde se muestra</legend>
         <label className="flex items-center gap-2">
@@ -143,7 +199,17 @@ function FormularioNuevaPromocion() {
   );
 }
 
-function FilaPromocion({ promocion }: { promocion: Promocion }) {
+function FilaPromocion({
+  promocion,
+  productos,
+}: {
+  promocion: Promocion;
+  productos: ProductoSelector[];
+}) {
+  const nombrePorId = new Map(productos.map((p) => [p.id, p.nombre]));
+  const excluidos = promocion.productosExcluidos.map(
+    (id) => nombrePorId.get(id) ?? `#${id}`
+  );
   const [estado, accionActiva] = useActionState(actualizarActiva, undefined);
   // Borrar es irreversible — se confirma con un segundo paso propio,
   // igual que en las reseñas (ver ListaResenas.tsx).
@@ -175,6 +241,17 @@ function FilaPromocion({ promocion }: { promocion: Promocion }) {
               <p className="mt-0.5 text-sm text-muted">{promocion.texto}</p>
             )}
             <p className="mt-1 text-xs text-muted">{describirFechas(promocion)}</p>
+            {promocion.descuentoPorcentaje !== null && (
+              <p className="mt-0.5 text-xs font-semibold text-ember">
+                Descuento: {promocion.descuentoPorcentaje}% en los productos
+                {excluidos.length > 0 && (
+                  <span className="font-normal text-muted">
+                    {' '}
+                    (excepto {excluidos.join(', ')})
+                  </span>
+                )}
+              </p>
+            )}
             <p className="mt-0.5 text-xs text-muted">
               {[
                 promocion.enFranja && 'Franja superior',
@@ -236,19 +313,25 @@ function FilaPromocion({ promocion }: { promocion: Promocion }) {
 
 export default function ListaPromociones({
   promociones,
+  productos,
 }: {
   promociones: Promocion[];
+  productos: ProductoSelector[];
 }) {
   return (
     <div className="flex flex-col gap-6">
-      <FormularioNuevaPromocion />
+      <FormularioNuevaPromocion productos={productos} />
 
       {promociones.length === 0 ? (
         <p className="text-sm text-muted">Todavía no hay promociones creadas.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {promociones.map((promocion) => (
-            <FilaPromocion key={promocion.id} promocion={promocion} />
+            <FilaPromocion
+              key={promocion.id}
+              promocion={promocion}
+              productos={productos}
+            />
           ))}
         </ul>
       )}

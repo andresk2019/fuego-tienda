@@ -150,6 +150,8 @@ export default function CatalogoFiltrable({
                 productoId={producto.id}
                 nombre={producto.nombre}
                 precioVenta={producto.precioVenta}
+                precioOriginal={producto.precioOriginal}
+                descuentoPorcentaje={producto.descuentoPorcentaje}
                 fotoUrl={producto.fotoUrl}
                 disponible={producto.disponible}
                 pocasUnidades={producto.pocasUnidades}

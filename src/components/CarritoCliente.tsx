@@ -42,7 +42,11 @@ function construirMensajeWhatsApp(
     const detalles = detallesItem(item);
     return `- ${item.cantidad}x ${item.nombre}${
       detalles ? ` (${detalles})` : ""
-    } — ${formatoCOP.format(item.precioUnitario * item.cantidad)}`;
+    } — ${formatoCOP.format(item.precioUnitario * item.cantidad)}${
+      item.precioOriginal
+        ? ` (antes ${formatoCOP.format(item.precioOriginal * item.cantidad)})`
+        : ""
+    }`;
   });
   const encabezado = numero
     ? `Hola, soy ${nombreCliente}. Quiero hacer este pedido (#${numero}):`
@@ -285,6 +289,11 @@ export default function CarritoCliente({
                 )}
                 <p className="text-sm text-muted">
                   {formatoCOP.format(item.precioUnitario)} c/u
+                  {item.precioOriginal ? (
+                    <span className="ml-2 line-through">
+                      {formatoCOP.format(item.precioOriginal)}
+                    </span>
+                  ) : null}
                 </p>
               </div>
               <input

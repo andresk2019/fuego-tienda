@@ -12,6 +12,8 @@ import {
   enlaceValido,
   LONGITUD_MAXIMA_TITULO,
   LONGITUD_MAXIMA_TEXTO,
+  DESCUENTO_MINIMO,
+  DESCUENTO_MAXIMO,
 } from '@/lib/promociones';
 
 export type EstadoCrearPromocion = { error?: string; ok?: boolean } | undefined;
@@ -27,6 +29,7 @@ const FORMATO_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
 function revalidarTienda() {
   revalidatePath('/admin/promociones');
+  // El descuento cambia precios en el catálogo, las fichas y el carrito.
   revalidatePath('/', 'layout');
 }
 
@@ -48,6 +51,7 @@ export async function agregarPromocion(
   const enFranja = formData.get('enFranja') === 'on';
   const enPortada = formData.get('enPortada') === 'on';
   const imagen = formData.get('imagen');
+  const descuentoCrudo = String(formData.get('descuento') ?? '').trim();
 
   if (!titulo) return { error: 'Escribe el título de la promoción.' };
   if (titulo.length > LONGITUD_MAXIMA_TITULO) {
@@ -69,6 +73,29 @@ export async function agregarPromocion(
   if (!enFranja && !enPortada) {
     return { error: 'Elige dónde se muestra: franja superior, portada, o ambas.' };
   }
+
+  // Campo vacío = promo solo informativa, sin descuento. Con valor,
+  // tiene que ser un porcentaje entero razonable: este número rebaja
+  // de verdad los precios de la tienda (ver porcentajeDescuentoDe).
+  let descuentoPorcentaje: number | null = null;
+  if (descuentoCrudo) {
+    const descuento = Number(descuentoCrudo);
+    if (
+      !Number.isInteger(descuento) ||
+      descuento < DESCUENTO_MINIMO ||
+      descuento > DESCUENTO_MAXIMO
+    ) {
+      return {
+        error: `El descuento debe ser un número entero entre ${DESCUENTO_MINIMO} y ${DESCUENTO_MAXIMO}.`,
+      };
+    }
+    descuentoPorcentaje = descuento;
+  }
+  const productosExcluidos = descuentoPorcentaje
+    ? [...new Set(formData.getAll('productosExcluidos').map(Number))].filter(
+        (id) => Number.isInteger(id) && id > 0
+      )
+    : [];
 
   let imagenUrl: string | null = null;
   if (imagen instanceof File && imagen.size > 0) {
@@ -96,6 +123,8 @@ export async function agregarPromocion(
       fin: fin || null,
       enFranja,
       enPortada,
+      descuentoPorcentaje,
+      productosExcluidos,
     });
   } catch {
     return { error: 'No se pudo guardar la promoción. Intenta de nuevo.' };
