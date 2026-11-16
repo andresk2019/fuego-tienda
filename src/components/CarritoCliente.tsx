@@ -4,12 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { sendGAEvent } from "@next/third-parties/google";
 import { useCarrito } from "@/components/CarritoContext";
-import {
-  totalCarrito,
-  totalCarritoPrecioNormal,
-  detallesItem,
-  type ItemCarrito,
-} from "@/lib/carrito";
+import { totalCarrito, detallesItem, type ItemCarrito } from "@/lib/carrito";
 import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
 import { UBICACIONES_COLOMBIA } from "@/lib/colombia-ubicaciones";
 import type { ProblemaStock } from "@/lib/db";
@@ -100,9 +95,7 @@ export default function CarritoCliente({
 }) {
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
   const subtotal = totalCarrito(items);
-  // El envío gratis se mide con precios normales, no con los rebajados
-  // por una promo (ver crearPedidoDesdeCarrito).
-  const envioGratis = totalCarritoPrecioNormal(items) >= configEnvio.gratisDesde;
+  const envioGratis = subtotal >= configEnvio.gratisDesde;
 
   // Evento estándar de GA4 — entrar al carrito con algo adentro es el
   // paso "empieza a pagar" del embudo (ver producto → agregar al
@@ -346,7 +339,6 @@ export default function CarritoCliente({
         {envioGratis && (
           <p className="text-xs text-muted">
             Envío gratis por superar {formatoCOP.format(configEnvio.gratisDesde)}
-            {subtotal < totalCarritoPrecioNormal(items) && " (a precios normales)"}
             .
           </p>
         )}
