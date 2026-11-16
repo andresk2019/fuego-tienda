@@ -224,7 +224,6 @@ export async function guardarEnvio(
 
   const costoLocal = Number(formData.get('costoLocal'));
   const costoNacional = Number(formData.get('costoNacional'));
-  const gratisDesde = Number(formData.get('gratisDesde'));
 
   if (!Number.isFinite(costoLocal) || costoLocal < 0) {
     return { error: 'El costo de envío dentro de Medellín no es válido.' };
@@ -232,12 +231,9 @@ export async function guardarEnvio(
   if (!Number.isFinite(costoNacional) || costoNacional < 0) {
     return { error: 'El costo de envío al resto del país no es válido.' };
   }
-  if (!Number.isFinite(gratisDesde) || gratisDesde < 0) {
-    return { error: 'El monto para envío gratis no es válido.' };
-  }
 
   try {
-    await guardarConfigEnvio({ costoLocal, costoNacional, gratisDesde });
+    await guardarConfigEnvio({ costoLocal, costoNacional });
   } catch {
     return { error: 'No se pudo guardar. Intenta de nuevo.' };
   }

@@ -143,9 +143,10 @@ export async function crearPedidoDesdeCarrito(datos: {
   // importa cuánto haya calculado (o manipulado) el navegador, el
   // costo real siempre sale de la misma fuente que ve el dueño.
   const configEnvio = await obtenerConfigEnvio();
-  const costoBase =
+  // Sin envío gratis por monto de compra (decisión del dueño,
+  // 2026-11-16): siempre se cobra la tarifa de la zona.
+  const costoEnvio =
     zonaEnvio === 'medellin' ? configEnvio.costoLocal : configEnvio.costoNacional;
-  const costoEnvio = subtotalReal >= configEnvio.gratisDesde ? 0 : costoBase;
   const total = subtotalReal + costoEnvio;
 
   try {
