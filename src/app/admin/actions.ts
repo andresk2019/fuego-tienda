@@ -33,12 +33,15 @@ export async function cerrarSesion() {
 
 export type EstadoSubidaFoto = { error?: string; ok?: boolean } | undefined;
 
-// Antes era 5MB — de por sí ya quedaba corto contra una foto de
-// celular sin comprimir, y encima Next.js cortaba en 1MB por su
-// cuenta antes de que este número siquiera importara (ver
-// bodySizeLimit en next.config.ts). Ahora los dos límites están
-// alineados.
-const LIMITE_MB = 8;
+// Vercel rechaza cualquier petición de más de ~4.5MB a una función
+// (413 FUNCTION_PAYLOAD_TOO_LARGE) ANTES de que llegue a este código,
+// así que un límite más alto que eso (antes 8MB) nunca se alcanzaba: la
+// foto de celular de 5-8MB pasaba esta validación en teoría, pero
+// Vercel la cortaba, y se veía como un error de subida sin explicación.
+// El navegador ya reduce las imágenes antes de enviarlas (ver
+// preparar-imagen.ts); este límite queda de red de seguridad, por debajo
+// del de Vercel, para que si algo grande se cuela el mensaje sea claro.
+const LIMITE_MB = 4;
 
 export async function subirFotoProducto(
   _estado: EstadoSubidaFoto,
@@ -69,7 +72,8 @@ export async function subirFotoProducto(
   try {
     const url = await subirFotoAStorage(productoId, archivo);
     await guardarFotoProducto(productoId, url);
-  } catch {
+  } catch (error) {
+    console.error('[subida] foto de producto', { productoId, tipo: archivo.type, bytes: archivo.size }, error);
     return { error: 'No se pudo subir la imagen. Intenta de nuevo.' };
   }
 
@@ -169,7 +173,8 @@ export async function subirLogo(
   try {
     const url = await subirLogoAStorage(archivo);
     await guardarLogoUrl(url);
-  } catch {
+  } catch (error) {
+    console.error('[subida] logo', { tipo: archivo.type, bytes: archivo.size }, error);
     return { error: 'No se pudo subir el logo. Intenta de nuevo.' };
   }
 
@@ -313,7 +318,8 @@ export async function agregarFotoGaleriaProducto(
   try {
     const url = await subirFotoGaleriaAStorage(productoId, archivo);
     await agregarFotoGaleria(productoId, url);
-  } catch {
+  } catch (error) {
+    console.error('[subida] foto de galería', { productoId, tipo: archivo.type, bytes: archivo.size }, error);
     return { error: 'No se pudo subir la imagen. Intenta de nuevo.' };
   }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
+import { prepararInputImagen } from '@/lib/preparar-imagen';
 import Image from 'next/image';
 import {
   agregarFotoGaleriaProducto,
@@ -52,12 +53,28 @@ function AgregarFoto({ productoId }: { productoId: number }) {
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function manejarSeleccion(e: React.ChangeEvent<HTMLInputElement>) {
-    const archivo = e.target.files?.[0];
+  // Las fotos de celular pesan más de lo que Vercel deja pasar (~4.5MB
+  // por petición): se reducen aquí, en el navegador, antes de subirlas
+  // (ver preparar-imagen.ts).
+  const [errorImagen, setErrorImagen] = useState<string | null>(null);
+  const [preparando, setPreparando] = useState(false);
+
+  async function manejarSeleccion(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    setErrorImagen(null);
     setVistaPrevia((anterior) => {
       if (anterior) URL.revokeObjectURL(anterior);
-      return archivo ? URL.createObjectURL(archivo) : null;
+      return null;
     });
+    setPreparando(true);
+    const error = await prepararInputImagen(input);
+    setPreparando(false);
+    if (error) {
+      setErrorImagen(error);
+      return;
+    }
+    const archivo = input.files?.[0];
+    setVistaPrevia(archivo ? URL.createObjectURL(archivo) : null);
   }
 
   useEffect(() => {
@@ -106,6 +123,8 @@ function AgregarFoto({ productoId }: { productoId: number }) {
           </button>
         </div>
       </div>
+      {preparando && <p className="text-[11px] text-muted">Preparando imagen...</p>}
+      {errorImagen && <p className="text-[11px] text-danger">{errorImagen}</p>}
       {estado?.error && <p className="text-[11px] text-danger">{estado.error}</p>}
     </form>
   );

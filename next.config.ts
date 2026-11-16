@@ -49,16 +49,18 @@ const cspHeader = `
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      // Por defecto Next.js corta cualquier Server Action en 1MB —
-      // muy por debajo del límite de 8MB que ya validaba nuestro
-      // propio código en admin/actions.ts (LIMITE_MB). Una foto de
-      // celular casi siempre pesa más de 1MB, así que se rechazaba
-      // ANTES de que nuestro código llegara a verla, con un error
-      // genérico de Next en vez del mensaje claro que ya teníamos
-      // escrito. 10mb deja margen sobre los 8MB reales (el propio
-      // límite del multipart le suma peso de más por los separadores
-      // entre campos).
-      bodySizeLimit: "10mb",
+      // Por defecto Next.js corta cualquier Server Action en 1MB, muy
+      // por debajo de una foto de celular: se rechazaba ANTES de que
+      // nuestro código la viera, con un error genérico. 5mb deja margen
+      // sobre el límite propio de 4MB (LIMITE_MB en admin/actions.ts) y
+      // sobre el peso extra del multipart.
+      //
+      // OJO: en Vercel el límite real es ~4.5MB por petición, sin
+      // importar este número — por encima, Vercel responde 413
+      // (FUNCTION_PAYLOAD_TOO_LARGE) sin llegar a esta app. Por eso las
+      // imágenes se reducen en el navegador antes de enviarlas (ver
+      // lib/preparar-imagen.ts).
+      bodySizeLimit: "5mb",
     },
   },
   images: {
