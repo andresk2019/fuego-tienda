@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import {
   agregarPromocion,
+  editarPromocion,
   actualizarActiva,
   borrarPromocion,
 } from '@/app/admin/promociones/actions';
@@ -44,29 +45,41 @@ function describirFechas(p: Promocion): string {
 
 type ProductoSelector = { id: number; nombre: string };
 
-function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[] }) {
-  const [conDescuento, setConDescuento] = useState(false);
-  const [estado, accion, guardando] = useActionState(agregarPromocion, undefined);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (estado?.ok) {
-      formRef.current?.reset();
-      setConDescuento(false);
-    }
-  }, [estado]);
+// Los campos de una promoción — los comparten crear y editar. Con
+// `promocion` (editar) arranca con sus valores; sin ella (crear), vacío.
+function FormularioPromocion({
+  productos,
+  promocion,
+  accion,
+  guardando,
+  error,
+  textoBoton,
+  alCancelar,
+}: {
+  productos: ProductoSelector[];
+  promocion?: Promocion;
+  accion: (formData: FormData) => void;
+  guardando: boolean;
+  error?: string;
+  textoBoton: string;
+  alCancelar?: () => void;
+}) {
+  const [conDescuento, setConDescuento] = useState(
+    promocion?.descuentoPorcentaje != null
+  );
 
   return (
     <form
-      ref={formRef}
       action={accion}
       className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4"
     >
+      {promocion && <input type="hidden" name="promocionId" value={promocion.id} />}
       <input
         type="text"
         name="titulo"
         required
         maxLength={LONGITUD_MAXIMA_TITULO}
+        defaultValue={promocion?.titulo}
         placeholder="Título (ej. Black Friday: 20% en toda la tienda)"
         className={CLASE_CAMPO}
       />
@@ -74,29 +87,56 @@ function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[]
         name="texto"
         rows={2}
         maxLength={LONGITUD_MAXIMA_TEXTO}
+        defaultValue={promocion?.texto}
         placeholder="Texto corto (opcional, ej. Solo este fin de semana)"
         className={CLASE_CAMPO}
       />
 
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-foreground">Imagen del banner (opcional)</span>
-        <input
-          type="file"
-          name="imagen"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          className="text-xs text-muted file:mr-2 file:rounded-lg file:border-0 file:bg-ember file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-on-ember"
-        />
-        <span className="text-xs text-muted">
-          Mejor si es ancha (ej. 1200 × 400). Sin imagen, el banner usa el
-          color de la marca.
-        </span>
-      </label>
+      <div className="flex flex-col gap-2 text-sm">
+        {promocion?.imagenUrl && (
+          <div className="flex flex-wrap items-center gap-3">
+            <Image
+              src={promocion.imagenUrl}
+              alt="Imagen actual del banner"
+              width={96}
+              height={64}
+              className="h-16 w-24 shrink-0 rounded-lg border border-border object-cover"
+            />
+            <label className="flex items-center gap-2 text-foreground">
+              <input
+                type="checkbox"
+                name="quitarImagen"
+                className="h-4 w-4 rounded border-border accent-ember"
+              />
+              Quitar la imagen actual
+            </label>
+          </div>
+        )}
+        <label className="flex flex-col gap-1">
+          <span className="font-medium text-foreground">
+            {promocion?.imagenUrl
+              ? 'Cambiar la imagen (opcional)'
+              : 'Imagen del banner (opcional)'}
+          </span>
+          <input
+            type="file"
+            name="imagen"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="text-xs text-muted file:mr-2 file:rounded-lg file:border-0 file:bg-ember file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-on-ember"
+          />
+          <span className="text-xs text-muted">
+            Mejor si es ancha (ej. 1200 × 400). Sin imagen, el banner usa el
+            color de la marca.
+          </span>
+        </label>
+      </div>
 
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-foreground">Enlace (opcional)</span>
         <input
           type="text"
           name="enlace"
+          defaultValue={promocion?.enlace ?? ''}
           placeholder="/catalogo"
           className={CLASE_CAMPO}
         />
@@ -109,11 +149,21 @@ function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[]
       <div className="flex flex-wrap gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-foreground">Empieza (opcional)</span>
-          <input type="date" name="inicio" className={CLASE_CAMPO} />
+          <input
+            type="date"
+            name="inicio"
+            defaultValue={promocion?.inicio ?? ''}
+            className={CLASE_CAMPO}
+          />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-foreground">Termina (opcional)</span>
-          <input type="date" name="fin" className={CLASE_CAMPO} />
+          <input
+            type="date"
+            name="fin"
+            defaultValue={promocion?.fin ?? ''}
+            className={CLASE_CAMPO}
+          />
         </label>
       </div>
 
@@ -129,6 +179,7 @@ function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[]
             max={DESCUENTO_MAXIMO}
             step={1}
             inputMode="numeric"
+            defaultValue={promocion?.descuentoPorcentaje ?? ''}
             placeholder="Ej. 20"
             onChange={(e) => setConDescuento(e.target.value.trim() !== '')}
             className={`w-32 ${CLASE_CAMPO}`}
@@ -141,28 +192,33 @@ function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[]
           </span>
         </label>
 
-        {conDescuento && (
-          <details className="text-sm">
-            <summary className="cursor-pointer font-medium text-foreground">
-              Productos que NO entran en el descuento (opcional)
-            </summary>
-            <ul className="mt-2 grid max-h-48 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
-              {productos.map((p) => (
-                <li key={p.id}>
-                  <label className="flex items-center gap-2 text-foreground">
-                    <input
-                      type="checkbox"
-                      name="productosExcluidos"
-                      value={p.id}
-                      className="h-4 w-4 rounded border-border accent-ember"
-                    />
-                    {p.nombre}
-                  </label>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
+        {/* Oculto (no desmontado) cuando no hay descuento, para no
+            perder las exclusiones marcadas si se borra y se vuelve a
+            escribir el porcentaje. El servidor las ignora sin descuento. */}
+        <details
+          open={promocion?.productosExcluidos.length ? true : undefined}
+          className={conDescuento ? 'text-sm' : 'hidden'}
+        >
+          <summary className="cursor-pointer font-medium text-foreground">
+            Productos que NO entran en el descuento (opcional)
+          </summary>
+          <ul className="mt-2 grid max-h-48 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
+            {productos.map((p) => (
+              <li key={p.id}>
+                <label className="flex items-center gap-2 text-foreground">
+                  <input
+                    type="checkbox"
+                    name="productosExcluidos"
+                    value={p.id}
+                    defaultChecked={promocion?.productosExcluidos.includes(p.id)}
+                    className="h-4 w-4 rounded border-border accent-ember"
+                  />
+                  {p.nombre}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </details>
       </div>
 
       <fieldset className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-foreground">
@@ -171,7 +227,7 @@ function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[]
           <input
             type="checkbox"
             name="enFranja"
-            defaultChecked
+            defaultChecked={promocion ? promocion.enFranja : true}
             className="h-4 w-4 rounded border-border accent-ember"
           />
           Franja superior (en todas las páginas)
@@ -180,22 +236,86 @@ function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[]
           <input
             type="checkbox"
             name="enPortada"
-            defaultChecked
+            defaultChecked={promocion ? promocion.enPortada : true}
             className="h-4 w-4 rounded border-border accent-ember"
           />
           Banner en la portada
         </label>
       </fieldset>
 
-      <button
-        type="submit"
-        disabled={guardando}
-        className="w-fit rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover disabled:opacity-60"
-      >
-        {guardando ? 'Guardando...' : 'Crear promoción'}
-      </button>
-      {estado?.error && <p className="text-xs text-danger">{estado.error}</p>}
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={guardando}
+          className="w-fit rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover disabled:opacity-60"
+        >
+          {guardando ? 'Guardando...' : textoBoton}
+        </button>
+        {alCancelar && (
+          <button
+            type="button"
+            onClick={alCancelar}
+            className="text-sm text-muted transition-colors hover:text-foreground"
+          >
+            Cancelar
+          </button>
+        )}
+      </div>
+      {error && <p className="text-xs text-danger">{error}</p>}
     </form>
+  );
+}
+
+function FormularioNuevaPromocion({ productos }: { productos: ProductoSelector[] }) {
+  const [estado, accion, guardando] = useActionState(agregarPromocion, undefined);
+  // Al crear con éxito, el formulario se vuelve a montar desde cero
+  // (vacío, incluido el campo de archivo) cambiando su `key`.
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    if (estado?.ok) setVersion((v) => v + 1);
+  }, [estado]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <FormularioPromocion
+        key={version}
+        productos={productos}
+        accion={accion}
+        guardando={guardando}
+        error={estado?.error}
+        textoBoton="Crear promoción"
+      />
+      {estado?.ok && <p className="text-xs text-ember">¡Promoción creada!</p>}
+    </div>
+  );
+}
+
+function FormularioEditarPromocion({
+  promocion,
+  productos,
+  alCerrar,
+}: {
+  promocion: Promocion;
+  productos: ProductoSelector[];
+  alCerrar: () => void;
+}) {
+  const [estado, accion, guardando] = useActionState(editarPromocion, undefined);
+
+  useEffect(() => {
+    if (estado?.ok) alCerrar();
+  }, [estado, alCerrar]);
+
+  return (
+    <FormularioPromocion
+      productos={productos}
+      promocion={promocion}
+      accion={accion}
+      guardando={guardando}
+      error={estado?.error}
+      textoBoton="Guardar cambios"
+      alCancelar={alCerrar}
+    />
   );
 }
 
@@ -214,6 +334,20 @@ function FilaPromocion({
   // Borrar es irreversible — se confirma con un segundo paso propio,
   // igual que en las reseñas (ver ListaResenas.tsx).
   const [confirmandoBorrar, setConfirmandoBorrar] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const cerrarEdicion = useCallback(() => setEditando(false), []);
+
+  if (editando) {
+    return (
+      <li>
+        <FormularioEditarPromocion
+          promocion={promocion}
+          productos={productos}
+          alCerrar={cerrarEdicion}
+        />
+      </li>
+    );
+  }
 
   return (
     <li className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
@@ -278,6 +412,13 @@ function FilaPromocion({
               Activa
             </label>
           </form>
+          <button
+            type="button"
+            onClick={() => setEditando(true)}
+            className="text-xs font-medium text-foreground transition-colors hover:text-ember"
+          >
+            Editar
+          </button>
           {confirmandoBorrar ? (
             <div className="flex items-center gap-2 text-xs whitespace-nowrap">
               <span className="text-danger">¿Borrar?</span>

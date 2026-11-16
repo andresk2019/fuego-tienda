@@ -156,6 +156,49 @@ export async function crearPromocion(datos: {
   );
 }
 
+// `imagenUrl`: undefined = dejar la imagen como está; null = quitarla;
+// un texto = reemplazarla por esa. Lo demás siempre se sobrescribe con
+// lo que llega del formulario de edición.
+export async function actualizarPromocion(
+  id: number,
+  datos: {
+    titulo: string;
+    texto: string;
+    imagenUrl: string | null | undefined;
+    enlace: string | null;
+    inicio: string | null;
+    fin: string | null;
+    enFranja: boolean;
+    enPortada: boolean;
+    descuentoPorcentaje: number | null;
+    productosExcluidos: number[];
+  }
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `UPDATE tienda_promociones SET
+       titulo = $2, texto = $3, enlace = $4, inicio = $5, fin = $6,
+       en_franja = $7, en_portada = $8,
+       descuento_porcentaje = $9, productos_excluidos = $10,
+       imagen_url = CASE WHEN $11::boolean THEN $12::text ELSE imagen_url END
+     WHERE id = $1`,
+    [
+      id,
+      datos.titulo,
+      datos.texto,
+      datos.enlace,
+      datos.inicio,
+      datos.fin,
+      datos.enFranja,
+      datos.enPortada,
+      datos.descuentoPorcentaje,
+      datos.productosExcluidos,
+      datos.imagenUrl !== undefined,
+      datos.imagenUrl ?? null,
+    ]
+  );
+}
+
 export async function actualizarActivaPromocion(
   id: number,
   activa: boolean
