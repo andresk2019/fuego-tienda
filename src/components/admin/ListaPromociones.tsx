@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useState } from 'react';
+import { prepararInputImagen } from '@/lib/preparar-imagen';
 import Image from 'next/image';
 import {
   agregarPromocion,
@@ -67,6 +68,19 @@ function FormularioPromocion({
   const [conDescuento, setConDescuento] = useState(
     promocion?.descuentoPorcentaje != null
   );
+  // Las fotos de celular pesan más de lo que Vercel deja pasar (~4.5MB
+  // por petición): se reducen aquí, en el navegador, antes de subirlas
+  // (ver preparar-imagen.ts).
+  const [errorImagen, setErrorImagen] = useState<string | null>(null);
+  const [preparando, setPreparando] = useState(false);
+
+  async function alElegirImagen(e: React.ChangeEvent<HTMLInputElement>) {
+    setErrorImagen(null);
+    setPreparando(true);
+    const error = await prepararInputImagen(e.currentTarget);
+    setPreparando(false);
+    if (error) setErrorImagen(error);
+  }
 
   return (
     <form
@@ -121,13 +135,16 @@ function FormularioPromocion({
           <input
             type="file"
             name="imagen"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/*"
+            onChange={alElegirImagen}
             className="text-xs text-muted file:mr-2 file:rounded-lg file:border-0 file:bg-ember file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-on-ember"
           />
           <span className="text-xs text-muted">
             Mejor si es ancha (ej. 1200 × 400). Sin imagen, el banner usa el
             color de la marca.
           </span>
+          {preparando && <span className="text-xs text-muted">Preparando imagen...</span>}
+          {errorImagen && <span className="text-xs text-danger">{errorImagen}</span>}
         </label>
       </div>
 
@@ -246,7 +263,7 @@ function FormularioPromocion({
       <div className="flex items-center gap-3">
         <button
           type="submit"
-          disabled={guardando}
+          disabled={guardando || preparando}
           className="w-fit rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover disabled:opacity-60"
         >
           {guardando ? 'Guardando...' : textoBoton}

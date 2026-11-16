@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
+import { prepararInputImagen } from '@/lib/preparar-imagen';
 import Image from 'next/image';
 import { subirLogo } from '@/app/admin/actions';
 import Hero from '@/components/Hero';
@@ -17,12 +18,28 @@ export default function SubirLogoForm({ logoUrl }: { logoUrl: string | null }) {
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
   const inputArchivoRef = useRef<HTMLInputElement>(null);
 
-  function manejarSeleccionArchivo(e: React.ChangeEvent<HTMLInputElement>) {
-    const archivo = e.target.files?.[0];
+  // Las fotos de celular pesan más de lo que Vercel deja pasar (~4.5MB
+  // por petición): se reducen aquí, en el navegador, antes de subirlas
+  // (ver preparar-imagen.ts).
+  const [errorImagen, setErrorImagen] = useState<string | null>(null);
+  const [preparando, setPreparando] = useState(false);
+
+  async function manejarSeleccionArchivo(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    setErrorImagen(null);
     setVistaPrevia((anterior) => {
       if (anterior) URL.revokeObjectURL(anterior);
-      return archivo ? URL.createObjectURL(archivo) : null;
+      return null;
     });
+    setPreparando(true);
+    const error = await prepararInputImagen(input);
+    setPreparando(false);
+    if (error) {
+      setErrorImagen(error);
+      return;
+    }
+    const archivo = input.files?.[0];
+    setVistaPrevia(archivo ? URL.createObjectURL(archivo) : null);
   }
 
   useEffect(() => {
@@ -84,6 +101,8 @@ export default function SubirLogoForm({ logoUrl }: { logoUrl: string | null }) {
         </form>
       </div>
 
+      {preparando && <p className="text-xs text-muted">Preparando imagen...</p>}
+      {errorImagen && <p className="text-xs text-danger">{errorImagen}</p>}
       {estado?.error && <p className="text-xs text-danger">{estado.error}</p>}
       {estado?.ok && <p className="text-xs text-ember">¡Logo actualizado!</p>}
 

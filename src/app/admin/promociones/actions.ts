@@ -19,7 +19,9 @@ import {
 
 export type EstadoCrearPromocion = { error?: string; ok?: boolean } | undefined;
 
-const LIMITE_MB = 8;
+// Vercel corta en ~4.5MB por petición (ver LIMITE_MB en admin/actions.ts);
+// el navegador ya reduce la imagen antes de enviarla.
+const LIMITE_MB = 4;
 const EXTENSION_POR_TIPO: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -133,7 +135,8 @@ async function subirImagenDelFormulario(
   }
   try {
     return { url: await subirImagenPromocionAStorage(imagen, extension) };
-  } catch {
+  } catch (error) {
+    console.error('[subida] imagen de promoción', { tipo: imagen.type, bytes: imagen.size }, error);
     return { error: 'No se pudo subir la imagen. Intenta de nuevo.' };
   }
 }
