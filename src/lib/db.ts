@@ -232,7 +232,7 @@ export async function validarStockCarrito(
 // ya habría bloqueado ese mismo ítem antes de llegar acá.
 export async function obtenerPreciosReales(
   productoIds: number[]
-): Promise<Map<number, number>> {
+): Promise<Map<number, { precio: number; precioNormal: number }>> {
   if (productoIds.length === 0) return new Map();
 
   const [{ rows }, promociones] = await Promise.all([
@@ -252,7 +252,10 @@ export async function obtenerPreciosReales(
       const precioBase = Number(r.precio_venta);
       const porcentaje =
         precioBase > 0 ? porcentajeDescuentoDe(promociones, r.id as number) : 0;
-      return [r.id as number, aplicarDescuento(precioBase, porcentaje)];
+      return [
+        r.id as number,
+        { precio: aplicarDescuento(precioBase, porcentaje), precioNormal: precioBase },
+      ];
     })
   );
 }

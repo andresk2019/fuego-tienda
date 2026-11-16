@@ -40,6 +40,16 @@ export function totalCarrito(items: ItemCarrito[]): number {
   return items.reduce((suma, item) => suma + item.precioUnitario * item.cantidad, 0);
 }
 
+// Lo que costaría el carrito sin ningún descuento — se usa para decidir
+// el envío gratis, que se mide con precios normales (ver
+// crearPedidoDesdeCarrito en (tienda)/carrito/actions.ts).
+export function totalCarritoPrecioNormal(items: ItemCarrito[]): number {
+  return items.reduce(
+    (suma, item) => suma + (item.precioOriginal ?? item.precioUnitario) * item.cantidad,
+    0
+  );
+}
+
 export function cantidadTotalCarrito(items: ItemCarrito[]): number {
   return items.reduce((suma, item) => suma + item.cantidad, 0);
 }

@@ -126,10 +126,19 @@ export async function crearPedidoDesdeCarrito(datos: {
   // el carrito abierto, lo registrado y el total siempre coinciden.
   const itemsConPrecioReal = datos.items.map((item) => ({
     ...item,
-    precioUnitario: preciosReales.get(item.productoId) ?? 0,
+    precioUnitario: preciosReales.get(item.productoId)?.precio ?? 0,
   }));
   const subtotalReal = itemsConPrecioReal.reduce(
     (suma, item) => suma + item.precioUnitario * item.cantidad,
+    0
+  );
+  // El envío gratis se decide con el subtotal a precios NORMALES (sin
+  // descuento): una promo no debe quitarle el envío gratis a quien
+  // igual llegaría al monto sin ella. Lo que se cobra (el total) sí
+  // usa los precios rebajados.
+  const subtotalPrecioNormal = datos.items.reduce(
+    (suma, item) =>
+      suma + (preciosReales.get(item.productoId)?.precioNormal ?? 0) * item.cantidad,
     0
   );
 
@@ -145,7 +154,8 @@ export async function crearPedidoDesdeCarrito(datos: {
   const configEnvio = await obtenerConfigEnvio();
   const costoBase =
     zonaEnvio === 'medellin' ? configEnvio.costoLocal : configEnvio.costoNacional;
-  const costoEnvio = subtotalReal >= configEnvio.gratisDesde ? 0 : costoBase;
+  const costoEnvio =
+    subtotalPrecioNormal >= configEnvio.gratisDesde ? 0 : costoBase;
   const total = subtotalReal + costoEnvio;
 
   try {

@@ -82,7 +82,9 @@ export default function ConfigEnvioForm({
         Hoy: {formatoCOP.format(configActual.costoLocal)} dentro de
         Medellín, {formatoCOP.format(configActual.costoNacional)} al
         resto del país, gratis en compras desde{' '}
-        {formatoCOP.format(configActual.gratisDesde)}.
+        {formatoCOP.format(configActual.gratisDesde)}. Ese monto se mide
+        con los precios normales: un descuento de una promoción no le
+        quita el envío gratis al cliente.
       </p>
 
       {estado?.error && <p className="text-xs text-danger">{estado.error}</p>}
