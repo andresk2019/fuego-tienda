@@ -1,6 +1,8 @@
 import { obtenerCatalogoFuego, visibleEnTienda } from "@/lib/db";
 import { obtenerResumenResenasPorProducto } from "@/lib/resenas-db";
+import { obtenerPromocionesPortada } from "@/lib/promociones-db";
 import CatalogoPorSeccion from "@/components/CatalogoPorSeccion";
+import BannersPromocion from "@/components/BannersPromocion";
 
 // El stock puede cambiar en cualquier momento por una venta de mostrador
 // registrada desde Contabilidad Lady (no solo por pedidos de esta tienda),
@@ -13,14 +15,21 @@ export const metadata = {
 };
 
 export default async function CatalogoPage() {
-  const [productosTodos, resumenResenasPorProducto] = await Promise.all([
-    obtenerCatalogoFuego(),
-    obtenerResumenResenasPorProducto(),
-  ]);
+  const [productosTodos, resumenResenasPorProducto, promociones] =
+    await Promise.all([
+      obtenerCatalogoFuego(),
+      obtenerResumenResenasPorProducto(),
+      obtenerPromocionesPortada(),
+    ]);
   const productos = productosTodos.filter(visibleEnTienda);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
+      <BannersPromocion
+        promociones={promociones}
+        variante="compacto"
+        rutaActual="/catalogo"
+      />
       {productos.length === 0 ? (
         <p className="text-center text-muted">
           Todavía no hay productos publicados.

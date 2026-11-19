@@ -20,10 +20,24 @@ import PrecioProducto from "@/components/PrecioProducto";
 // la vista después del banner de bienvenida, antes que la franja de
 // confianza (decisión del dueño, 2026-09-16: los productos deben
 // captar la atención primero).
+//
+// También lo usa la sección "En promoción" de la portada (los textos y
+// la insignia cambian con las props de abajo).
 export default function CarruselDestacados({
   productos,
+  etiqueta = "Elegidas por nuestros clientes",
+  titulo = "Las más vendidas",
+  mostrarInsignia = true,
+  extra,
 }: {
   productos: ProductoCatalogo[];
+  etiqueta?: string;
+  titulo?: string;
+  // "Destacado" arriba de cada tarjeta. En la sección de promoción se
+  // apaga: el precio ya trae su propia etiqueta "-20%".
+  mostrarInsignia?: boolean;
+  // Algo extra debajo del título (ej. la cuenta regresiva de la promo).
+  extra?: React.ReactNode;
 }) {
   const listaRef = useRef<HTMLUListElement>(null);
 
@@ -40,11 +54,12 @@ export default function CarruselDestacados({
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-ember/15 px-3 py-1 text-xs font-semibold tracking-wide text-ember uppercase">
               <EstrellaIcon llena className="h-3.5 w-3.5" />
-              Elegidas por nuestros clientes
+              {etiqueta}
             </span>
             <h2 className="mt-3 font-serif text-3xl text-foreground">
-              Las más vendidas
+              {titulo}
             </h2>
+            {extra && <div className="mt-1 text-sm text-ember">{extra}</div>}
           </div>
           <div className="hidden shrink-0 gap-2 sm:flex">
             <button
@@ -79,10 +94,12 @@ export default function CarruselDestacados({
                 href={productoHref(producto)}
                 className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-ember/60 hover:shadow-lg"
               >
-                <span className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-full bg-ember px-2 py-1 text-[10px] font-semibold text-on-ember shadow-sm">
-                  <EstrellaIcon llena className="h-3 w-3" />
-                  Destacado
-                </span>
+                {mostrarInsignia && (
+                  <span className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-full bg-ember px-2 py-1 text-[10px] font-semibold text-on-ember shadow-sm">
+                    <EstrellaIcon llena className="h-3 w-3" />
+                    Destacado
+                  </span>
+                )}
                 <FotoProducto
                   fotoUrl={producto.fotoUrl}
                   alt={producto.nombre}

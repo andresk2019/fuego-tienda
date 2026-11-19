@@ -35,9 +35,11 @@ export default async function PromocionesPage() {
       </div>
 
       <p className="mt-2 mb-6 text-sm text-muted">
-        Crea banners para fechas especiales (Black Friday, Navidad, Día de la
-        Madre...). Puedes programarlos con fecha de inicio y fin: se
-        encienden y se apagan solos. Si pones un porcentaje de descuento,
+        Crea promociones para fechas especiales (Black Friday, Navidad, Día de
+        la Madre...) y elige dónde se anuncian: franja superior, banners
+        (portada, catálogo y carrito) y/o un pop-up al entrar. Puedes
+        programarlas con fecha de inicio y fin: se encienden y se apagan
+        solas, y muestran una cuenta regresiva. Si pones un porcentaje de descuento,
         se aplica de verdad a los precios de la tienda mientras la promo
         esté vigente; si lo dejas vacío, el banner solo anuncia.
       </p>

@@ -28,7 +28,8 @@ function asegurarEsquema(): Promise<void> {
            creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
          );
          ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS descuento_porcentaje INTEGER;
-         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS productos_excluidos INTEGER[] NOT NULL DEFAULT '{}';`
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS productos_excluidos INTEGER[] NOT NULL DEFAULT '{}';
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS en_popup BOOLEAN NOT NULL DEFAULT false;`
       )
       .then(() => undefined);
   }
@@ -45,7 +46,7 @@ const COLUMNAS = `
   id, titulo, texto, imagen_url, enlace,
   to_char(inicio, 'YYYY-MM-DD') AS inicio,
   to_char(fin, 'YYYY-MM-DD') AS fin,
-  activa, en_franja, en_portada,
+  activa, en_franja, en_portada, en_popup,
   descuento_porcentaje, productos_excluidos,
   CASE
     WHEN NOT activa THEN 'desactivada'
@@ -65,6 +66,7 @@ function filaAPromocion(r: {
   activa: boolean;
   en_franja: boolean;
   en_portada: boolean;
+  en_popup: boolean;
   descuento_porcentaje: number | null;
   productos_excluidos: number[];
   estado: Promocion['estado'];
@@ -80,6 +82,7 @@ function filaAPromocion(r: {
     activa: r.activa,
     enFranja: r.en_franja,
     enPortada: r.en_portada,
+    enPopup: r.en_popup,
     descuentoPorcentaje: r.descuento_porcentaje,
     productosExcluidos: r.productos_excluidos,
     estado: r.estado,
@@ -123,6 +126,13 @@ export async function obtenerPromocionesPortada(): Promise<Promocion[]> {
   return vigentes.filter((p) => p.enPortada);
 }
 
+// El pop-up solo muestra UNA promo (la vigente más reciente marcada
+// para eso) — no tiene sentido abrir varias ventanas seguidas.
+export async function obtenerPromocionPopup(): Promise<Promocion | null> {
+  const vigentes = await obtenerPromocionesVigentes();
+  return vigentes.find((p) => p.enPopup) ?? null;
+}
+
 export async function crearPromocion(datos: {
   titulo: string;
   texto: string;
@@ -132,6 +142,7 @@ export async function crearPromocion(datos: {
   fin: string | null;
   enFranja: boolean;
   enPortada: boolean;
+  enPopup: boolean;
   descuentoPorcentaje: number | null;
   productosExcluidos: number[];
 }): Promise<void> {
@@ -139,8 +150,8 @@ export async function crearPromocion(datos: {
   await getPool().query(
     `INSERT INTO tienda_promociones
        (titulo, texto, imagen_url, enlace, inicio, fin, en_franja, en_portada,
-        descuento_porcentaje, productos_excluidos)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        descuento_porcentaje, productos_excluidos, en_popup)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       datos.titulo,
       datos.texto,
@@ -152,6 +163,7 @@ export async function crearPromocion(datos: {
       datos.enPortada,
       datos.descuentoPorcentaje,
       datos.productosExcluidos,
+      datos.enPopup,
     ]
   );
 }
@@ -170,6 +182,7 @@ export async function actualizarPromocion(
     fin: string | null;
     enFranja: boolean;
     enPortada: boolean;
+  enPopup: boolean;
     descuentoPorcentaje: number | null;
     productosExcluidos: number[];
   }
@@ -180,7 +193,8 @@ export async function actualizarPromocion(
        titulo = $2, texto = $3, enlace = $4, inicio = $5, fin = $6,
        en_franja = $7, en_portada = $8,
        descuento_porcentaje = $9, productos_excluidos = $10,
-       imagen_url = CASE WHEN $11::boolean THEN $12::text ELSE imagen_url END
+       imagen_url = CASE WHEN $11::boolean THEN $12::text ELSE imagen_url END,
+       en_popup = $13
      WHERE id = $1`,
     [
       id,
@@ -195,6 +209,7 @@ export async function actualizarPromocion(
       datos.productosExcluidos,
       datos.imagenUrl !== undefined,
       datos.imagenUrl ?? null,
+      datos.enPopup,
     ]
   );
 }

@@ -4,8 +4,12 @@ import CarritoLateral from "@/components/CarritoLateral";
 import CarritoFlotante from "@/components/CarritoFlotante";
 import WhatsAppFlotante from "@/components/WhatsAppFlotante";
 import FranjaPromocion from "@/components/FranjaPromocion";
+import PopupPromocion from "@/components/PopupPromocion";
 import { obtenerNumeroWhatsApp } from "@/lib/admin-db";
-import { obtenerPromocionFranja } from "@/lib/promociones-db";
+import {
+  obtenerPromocionFranja,
+  obtenerPromocionPopup,
+} from "@/lib/promociones-db";
 
 // Header/footer públicos — solo para las páginas de la tienda
 // (portada, catálogo, producto, quiénes somos, carrito). El panel de
@@ -26,9 +30,10 @@ export default async function TiendaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [numeroWhatsApp, promocionFranja] = await Promise.all([
+  const [numeroWhatsApp, promocionFranja, promocionPopup] = await Promise.all([
     obtenerNumeroWhatsApp(),
     obtenerPromocionFranja(),
+    obtenerPromocionPopup(),
   ]);
 
   return (
@@ -40,6 +45,7 @@ export default async function TiendaLayout({
       <CarritoLateral />
       <CarritoFlotante />
       <WhatsAppFlotante numeroWhatsApp={numeroWhatsApp} />
+      <PopupPromocion promocion={promocionPopup} />
     </>
   );
 }

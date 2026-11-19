@@ -29,6 +29,13 @@ export default function CatalogoFiltrable({
     CategoriaSlug | "todas"
   >("todas");
   const [busqueda, setBusqueda] = useState("");
+  // Solo aparece si algún producto de la lista tiene un descuento
+  // vigente (ver descuentoPorcentaje en ProductoCatalogo).
+  const hayOfertas = useMemo(
+    () => productos.some((p) => p.descuentoPorcentaje !== null),
+    [productos]
+  );
+  const [soloOfertas, setSoloOfertas] = useState(false);
 
   // Rango de precio "dinámico": el mínimo/máximo del slider no está
   // fijo en el código, se calcula a partir de los productos que de
@@ -60,6 +67,7 @@ export default function CatalogoFiltrable({
     setRangoPrecio([precioMinDisponible, precioMaxDisponible]);
     setCategoriaActiva("todas");
     setBusqueda("");
+    setSoloOfertas(false);
   }
 
   const terminoBusqueda = busqueda.trim().toLowerCase();
@@ -68,6 +76,7 @@ export default function CatalogoFiltrable({
     .filter((p) =>
       categoriaActiva === "todas" ? true : p.categoria === categoriaActiva
     )
+    .filter((p) => !soloOfertas || p.descuentoPorcentaje !== null)
     .filter(
       (p) =>
         p.precioVenta >= rangoPrecio[0] && p.precioVenta <= rangoPrecio[1]
@@ -126,6 +135,22 @@ export default function CatalogoFiltrable({
             ))}
           </nav>
         </div>
+
+        {hayOfertas && (
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs font-medium tracking-wide text-muted uppercase">
+              Ofertas
+            </span>
+            <Chip
+              variant="contorno"
+              size="sm"
+              activo={soloOfertas}
+              onClick={() => setSoloOfertas((v) => !v)}
+            >
+              Solo productos en oferta
+            </Chip>
+          </div>
+        )}
 
         {precioMinDisponible < precioMaxDisponible && (
           <FiltroPrecio
