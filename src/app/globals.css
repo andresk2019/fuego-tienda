@@ -150,3 +150,123 @@ body {
 .animar-entrada-carrito {
   animation: entrada-item-carrito 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* Estilo "Aniversario" de las promociones (ver estilo en
+   promociones.ts y Confeti.tsx / SelloAniversario.tsx). Todo es CSS
+   puro — sin video ni imágenes extra, así carga al instante en el
+   celular. Quien tiene activada la opción de "reducir movimiento" en
+   su dispositivo no ve ninguna animación (ver el final del bloque). */
+@keyframes caer-confeti {
+  0% {
+    transform: translate3d(0, -14%, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--deriva, 0px), 115%, 0) rotate(var(--giro, 540deg));
+    opacity: 0.9;
+  }
+}
+.confeti-pieza {
+  position: absolute;
+  top: 0;
+  display: block;
+  border-radius: 2px;
+  opacity: 0;
+  will-change: transform;
+  animation: caer-confeti var(--duracion, 6s) linear var(--retraso, 0s) infinite;
+}
+
+@keyframes brillo-texto {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+.texto-dorado {
+  background-image: linear-gradient(
+    100deg,
+    #b8862b 0%,
+    #f6dc8f 25%,
+    #fff3c4 50%,
+    #f6dc8f 75%,
+    #b8862b 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: brillo-texto 4s linear infinite;
+}
+
+@keyframes sello-aparece {
+  0% {
+    transform: scale(0) rotate(-25deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15) rotate(6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(-6deg);
+    opacity: 1;
+  }
+}
+@keyframes sello-pulso {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(246 220 143 / 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgb(246 220 143 / 0);
+  }
+}
+.sello-aniversario {
+  animation:
+    sello-aparece 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) both,
+    sello-pulso 2.4s ease-out 1s infinite;
+}
+
+@keyframes barrido-brillo {
+  0% {
+    transform: translateX(-130%) skewX(-20deg);
+  }
+  60%,
+  100% {
+    transform: translateX(300%) skewX(-20deg);
+  }
+}
+.franja-aniversario {
+  position: relative;
+  overflow: hidden;
+}
+.franja-aniversario::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  pointer-events: none;
+  animation: barrido-brillo 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confeti-pieza,
+  .franja-aniversario::after {
+    display: none;
+  }
+  .texto-dorado {
+    animation: none;
+    background-position: 50% 50%;
+  }
+  .sello-aniversario {
+    animation: none;
+  }
+}

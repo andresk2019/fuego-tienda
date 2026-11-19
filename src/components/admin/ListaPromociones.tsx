@@ -12,6 +12,8 @@ import {
 import {
   DESCUENTO_MAXIMO,
   DESCUENTO_MINIMO,
+  ESTILOS_PROMOCION,
+  LONGITUD_MAXIMA_SELLO,
   ETIQUETA_ESTADO,
   LONGITUD_MAXIMA_TEXTO,
   LONGITUD_MAXIMA_TITULO,
@@ -68,6 +70,7 @@ function FormularioPromocion({
   const [conDescuento, setConDescuento] = useState(
     promocion?.descuentoPorcentaje != null
   );
+  const [estilo, setEstilo] = useState<string>(promocion?.estilo ?? 'normal');
   // Las fotos de celular pesan más de lo que Vercel deja pasar (~4.5MB
   // por petición): se reducen aquí, en el navegador, antes de subirlas
   // (ver preparar-imagen.ts).
@@ -105,6 +108,47 @@ function FormularioPromocion({
         placeholder="Texto corto (opcional, ej. Solo este fin de semana)"
         className={CLASE_CAMPO}
       />
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-foreground">Estilo</span>
+          <select
+            name="estilo"
+            value={estilo}
+            onChange={(e) => setEstilo(e.target.value)}
+            className={CLASE_CAMPO}
+          >
+            {ESTILOS_PROMOCION.map((e) => (
+              <option key={e.valor} value={e.valor}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        {/* Oculto (no desmontado) fuera del estilo aniversario, para no
+            perder lo escrito si se cambia de estilo y se vuelve. El
+            servidor lo ignora si el estilo no es aniversario. */}
+        <label
+          className={estilo === 'aniversario' ? 'flex flex-col gap-1 text-sm' : 'hidden'}
+        >
+          <span className="font-medium text-foreground">Sello (opcional)</span>
+          <input
+            type="text"
+            name="sello"
+            maxLength={LONGITUD_MAXIMA_SELLO}
+            defaultValue={promocion?.sello ?? ''}
+            placeholder="Ej. 5 años"
+            className={`w-36 ${CLASE_CAMPO}`}
+          />
+        </label>
+      </div>
+      {estilo === 'aniversario' && (
+        <p className="-mt-1 text-xs text-muted">
+          Fondo oscuro con dorado, confeti que cae, título con brillo y un
+          sello redondo (ej. &ldquo;5 años&rdquo;) en la franja, los banners
+          y el pop-up. Se ve igual en el celular y no usa video.
+        </p>
+      )}
 
       <div className="flex flex-col gap-2 text-sm">
         {promocion?.imagenUrl && (
@@ -417,6 +461,7 @@ function FilaPromocion({
                 promocion.enFranja && 'Franja superior',
                 promocion.enPortada && 'Banners',
                 promocion.enPopup && 'Pop-up',
+                promocion.estilo === 'aniversario' && 'Estilo aniversario',
               ]
                 .filter(Boolean)
                 .join(' · ')}
