@@ -1,4 +1,5 @@
 import EnlacePromocion from "@/components/EnlacePromocion";
+import CuentaRegresiva from "@/components/CuentaRegresiva";
 import type { Promocion } from "@/lib/promociones";
 
 // Franja delgada arriba de todo el sitio con la promo vigente (ver
@@ -16,6 +17,13 @@ export default function FranjaPromocion({
     <>
       <span className="font-semibold">{promocion.titulo}</span>
       {promocion.texto && <span className="opacity-90"> — {promocion.texto}</span>}
+      {promocion.fin && (
+        <CuentaRegresiva
+          fin={promocion.fin}
+          prefijo=" · Termina en"
+          className="whitespace-nowrap"
+        />
+      )}
       {promocion.enlace && <span aria-hidden="true"> →</span>}
     </>
   );

@@ -3,6 +3,7 @@ import {
   obtenerConfigEnvio,
   obtenerConfigCompra,
 } from "@/lib/admin-db";
+import { obtenerPromocionesPortada } from "@/lib/promociones-db";
 import CarritoCliente from "@/components/CarritoCliente";
 
 // El número de WhatsApp, el costo de envío, y la info de pago/entrega
@@ -12,16 +13,19 @@ import CarritoCliente from "@/components/CarritoCliente";
 export const dynamic = "force-dynamic";
 
 export default async function CarritoPage() {
-  const [numeroWhatsApp, configEnvio, configCompra] = await Promise.all([
-    obtenerNumeroWhatsApp(),
-    obtenerConfigEnvio(),
-    obtenerConfigCompra(),
-  ]);
+  const [numeroWhatsApp, configEnvio, configCompra, promociones] =
+    await Promise.all([
+      obtenerNumeroWhatsApp(),
+      obtenerConfigEnvio(),
+      obtenerConfigCompra(),
+      obtenerPromocionesPortada(),
+    ]);
   return (
     <CarritoCliente
       numeroWhatsApp={numeroWhatsApp}
       configEnvio={configEnvio}
       configCompra={configCompra}
+      promociones={promociones}
     />
   );
 }

@@ -25,7 +25,10 @@ export type Promocion = {
   fin: string | null;
   activa: boolean;
   enFranja: boolean;
+  // Banners: portada, catálogo y carrito.
   enPortada: boolean;
+  // Ventana emergente al entrar (una vez por visita).
+  enPopup: boolean;
   // Porcentaje que se rebaja del precio de los productos mientras la
   // promo esté vigente (null = promo solo informativa, sin descuento).
   descuentoPorcentaje: number | null;
@@ -34,6 +37,13 @@ export type Promocion = {
   productosExcluidos: number[];
   estado: EstadoPromocion;
 };
+
+// Momento exacto en que termina una promo: el final del día `fin`
+// (YYYY-MM-DD) en hora de Colombia (UTC-5, sin horario de verano) —
+// la fecha de fin es inclusiva, igual que en la base de datos.
+export function finDePromocion(fin: string): number {
+  return Date.parse(`${fin}T23:59:59.999-05:00`);
+}
 
 export const DESCUENTO_MINIMO = 1;
 export const DESCUENTO_MAXIMO = 90;

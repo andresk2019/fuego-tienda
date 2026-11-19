@@ -5,6 +5,8 @@ import Link from "next/link";
 import { sendGAEvent } from "@next/third-parties/google";
 import { useCarrito } from "@/components/CarritoContext";
 import { totalCarrito, detallesItem, type ItemCarrito } from "@/lib/carrito";
+import BannersPromocion from "@/components/BannersPromocion";
+import type { Promocion } from "@/lib/promociones";
 import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
 import { UBICACIONES_COLOMBIA } from "@/lib/colombia-ubicaciones";
 import type { ProblemaStock } from "@/lib/db";
@@ -83,6 +85,7 @@ export default function CarritoCliente({
   numeroWhatsApp,
   configEnvio,
   configCompra,
+  promociones,
 }: {
   numeroWhatsApp: string | null;
   configEnvio: ConfigEnvio;
@@ -92,6 +95,9 @@ export default function CarritoCliente({
   // con esa info antes de escribir sus datos (ver ConfigCompraForm en
   // /admin).
   configCompra: ConfigCompra;
+  // Promos vigentes con banner — se muestra la más reciente, en
+  // versión compacta, arriba del carrito.
+  promociones: Promocion[];
 }) {
   const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
   const subtotal = totalCarrito(items);
@@ -262,6 +268,11 @@ export default function CarritoCliente({
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
+      <BannersPromocion
+        promociones={promociones}
+        variante="compacto"
+        rutaActual="/carrito"
+      />
       <h1 className="font-serif text-2xl text-foreground">Tu carrito</h1>
 
       <div className="mt-4 flex flex-col gap-1 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-muted">

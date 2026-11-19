@@ -44,6 +44,7 @@ type DatosPromocion = {
   fin: string | null;
   enFranja: boolean;
   enPortada: boolean;
+  enPopup: boolean;
   descuentoPorcentaje: number | null;
   productosExcluidos: number[];
 };
@@ -60,6 +61,7 @@ function leerDatosPromocion(
   const fin = String(formData.get('fin') ?? '').trim();
   const enFranja = formData.get('enFranja') === 'on';
   const enPortada = formData.get('enPortada') === 'on';
+  const enPopup = formData.get('enPopup') === 'on';
   const descuentoCrudo = String(formData.get('descuento') ?? '').trim();
 
   if (!titulo) return { error: 'Escribe el título de la promoción.' };
@@ -79,8 +81,10 @@ function leerDatosPromocion(
   if (inicio && fin && fin < inicio) {
     return { error: 'La fecha de fin no puede ser antes de la de inicio.' };
   }
-  if (!enFranja && !enPortada) {
-    return { error: 'Elige dónde se muestra: franja superior, portada, o ambas.' };
+  if (!enFranja && !enPortada && !enPopup) {
+    return {
+      error: 'Elige dónde se muestra: franja superior, banners o pop-up (al menos uno).',
+    };
   }
 
   // Campo vacío = promo solo informativa, sin descuento. Con valor,
@@ -115,6 +119,7 @@ function leerDatosPromocion(
       fin: fin || null,
       enFranja,
       enPortada,
+      enPopup,
       descuentoPorcentaje,
       productosExcluidos,
     },

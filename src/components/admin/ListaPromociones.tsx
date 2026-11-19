@@ -256,7 +256,16 @@ function FormularioPromocion({
             defaultChecked={promocion ? promocion.enPortada : true}
             className="h-4 w-4 rounded border-border accent-ember"
           />
-          Banner en la portada
+          Banners (portada, catálogo y carrito)
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="enPopup"
+            defaultChecked={promocion ? promocion.enPopup : false}
+            className="h-4 w-4 rounded border-border accent-ember"
+          />
+          Pop-up al entrar (una vez por visita)
         </label>
       </fieldset>
 
@@ -406,7 +415,8 @@ function FilaPromocion({
             <p className="mt-0.5 text-xs text-muted">
               {[
                 promocion.enFranja && 'Franja superior',
-                promocion.enPortada && 'Portada',
+                promocion.enPortada && 'Banners',
+                promocion.enPopup && 'Pop-up',
               ]
                 .filter(Boolean)
                 .join(' · ')}
