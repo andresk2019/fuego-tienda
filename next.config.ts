@@ -2,6 +2,19 @@ import type { NextConfig } from "next";
 
 const esDev = process.env.NODE_ENV === "development";
 
+// Servidores de fotos permitidos para next/image (ver `images` más abajo).
+const HOST_PRODUCCION = "yaxagfzxibjipavncujr.supabase.co";
+function hostDeSupabaseActual(): string | null {
+  try {
+    return new URL(process.env.SUPABASE_URL ?? "").hostname || null;
+  } catch {
+    return null;
+  }
+}
+const hostsDeImagenes = Array.from(
+  new Set([HOST_PRODUCCION, hostDeSupabaseActual()].filter((h): h is string => !!h))
+);
+
 // Sin nonces (ver docs/01-app/02-guides/content-security-policy.md):
 // una política de nonce por request obligaría a renderizar TODO
 // dinámico (nada de páginas estáticas ni ISR) y tocar proxy.ts para
@@ -66,13 +79,16 @@ const nextConfig: NextConfig = {
   images: {
     // Fotos de producto subidas desde el panel de administración,
     // guardadas en el bucket público de Supabase Storage.
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "yaxagfzxibjipavncujr.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-    ],
+    // Además del bucket de producción (fijo, para que el sitio real no
+    // dependa de ninguna variable), se permite el del proyecto de
+    // Supabase del entorno actual (SUPABASE_URL): en local apunta a un
+    // proyecto de pruebas aparte, con sus propias fotos, para que lo que
+    // se pruebe allá nunca toque la tienda real.
+    remotePatterns: hostsDeImagenes.map((hostname) => ({
+      protocol: "https" as const,
+      hostname,
+      pathname: "/storage/v1/object/public/**",
+    })),
   },
   // No hace falta anunciar el framework — un dato gratis de menos
   // para quien esté reconociendo el sitio.
