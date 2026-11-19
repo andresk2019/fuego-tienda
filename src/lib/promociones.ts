@@ -13,6 +13,17 @@ export type EstadoPromocion =
   | "vencida"
   | "desactivada";
 
+// Cómo se ve una promo. "aniversario": fondo oscuro con dorado, confeti
+// animado, título con brillo y un sello (ej. "5 años").
+export type EstiloPromocion = "normal" | "aniversario";
+
+export const ESTILOS_PROMOCION: { valor: EstiloPromocion; nombre: string }[] = [
+  { valor: "normal", nombre: "Normal (color de la marca)" },
+  { valor: "aniversario", nombre: "Aniversario (dorado, con confeti)" },
+];
+
+export const LONGITUD_MAXIMA_SELLO = 16;
+
 export type Promocion = {
   id: number;
   titulo: string;
@@ -29,6 +40,10 @@ export type Promocion = {
   enPortada: boolean;
   // Ventana emergente al entrar (una vez por visita).
   enPopup: boolean;
+  estilo: EstiloPromocion;
+  // Texto del sello del estilo "aniversario" (ej. "5 años"); null si
+  // no lleva.
+  sello: string | null;
   // Porcentaje que se rebaja del precio de los productos mientras la
   // promo esté vigente (null = promo solo informativa, sin descuento).
   descuentoPorcentaje: number | null;

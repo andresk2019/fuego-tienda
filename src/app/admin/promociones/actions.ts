@@ -15,6 +15,9 @@ import {
   LONGITUD_MAXIMA_TEXTO,
   DESCUENTO_MINIMO,
   DESCUENTO_MAXIMO,
+  ESTILOS_PROMOCION,
+  LONGITUD_MAXIMA_SELLO,
+  type EstiloPromocion,
 } from '@/lib/promociones';
 
 export type EstadoCrearPromocion = { error?: string; ok?: boolean } | undefined;
@@ -45,6 +48,8 @@ type DatosPromocion = {
   enFranja: boolean;
   enPortada: boolean;
   enPopup: boolean;
+  estilo: EstiloPromocion;
+  sello: string | null;
   descuentoPorcentaje: number | null;
   productosExcluidos: number[];
 };
@@ -62,6 +67,8 @@ function leerDatosPromocion(
   const enFranja = formData.get('enFranja') === 'on';
   const enPortada = formData.get('enPortada') === 'on';
   const enPopup = formData.get('enPopup') === 'on';
+  const estiloCrudo = String(formData.get('estilo') ?? 'normal');
+  const selloCrudo = String(formData.get('sello') ?? '').trim();
   const descuentoCrudo = String(formData.get('descuento') ?? '').trim();
 
   if (!titulo) return { error: 'Escribe el título de la promoción.' };
@@ -80,6 +87,11 @@ function leerDatosPromocion(
   if (fin && !FORMATO_FECHA.test(fin)) return { error: 'Fecha de fin inválida.' };
   if (inicio && fin && fin < inicio) {
     return { error: 'La fecha de fin no puede ser antes de la de inicio.' };
+  }
+  const estilo = ESTILOS_PROMOCION.find((e) => e.valor === estiloCrudo)?.valor;
+  if (!estilo) return { error: 'Estilo inválido.' };
+  if (selloCrudo.length > LONGITUD_MAXIMA_SELLO) {
+    return { error: `El sello puede tener máximo ${LONGITUD_MAXIMA_SELLO} caracteres.` };
   }
   if (!enFranja && !enPortada && !enPopup) {
     return {
@@ -120,6 +132,9 @@ function leerDatosPromocion(
       enFranja,
       enPortada,
       enPopup,
+      estilo,
+      // El sello solo existe en el estilo aniversario.
+      sello: estilo === 'aniversario' && selloCrudo ? selloCrudo : null,
       descuentoPorcentaje,
       productosExcluidos,
     },

@@ -29,7 +29,9 @@ function asegurarEsquema(): Promise<void> {
          );
          ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS descuento_porcentaje INTEGER;
          ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS productos_excluidos INTEGER[] NOT NULL DEFAULT '{}';
-         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS en_popup BOOLEAN NOT NULL DEFAULT false;`
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS en_popup BOOLEAN NOT NULL DEFAULT false;
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS estilo TEXT NOT NULL DEFAULT 'normal';
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS sello TEXT;`
       )
       .then(() => undefined);
   }
@@ -46,7 +48,7 @@ const COLUMNAS = `
   id, titulo, texto, imagen_url, enlace,
   to_char(inicio, 'YYYY-MM-DD') AS inicio,
   to_char(fin, 'YYYY-MM-DD') AS fin,
-  activa, en_franja, en_portada, en_popup,
+  activa, en_franja, en_portada, en_popup, estilo, sello,
   descuento_porcentaje, productos_excluidos,
   CASE
     WHEN NOT activa THEN 'desactivada'
@@ -67,6 +69,8 @@ function filaAPromocion(r: {
   en_franja: boolean;
   en_portada: boolean;
   en_popup: boolean;
+  estilo: Promocion['estilo'];
+  sello: string | null;
   descuento_porcentaje: number | null;
   productos_excluidos: number[];
   estado: Promocion['estado'];
@@ -83,6 +87,8 @@ function filaAPromocion(r: {
     enFranja: r.en_franja,
     enPortada: r.en_portada,
     enPopup: r.en_popup,
+    estilo: r.estilo,
+    sello: r.sello,
     descuentoPorcentaje: r.descuento_porcentaje,
     productosExcluidos: r.productos_excluidos,
     estado: r.estado,
@@ -143,6 +149,8 @@ export async function crearPromocion(datos: {
   enFranja: boolean;
   enPortada: boolean;
   enPopup: boolean;
+  estilo: Promocion['estilo'];
+  sello: string | null;
   descuentoPorcentaje: number | null;
   productosExcluidos: number[];
 }): Promise<void> {
@@ -150,8 +158,8 @@ export async function crearPromocion(datos: {
   await getPool().query(
     `INSERT INTO tienda_promociones
        (titulo, texto, imagen_url, enlace, inicio, fin, en_franja, en_portada,
-        descuento_porcentaje, productos_excluidos, en_popup)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        descuento_porcentaje, productos_excluidos, en_popup, estilo, sello)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
     [
       datos.titulo,
       datos.texto,
@@ -164,6 +172,8 @@ export async function crearPromocion(datos: {
       datos.descuentoPorcentaje,
       datos.productosExcluidos,
       datos.enPopup,
+      datos.estilo,
+      datos.sello,
     ]
   );
 }
@@ -183,6 +193,8 @@ export async function actualizarPromocion(
     enFranja: boolean;
     enPortada: boolean;
   enPopup: boolean;
+  estilo: Promocion['estilo'];
+  sello: string | null;
     descuentoPorcentaje: number | null;
     productosExcluidos: number[];
   }
@@ -194,7 +206,7 @@ export async function actualizarPromocion(
        en_franja = $7, en_portada = $8,
        descuento_porcentaje = $9, productos_excluidos = $10,
        imagen_url = CASE WHEN $11::boolean THEN $12::text ELSE imagen_url END,
-       en_popup = $13
+       en_popup = $13, estilo = $14, sello = $15
      WHERE id = $1`,
     [
       id,
@@ -210,6 +222,8 @@ export async function actualizarPromocion(
       datos.imagenUrl !== undefined,
       datos.imagenUrl ?? null,
       datos.enPopup,
+      datos.estilo,
+      datos.sello,
     ]
   );
 }
