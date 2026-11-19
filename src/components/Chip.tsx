@@ -22,7 +22,7 @@ export default function Chip({
     size === "lg"
       ? "px-5 py-2 text-sm"
       : size === "sm"
-        ? "px-3 py-1 text-xs"
+        ? "px-3 py-2 text-xs sm:py-1"
         : "px-4 py-1.5 text-sm";
 
   const estilo =

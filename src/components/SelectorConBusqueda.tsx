@@ -135,7 +135,9 @@ export default function SelectorConBusqueda({
           }
         }}
         className={`w-full rounded-lg border border-border bg-background text-foreground placeholder:text-muted/60 disabled:cursor-not-allowed disabled:opacity-60 ${
-          compacto ? "py-1.5 pr-7 pl-2 text-xs" : "py-2 pr-9 pl-3"
+          compacto
+            ? "py-2 pr-5 pl-2 text-base text-ellipsis sm:py-1.5 sm:pr-7 sm:text-xs"
+            : "py-2 pr-9 pl-3 text-base sm:text-sm"
         }`}
       />
 
@@ -198,7 +200,7 @@ export default function SelectorConBusqueda({
                   // claramente cuál opción se está a punto de elegir.
                   onMouseEnter={() => setResaltado(i)}
                   className={`block w-full cursor-pointer text-left transition-colors ${
-                    compacto ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
+                    compacto ? "px-2 py-2.5 text-sm sm:py-1.5 sm:text-xs" : "px-3 py-2.5 text-sm"
                   } ${
                     i === resaltado ? "bg-ember/10 text-ember" : "text-foreground"
                   }`}

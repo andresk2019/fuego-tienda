@@ -26,6 +26,18 @@ const formatoCOP = new Intl.NumberFormat("es-CO", {
 // no cambia en tiempo de ejecución.
 const DEPARTAMENTOS = UBICACIONES_COLOMBIA.map((d) => d.departamento);
 
+type PedidoEnviado = { numero: string | null; link: string; en: number };
+const CLAVE_ULTIMO_PEDIDO = "fuego-ultimo-pedido";
+const VIGENCIA_ULTIMO_PEDIDO_MS = 3 * 60 * 60 * 1000;
+
+function olvidarUltimoPedido() {
+  try {
+    sessionStorage.removeItem(CLAVE_ULTIMO_PEDIDO);
+  } catch {
+    // sin storage: no hay nada que borrar
+  }
+}
+
 // `numero` puede venir vacío si el pedido no se alcanzó a registrar
 // (ver manejarContinuar) — el mensaje sigue armándose igual, solo sin
 // el número, para no dejar al cliente sin poder pedir por un problema
@@ -128,10 +140,40 @@ export default function CarritoCliente({
   const [departamento, setDepartamento] = useState("");
   const [municipio, setMunicipio] = useState("");
   const [aceptaPolitica, setAceptaPolitica] = useState(false);
+  // Último pedido enviado por WhatsApp. El carrito se vacía al enviarlo,
+  // y antes el cliente quedaba con un "Tu carrito está vacío" sin saber
+  // si el pedido salió ni cómo reintentar si WhatsApp no se abrió. Se
+  // guarda también en sessionStorage para que sobreviva a una recarga
+  // (el celular suele recargar la página al volver de WhatsApp).
+  const [pedidoEnviado, setPedidoEnviado] = useState<PedidoEnviado | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [problemasStock, setProblemasStock] = useState<ProblemaStock[] | null>(
     null
   );
+
+  useEffect(() => {
+    try {
+      const guardado = sessionStorage.getItem(CLAVE_ULTIMO_PEDIDO);
+      if (!guardado) return;
+      const pedido = JSON.parse(guardado) as PedidoEnviado;
+      if (Date.now() - pedido.en < VIGENCIA_ULTIMO_PEDIDO_MS) {
+        setPedidoEnviado(pedido);
+      } else {
+        olvidarUltimoPedido();
+      }
+    } catch {
+      // dato corrupto o sin storage: se ignora
+    }
+  }, []);
+
+  // Si el cliente vuelve a armar un carrito, el aviso del pedido anterior
+  // ya no aplica.
+  useEffect(() => {
+    if (items.length > 0 && pedidoEnviado) {
+      olvidarUltimoPedido();
+      setPedidoEnviado(null);
+    }
+  }, [items.length, pedidoEnviado]);
 
   const municipiosDisponibles = useMemo(
     () =>
@@ -151,6 +193,52 @@ export default function CarritoCliente({
     : null;
   const totalMostrado =
     costoEnvioMostrado !== null ? subtotal + costoEnvioMostrado : null;
+
+  if (items.length === 0 && pedidoEnviado) {
+    return (
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+        <span
+          aria-hidden="true"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-whatsapp/15 text-3xl text-whatsapp"
+        >
+          ✓
+        </span>
+        <h1 className="font-serif text-2xl text-foreground">¡Casi listo!</h1>
+        {pedidoEnviado.numero && (
+          <p className="text-lg font-semibold text-foreground">
+            Tu pedido #{pedidoEnviado.numero} quedó registrado
+          </p>
+        )}
+        <p className="text-sm text-muted">
+          {pedidoEnviado.numero
+            ? "Falta un paso: envía el mensaje por WhatsApp para que lo confirmemos contigo."
+            : "Abre WhatsApp y envía el mensaje para hacer tu pedido."}
+        </p>
+        <a
+          href={pedidoEnviado.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-whatsapp px-4 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-whatsapp-hover"
+        >
+          Abrir WhatsApp
+        </a>
+        <p className="text-xs text-muted">
+          Si WhatsApp no se abrió solo, toca el botón: el mensaje ya viene
+          escrito.
+        </p>
+        <Link
+          href="/catalogo"
+          onClick={() => {
+            olvidarUltimoPedido();
+            setPedidoEnviado(null);
+          }}
+          className="inline-block py-2 text-sm font-medium text-ember transition-colors hover:text-ember-hover"
+        >
+          ← Seguir comprando
+        </Link>
+      </main>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -253,6 +341,13 @@ export default function CarritoCliente({
       window.open(linkWhatsApp, "_blank", "noopener,noreferrer");
     }
 
+    const enviado: PedidoEnviado = { numero, link: linkWhatsApp, en: Date.now() };
+    try {
+      sessionStorage.setItem(CLAVE_ULTIMO_PEDIDO, JSON.stringify(enviado));
+    } catch {
+      // sin storage: igual se muestra la confirmación en esta visita
+    }
+
     // Esta tienda no tiene "compra" dentro del sitio (se cierra por
     // WhatsApp) — este es el evento que de verdad importa medir en
     // Analytics: no cuántos visitan, sino cuántos llegan hasta acá.
@@ -263,7 +358,10 @@ export default function CarritoCliente({
       currency: "COP",
     });
 
+    // Primero se vacía el carrito y DESPUÉS se muestra el aviso: el efecto
+    // que olvida el aviso cuando hay items no debe verlos a los dos a la vez.
     vaciar();
+    setPedidoEnviado(enviado);
   }
 
   return (
@@ -387,7 +485,8 @@ export default function CarritoCliente({
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="¿Cómo te llamas?"
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+              autoComplete="name"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted/60 sm:text-sm"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -400,7 +499,9 @@ export default function CarritoCliente({
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
               placeholder="Ej. 3001234567"
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+              autoComplete="tel"
+              inputMode="tel"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted/60 sm:text-sm"
             />
           </label>
 

@@ -79,7 +79,7 @@ export default function CarritoLateral() {
             type="button"
             onClick={cerrarCarrito}
             aria-label="Cerrar carrito"
-            className="p-1 text-muted transition-colors hover:text-foreground"
+            className="-mr-2 flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-foreground"
           >
             <CerrarIcon className="h-5 w-5" />
           </button>
@@ -145,11 +145,11 @@ export default function CarritoLateral() {
                             actualizarCantidad(item.clave, item.cantidad - 1)
                           }
                           aria-label={`Quitar una unidad de ${item.nombre}`}
-                          className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-base text-muted transition-colors hover:bg-surface-hover hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
                         >
                           −
                         </button>
-                        <span className="w-5 text-center text-xs font-medium text-foreground">
+                        <span className="w-6 text-center text-sm font-medium text-foreground">
                           {item.cantidad}
                         </span>
                         <button
@@ -158,7 +158,7 @@ export default function CarritoLateral() {
                             actualizarCantidad(item.clave, item.cantidad + 1)
                           }
                           aria-label={`Agregar una unidad de ${item.nombre}`}
-                          className="flex h-6 w-6 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-base text-muted transition-colors hover:bg-surface-hover hover:text-foreground"
                         >
                           +
                         </button>
@@ -183,7 +183,7 @@ export default function CarritoLateral() {
                     type="button"
                     onClick={() => quitar(item.clave)}
                     aria-label={`Quitar ${item.nombre} del carrito`}
-                    className="shrink-0 p-1 text-muted/50 transition-colors hover:text-danger"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center text-muted/50 transition-colors hover:text-danger"
                   >
                     <CerrarIcon className="h-3.5 w-3.5" />
                   </button>

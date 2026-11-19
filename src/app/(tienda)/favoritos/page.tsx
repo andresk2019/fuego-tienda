@@ -22,7 +22,7 @@ export default async function FavoritosPage() {
   const productos = productosTodos.filter(visibleEnTienda);
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
+    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6">
       <h1 className="font-serif text-2xl text-foreground">Tus favoritos</h1>
       <p className="mt-1 text-sm text-muted">
         Guardados en este navegador — decide cuándo agregarlos al carrito.

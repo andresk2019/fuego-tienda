@@ -49,7 +49,7 @@ export default function FichaProducto({
         {productoId !== undefined && (
           <FavoritoBoton
             productoId={productoId}
-            className="shrink-0 rounded-full p-2 text-ember transition-colors hover:bg-ember/10"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ember transition-colors hover:bg-ember/10"
           />
         )}
       </div>

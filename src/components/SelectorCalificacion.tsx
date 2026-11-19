@@ -16,14 +16,14 @@ export default function SelectorCalificacion({
   onCambiar: (valor: number) => void;
 }) {
   return (
-    <div className="flex gap-1 text-ember">
+    <div className="flex text-ember">
       {Array.from({ length: CALIFICACION_MAXIMA }).map((_, i) => (
         <button
           key={i}
           type="button"
           onClick={() => onCambiar(i + 1)}
           aria-label={`${i + 1} estrellas`}
-          className="cursor-pointer"
+          className="cursor-pointer p-1.5"
         >
           <EstrellaIcon llena={i < valor} className="h-5 w-5" />
         </button>

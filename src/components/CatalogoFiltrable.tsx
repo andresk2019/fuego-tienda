@@ -102,7 +102,7 @@ export default function CatalogoFiltrable({
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             placeholder="Buscar por nombre..."
-            className="w-full max-w-xs rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+            className="w-full max-w-xs rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted/60 sm:text-sm"
           />
         </div>
 
@@ -167,7 +167,7 @@ export default function CatalogoFiltrable({
           No hay productos que coincidan con este filtro todavía.
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
           {productosFiltrados.map((producto) => (
             <li key={producto.id}>
               <TarjetaProducto

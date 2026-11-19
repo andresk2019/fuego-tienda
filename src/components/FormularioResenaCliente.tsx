@@ -47,8 +47,9 @@ export default function FormularioResenaCliente({
         name="clienteNombre"
         required
         maxLength={60}
+        autoComplete="name"
         placeholder="Tu nombre"
-        className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+        className="rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted/60 sm:text-sm"
       />
       <textarea
         name="texto"
@@ -56,7 +57,7 @@ export default function FormularioResenaCliente({
         rows={3}
         maxLength={500}
         placeholder="¿Qué te pareció esta vela?"
-        className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/60"
+        className="rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted/60 sm:text-sm"
       />
 
       <button

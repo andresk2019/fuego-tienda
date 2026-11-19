@@ -19,7 +19,9 @@ export default function FavoritosIndicador({
     <Link
       href="/favoritos"
       aria-label="Ver favoritos"
-      className="flex items-center gap-1.5 transition-colors hover:text-foreground"
+      className={`flex items-center transition-colors hover:text-foreground ${
+        compacto ? "h-11 w-11 justify-center" : "gap-1.5"
+      }`}
     >
       <span className="relative">
         <CorazonIcon llena={false} className="h-5 w-5" />

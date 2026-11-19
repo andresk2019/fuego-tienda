@@ -147,7 +147,7 @@ export default function TarjetaProducto({
   );
 
   return (
-    <div className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ember/60 hover:bg-surface-hover">
+    <div className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors sm:p-5 hover:border-ember/60 hover:bg-surface-hover">
       {href ? (
         <Link href={href} className="contents">
           {contenido}
@@ -171,7 +171,7 @@ export default function TarjetaProducto({
           <button
             type="button"
             onClick={manejarAgregar}
-            className="w-full rounded-lg bg-ember px-3 py-2 text-xs font-semibold text-on-ember transition-colors hover:bg-ember-hover"
+            className="w-full rounded-lg bg-ember px-3 py-3 text-xs font-semibold text-on-ember transition-colors hover:bg-ember-hover sm:py-2"
           >
             Agregar al carrito
           </button>
