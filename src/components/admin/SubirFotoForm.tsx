@@ -10,9 +10,12 @@ import {
   guardarDestacado,
   guardarCategoria,
   guardarSubcategoria,
+  guardarDescuentoDeProducto,
 } from '@/app/admin/actions';
 import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
 import { SECCIONES, type SubcategoriaSlug } from '@/lib/secciones';
+import { DESCUENTO_MINIMO, DESCUENTO_MAXIMO } from '@/lib/promociones';
+import type { DescuentoProductoAdmin } from '@/lib/admin-db';
 import FlameIcon from '@/components/FlameIcon';
 import TarjetaProducto from '@/components/TarjetaProducto';
 import FichaProducto from '@/components/FichaProducto';
@@ -25,6 +28,14 @@ const formatoCOP = new Intl.NumberFormat('es-CO', {
   currency: 'COP',
   maximumFractionDigits: 0,
 });
+
+// "2026-11-30" -> "30 nov 2026", sin pasar por Date (que lo leería como
+// UTC y podría mostrar el día anterior según la zona horaria).
+function formatearFechaCorta(fecha: string): string {
+  const [anio, mes, dia] = fecha.split('-').map(Number);
+  const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return `${dia} ${meses[mes - 1]} ${anio}`;
+}
 
 export default function SubirFotoForm({
   productoId,
@@ -39,6 +50,7 @@ export default function SubirFotoForm({
   descripcion,
   destacado,
   fotosGaleria,
+  descuentoPropio,
 }: {
   productoId: number;
   nombre: string;
@@ -52,6 +64,7 @@ export default function SubirFotoForm({
   descripcion: string;
   destacado: boolean;
   fotosGaleria: FotoGaleria[];
+  descuentoPropio: DescuentoProductoAdmin | null;
 }) {
   const [estadoFoto, accionFoto, subiendoFoto] = useActionState(
     subirFotoProducto,
@@ -67,6 +80,10 @@ export default function SubirFotoForm({
   );
   const [estadoCategoria, accionCategoria] = useActionState(
     guardarCategoria,
+    undefined
+  );
+  const [estadoDescuento, accionDescuento] = useActionState(
+    guardarDescuentoDeProducto,
     undefined
   );
   const [estadoSubcategoria, accionSubcategoria] = useActionState(
@@ -273,6 +290,74 @@ export default function SubirFotoForm({
       )}
       {estadoDestacado?.error && (
         <p className="text-xs text-danger">{estadoDestacado.error}</p>
+      )}
+      {/* Descuento propio de este producto: manda siempre sobre el de una
+          promo de toda la tienda (no se suman). Fecha de fin opcional. */}
+      <form
+        // `key` remonta los campos con lo guardado (son "no controlados").
+        key={`${descuentoPropio?.porcentaje ?? ''}-${descuentoPropio?.hasta ?? ''}`}
+        action={accionDescuento}
+        className="flex flex-wrap items-center gap-1.5 text-xs"
+      >
+        <input type="hidden" name="productoId" value={productoId} />
+        <span className="font-medium text-foreground">Descuento propio</span>
+        <input
+          type="number"
+          name="porcentaje"
+          min={DESCUENTO_MINIMO}
+          max={DESCUENTO_MAXIMO}
+          step={1}
+          inputMode="numeric"
+          defaultValue={descuentoPropio?.porcentaje ?? ''}
+          placeholder="%"
+          aria-label="Porcentaje de descuento de este producto"
+          className="w-16 rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
+        />
+        <label className="flex items-center gap-1 text-muted">
+          hasta
+          <input
+            type="date"
+            name="hasta"
+            defaultValue={descuentoPropio?.hasta ?? ''}
+            aria-label="Fecha en que termina el descuento (opcional)"
+            className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
+          />
+        </label>
+        <button
+          type="submit"
+          className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:border-ember/60"
+        >
+          {descuentoPropio ? 'Actualizar' : 'Aplicar'}
+        </button>
+        {descuentoPropio && (
+          <button
+            type="submit"
+            name="quitar"
+            value="1"
+            formNoValidate
+            className="text-xs text-muted transition-colors hover:text-danger"
+          >
+            Quitar
+          </button>
+        )}
+      </form>
+      {descuentoPropio && (
+        <p
+          className={`text-xs ${descuentoPropio.vigente ? 'text-ember' : 'text-muted'}`}
+        >
+          {descuentoPropio.vigente
+            ? `Descuento activo: ${descuentoPropio.porcentaje}%${
+                descuentoPropio.hasta
+                  ? ` hasta el ${formatearFechaCorta(descuentoPropio.hasta)}`
+                  : ' (sin fecha de fin)'
+              }. Manda sobre cualquier promo de la tienda.`
+            : `El descuento de ${descuentoPropio.porcentaje}% terminó el ${formatearFechaCorta(
+                descuentoPropio.hasta ?? ''
+              )} y ya no se aplica.`}
+        </p>
+      )}
+      {estadoDescuento?.error && (
+        <p className="text-xs text-danger">{estadoDescuento.error}</p>
       )}
       {estadoSubcategoria?.error && (
         <p className="text-xs text-danger">{estadoSubcategoria.error}</p>

@@ -8,6 +8,7 @@ import {
   obtenerConfigEnvio,
   obtenerConfigCompra,
   obtenerGaleriaTodosLosProductos,
+  obtenerDescuentosProductoAdmin,
 } from '@/lib/admin-db';
 import { esPersonalizable } from '@/lib/personalizacion';
 import { cerrarSesion } from './actions';
@@ -36,6 +37,7 @@ export default async function AdminPage() {
     configEnvio,
     configCompra,
     galeriasTodas,
+    descuentosPropios,
   ] = await Promise.all([
     // El panel ve el precio real de Contabilidad Lady, no el rebajado
     // por una promoción.
@@ -45,6 +47,7 @@ export default async function AdminPage() {
     obtenerConfigEnvio(),
     obtenerConfigCompra(),
     obtenerGaleriaTodosLosProductos(),
+    obtenerDescuentosProductoAdmin(),
   ]);
 
   const productosParaAdmin = productos.map((producto) => ({
@@ -60,6 +63,7 @@ export default async function AdminPage() {
     descripcion: producto.descripcion,
     destacado: producto.destacado,
     fotosGaleria: galeriasTodas[producto.id] ?? [],
+    descuentoPropio: descuentosPropios[producto.id] ?? null,
   }));
 
   return (
