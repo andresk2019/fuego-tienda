@@ -3,9 +3,17 @@ import AriesIcon from "@/components/AriesIcon";
 import CarritoIndicador from "@/components/CarritoIndicador";
 import FavoritosIndicador from "@/components/FavoritosIndicador";
 import MenuMovil from "@/components/MenuMovil";
+import BannerEncabezado from "@/components/BannerEncabezado";
+import type { Promocion } from "@/lib/promociones";
 import { ENLACES_NAV } from "@/lib/navegacion";
 
-export default function SiteHeader() {
+export default function SiteHeader({
+  promocionEncabezado = null,
+}: {
+  // Promo de aniversario vigente: ocupa el lugar del bloque del logo
+  // (ver BannerEncabezado) — null = el logo de siempre.
+  promocionEncabezado?: Promocion | null;
+}) {
   // Ninguna de las 2 barras de abajo puede vivir anidada dentro de un
   // <header> propio: `position: sticky` solo se queda pegado
   // mientras el CONTENEDOR DIRECTO del elemento siga a la vista — un
@@ -38,21 +46,27 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {/* Bloque de marca, solo en escritorio (logo, nombre, lema): se
-          ve una sola vez arriba de todo y se pierde de vista al
-          bajar, a propósito — lo que se queda fijo es solo el <nav>
-          de aquí abajo, sin arrastrar este logo grande con él. */}
-      <div className="hidden px-6 pt-14 pb-6 text-center md:block">
-        <Link href="/" className="mx-auto flex flex-col items-center gap-3">
-          <AriesIcon className="h-8 w-8 text-ember" />
-          <h1 className="font-serif text-4xl tracking-tight text-foreground">
-            Fuego
-          </h1>
-          <p className="text-sm tracking-[0.2em] text-muted uppercase">
-            Velas artesanales
-          </p>
-        </Link>
-      </div>
+      {promocionEncabezado ? (
+        <BannerEncabezado promocion={promocionEncabezado} />
+      ) : (
+        <>
+          {/* Bloque de marca, solo en escritorio (logo, nombre, lema): se
+              ve una sola vez arriba de todo y se pierde de vista al
+              bajar, a propósito — lo que se queda fijo es solo el <nav>
+              de aquí abajo, sin arrastrar este logo grande con él. */}
+          <div className="hidden px-6 pt-14 pb-6 text-center md:block">
+            <Link href="/" className="mx-auto flex flex-col items-center gap-3">
+              <AriesIcon className="h-8 w-8 text-ember" />
+              <h1 className="font-serif text-4xl tracking-tight text-foreground">
+                Fuego
+              </h1>
+              <p className="text-sm tracking-[0.2em] text-muted uppercase">
+                Velas artesanales
+              </p>
+            </Link>
+          </div>
+        </>
+      )}
 
       {/* <nav> de escritorio: sticky por su cuenta, así el cliente
           siempre tiene a mano el menú, favoritos y carrito sin tener

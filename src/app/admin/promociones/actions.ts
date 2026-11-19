@@ -9,6 +9,7 @@ import {
   eliminarPromocion,
 } from '@/lib/promociones-db';
 import { subirImagenPromocionAStorage } from '@/lib/storage';
+import { obtenerCatalogoFuego } from '@/lib/db';
 import {
   enlaceValido,
   LONGITUD_MAXIMA_TITULO,
@@ -16,8 +17,10 @@ import {
   DESCUENTO_MINIMO,
   DESCUENTO_MAXIMO,
   ESTILOS_PROMOCION,
+  FONDOS_PROMOCION,
   LONGITUD_MAXIMA_SELLO,
   type EstiloPromocion,
+  type FondoPromocion,
 } from '@/lib/promociones';
 
 export type EstadoCrearPromocion = { error?: string; ok?: boolean } | undefined;
@@ -50,6 +53,7 @@ type DatosPromocion = {
   enPopup: boolean;
   estilo: EstiloPromocion;
   sello: string | null;
+  fondo: FondoPromocion | null;
   descuentoPorcentaje: number | null;
   productosExcluidos: number[];
 };
@@ -69,6 +73,7 @@ function leerDatosPromocion(
   const enPopup = formData.get('enPopup') === 'on';
   const estiloCrudo = String(formData.get('estilo') ?? 'normal');
   const selloCrudo = String(formData.get('sello') ?? '').trim();
+  const fondoCrudo = String(formData.get('fondo') ?? '').trim();
   const descuentoCrudo = String(formData.get('descuento') ?? '').trim();
 
   if (!titulo) return { error: 'Escribe el título de la promoción.' };
@@ -90,6 +95,11 @@ function leerDatosPromocion(
   }
   const estilo = ESTILOS_PROMOCION.find((e) => e.valor === estiloCrudo)?.valor;
   if (!estilo) return { error: 'Estilo inválido.' };
+  // Vacío = el fondo de siempre según el estilo.
+  const fondo = fondoCrudo
+    ? (FONDOS_PROMOCION.find((f) => f.valor === fondoCrudo)?.valor ?? null)
+    : null;
+  if (fondoCrudo && !fondo) return { error: 'Fondo inválido.' };
   if (selloCrudo.length > LONGITUD_MAXIMA_SELLO) {
     return { error: `El sello puede tener máximo ${LONGITUD_MAXIMA_SELLO} caracteres.` };
   }
@@ -135,6 +145,7 @@ function leerDatosPromocion(
       estilo,
       // El sello solo existe en el estilo aniversario.
       sello: estilo === 'aniversario' && selloCrudo ? selloCrudo : null,
+      fondo,
       descuentoPorcentaje,
       productosExcluidos,
     },
@@ -161,6 +172,22 @@ async function subirImagenDelFormulario(
   }
 }
 
+// "Usar la foto de un producto": en vez de subir una imagen, se
+// reutiliza la foto que ese producto ya tiene (solo se guarda su URL).
+async function fotoDeProductoDelFormulario(
+  formData: FormData
+): Promise<{ error: string } | { url: string | null }> {
+  const crudo = String(formData.get('imagenProductoId') ?? '').trim();
+  if (!crudo) return { url: null };
+  const id = Number(crudo);
+  if (!Number.isInteger(id) || id <= 0) return { error: 'Producto inválido.' };
+  const productos = await obtenerCatalogoFuego({ conDescuento: false });
+  const producto = productos.find((p) => p.id === id);
+  if (!producto) return { error: 'Producto inválido.' };
+  if (!producto.fotoUrl) return { error: 'Ese producto todavía no tiene foto.' };
+  return { url: producto.fotoUrl };
+}
+
 export async function agregarPromocion(
   _estado: EstadoCrearPromocion,
   formData: FormData
@@ -176,9 +203,15 @@ export async function agregarPromocion(
 
   const imagen = await subirImagenDelFormulario(formData.get('imagen'));
   if ('error' in imagen) return { error: imagen.error };
+  const fotoProducto = await fotoDeProductoDelFormulario(formData);
+  if ('error' in fotoProducto) return { error: fotoProducto.error };
 
   try {
-    await crearPromocion({ ...leido.datos, imagenUrl: imagen.url });
+    // Una imagen subida manda sobre la foto de un producto.
+    await crearPromocion({
+      ...leido.datos,
+      imagenUrl: imagen.url ?? fotoProducto.url,
+    });
   } catch {
     return { error: 'No se pudo guardar la promoción. Intenta de nuevo.' };
   }
@@ -208,12 +241,16 @@ export async function editarPromocion(
   // estaba (undefined = no tocar).
   const imagen = await subirImagenDelFormulario(formData.get('imagen'));
   if ('error' in imagen) return { error: imagen.error };
+  const fotoProducto = await fotoDeProductoDelFormulario(formData);
+  if ('error' in fotoProducto) return { error: fotoProducto.error };
   const imagenUrl =
     imagen.url !== null
       ? imagen.url
-      : formData.get('quitarImagen') === 'on'
-        ? null
-        : undefined;
+      : fotoProducto.url !== null
+        ? fotoProducto.url
+        : formData.get('quitarImagen') === 'on'
+          ? null
+          : undefined;
 
   try {
     await actualizarPromocion(promocionId, { ...leido.datos, imagenUrl });

@@ -3,7 +3,7 @@ import EnlacePromocion from "@/components/EnlacePromocion";
 import CuentaRegresiva from "@/components/CuentaRegresiva";
 import Confeti from "@/components/Confeti";
 import SelloAniversario from "@/components/SelloAniversario";
-import type { Promocion } from "@/lib/promociones";
+import { estiloFondo, type Promocion } from "@/lib/promociones";
 
 // Banners de promociones (ver obtenerPromocionesPortada en
 // promociones-db.ts). Dos formas:
@@ -33,14 +33,21 @@ export default function BannersPromocion({
   if (variante === "compacto") {
     const promocion = promociones[0];
     const esAniversario = promocion.estilo === "aniversario";
+    // Con un fondo listo elegido (oscuro) el texto va claro, aunque la
+    // promo no sea de aniversario.
+    const conFondo = estiloFondo(promocion) !== undefined;
+    const oscuro = esAniversario || conFondo;
     const mostrarEnlace = promocion.enlace && promocion.enlace !== rutaActual;
     return (
       <section aria-label="Promoción" className="mb-8">
         <div
+          style={estiloFondo(promocion)}
           className={`relative flex items-center gap-4 overflow-hidden rounded-xl border p-4 ${
             esAniversario
               ? "border-[#e9c46a]/60 bg-gradient-to-r from-[#2b1d0e] to-[#4a3216] text-[#fff3c4]"
-              : "border-ember/30 bg-gradient-to-r from-ember/15 via-ember/5 to-transparent"
+              : conFondo
+                ? "border-ember/30 text-[#fff8ef]"
+                : "border-ember/30 bg-gradient-to-r from-ember/15 via-ember/5 to-transparent"
           }`}
         >
           {esAniversario && <Confeti cantidad={12} />}
@@ -61,20 +68,20 @@ export default function BannersPromocion({
           <div className="relative min-w-0 flex-1">
             <p
               className={`font-serif text-lg leading-snug ${
-                esAniversario ? "texto-dorado" : "text-foreground"
+                esAniversario ? "texto-dorado" : oscuro ? "text-[#fff8ef]" : "text-foreground"
               }`}
             >
               {promocion.titulo}
             </p>
             {promocion.texto && (
-              <p className={`text-sm ${esAniversario ? "text-[#fff3c4]/80" : "text-muted"}`}>
+              <p className={`text-sm ${oscuro ? "text-[#fff3c4]/80" : "text-muted"}`}>
                 {promocion.texto}
               </p>
             )}
             {promocion.fin && (
               <CuentaRegresiva
                 fin={promocion.fin}
-                className={`mt-1 block text-xs ${esAniversario ? "text-[#f6dc8f]" : "text-ember"}`}
+                className={`mt-1 block text-xs ${oscuro ? "text-[#f6dc8f]" : "text-ember"}`}
               />
             )}
           </div>
@@ -106,6 +113,7 @@ export default function BannersPromocion({
         return (
           <div
             key={promocion.id}
+            style={estiloFondo(promocion)}
             className={`relative flex min-h-40 overflow-hidden rounded-2xl sm:min-h-52 ${
               esAniversario
                 ? "bg-gradient-to-br from-[#2b1d0e] via-[#4a3216] to-[#2b1d0e] text-[#fff3c4] ring-1 ring-[#e9c46a]/50"

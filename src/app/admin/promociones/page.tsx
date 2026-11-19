@@ -19,7 +19,7 @@ export default async function PromocionesPage() {
   // Para elegir qué productos quedan fuera del descuento — solo id y
   // nombre, en orden alfabético.
   const productosParaSelector = productos
-    .map((p) => ({ id: p.id, nombre: p.nombre }))
+    .map((p) => ({ id: p.id, nombre: p.nombre, conFoto: p.fotoUrl !== null }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   return (
