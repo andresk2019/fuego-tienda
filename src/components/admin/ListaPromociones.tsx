@@ -13,6 +13,7 @@ import {
   DESCUENTO_MAXIMO,
   DESCUENTO_MINIMO,
   ESTILOS_PROMOCION,
+  FONDOS_PROMOCION,
   LONGITUD_MAXIMA_SELLO,
   ETIQUETA_ESTADO,
   LONGITUD_MAXIMA_TEXTO,
@@ -46,7 +47,7 @@ function describirFechas(p: Promocion): string {
   return 'Sin fechas (se muestra mientras esté activa)';
 }
 
-type ProductoSelector = { id: number; nombre: string };
+type ProductoSelector = { id: number; nombre: string; conFoto: boolean };
 
 // Los campos de una promoción — los comparten crear y editar. Con
 // `promocion` (editar) arranca con sus valores; sin ella (crear), vacío.
@@ -146,9 +147,51 @@ function FormularioPromocion({
         <p className="-mt-1 text-xs text-muted">
           Fondo oscuro con dorado, confeti que cae, título con brillo y un
           sello redondo (ej. &ldquo;5 años&rdquo;) en la franja, los banners
-          y el pop-up. Se ve igual en el celular y no usa video.
+          y el pop-up. Se ve igual en el celular y no usa video. Con
+          &ldquo;Banners&rdquo; marcado, el banner reemplaza el logo del
+          encabezado en todas las páginas, para que el cliente no tenga que
+          bajar tanto.
         </p>
       )}
+
+      <fieldset className="flex flex-col gap-2 text-sm">
+        <legend className="mb-1 font-medium text-foreground">Fondo del banner</legend>
+        <p className="text-xs text-muted">
+          Elige uno de los fondos listos, o pon una foto más abajo (la de un
+          producto o una tuya). Si pones una foto, esa se usa en vez del fondo.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <label className="cursor-pointer">
+            <input
+              type="radio"
+              name="fondo"
+              value=""
+              defaultChecked={!promocion?.fondo}
+              className="peer sr-only"
+            />
+            <span className="flex h-14 w-24 items-center justify-center rounded-lg border-2 border-border bg-background text-center text-[11px] leading-tight text-muted peer-checked:border-ember peer-checked:ring-2 peer-checked:ring-ember/40 peer-focus-visible:ring-2 peer-focus-visible:ring-ember">
+              Por defecto
+            </span>
+          </label>
+          {FONDOS_PROMOCION.map((f) => (
+            <label key={f.valor} className="cursor-pointer">
+              <input
+                type="radio"
+                name="fondo"
+                value={f.valor}
+                defaultChecked={promocion?.fondo === f.valor}
+                className="peer sr-only"
+              />
+              <span
+                style={{ backgroundImage: f.css }}
+                className="flex h-14 w-24 items-end rounded-lg border-2 border-transparent p-1.5 text-[11px] font-medium text-[#fff3c4] peer-checked:border-ember peer-checked:ring-2 peer-checked:ring-ember/40 peer-focus-visible:ring-2 peer-focus-visible:ring-ember"
+              >
+                {f.nombre}
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="flex flex-col gap-2 text-sm">
         {promocion?.imagenUrl && (
@@ -172,9 +215,28 @@ function FormularioPromocion({
         )}
         <label className="flex flex-col gap-1">
           <span className="font-medium text-foreground">
+            Usar la foto de un producto (opcional)
+          </span>
+          <select
+            name="imagenProductoId"
+            defaultValue=""
+            className={CLASE_CAMPO}
+          >
+            <option value="">— Ninguno —</option>
+            {productos
+              .filter((p) => p.conFoto)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="font-medium text-foreground">
             {promocion?.imagenUrl
-              ? 'Cambiar la imagen (opcional)'
-              : 'Imagen del banner (opcional)'}
+              ? 'O sube otra imagen (opcional)'
+              : 'O sube una imagen tuya (opcional)'}
           </span>
           <input
             type="file"
@@ -184,8 +246,8 @@ function FormularioPromocion({
             className="text-xs text-muted file:mr-2 file:rounded-lg file:border-0 file:bg-ember file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-on-ember"
           />
           <span className="text-xs text-muted">
-            Mejor si es ancha (ej. 1200 × 400). Sin imagen, el banner usa el
-            color de la marca.
+            Mejor si es ancha (ej. 1200 × 400). Una imagen subida manda sobre
+            la foto de un producto.
           </span>
           {preparando && <span className="text-xs text-muted">Preparando imagen...</span>}
           {errorImagen && <span className="text-xs text-danger">{errorImagen}</span>}

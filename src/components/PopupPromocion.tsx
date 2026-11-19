@@ -8,7 +8,7 @@ import EnlacePromocion from "@/components/EnlacePromocion";
 import CuentaRegresiva from "@/components/CuentaRegresiva";
 import Confeti from "@/components/Confeti";
 import SelloAniversario from "@/components/SelloAniversario";
-import type { Promocion } from "@/lib/promociones";
+import { estiloFondo, type Promocion } from "@/lib/promociones";
 
 const clave = (id: number) => `fuego-popup-promo-${id}`;
 const RETRASO_MS = 2500;
@@ -66,6 +66,10 @@ export default function PopupPromocion({
   if (!promocion || !abierto || rutaExcluida) return null;
 
   const esAniversario = promocion.estilo === "aniversario";
+  // Con un fondo listo elegido (oscuro) el texto va claro, aunque la
+  // promo no sea de aniversario.
+  const conFondo = estiloFondo(promocion) !== undefined;
+  const claro = esAniversario || conFondo;
   const cerrar = () => setAbierto(false);
   const textoBoton = promocion.enlace ? "Ver promoción" : "Ver el catálogo";
   const claseBoton = `inline-block rounded-lg px-6 py-3 text-sm font-semibold transition-colors ${
@@ -83,11 +87,14 @@ export default function PopupPromocion({
         role="dialog"
         aria-modal="true"
         aria-labelledby="popup-promocion-titulo"
+        style={estiloFondo(promocion)}
         onClick={(e) => e.stopPropagation()}
         className={`relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl shadow-2xl ${
           esAniversario
             ? "bg-gradient-to-b from-[#2b1d0e] to-[#4a3216] text-[#fff3c4] ring-2 ring-[#e9c46a]/70"
-            : "bg-surface"
+            : conFondo
+              ? "text-[#fff8ef]"
+              : "bg-surface"
         }`}
       >
         {esAniversario && <Confeti cantidad={26} encima />}
@@ -138,20 +145,20 @@ export default function PopupPromocion({
           <h2
             id="popup-promocion-titulo"
             className={`font-serif text-2xl ${
-              esAniversario ? "texto-dorado" : "text-foreground"
+              esAniversario ? "texto-dorado" : claro ? "text-[#fff8ef]" : "text-foreground"
             }`}
           >
             {promocion.titulo}
           </h2>
           {promocion.texto && (
-            <p className={esAniversario ? "text-[#fff3c4]/85" : "text-muted"}>
+            <p className={claro ? "text-[#fff3c4]/85" : "text-muted"}>
               {promocion.texto}
             </p>
           )}
           {promocion.fin && (
             <CuentaRegresiva
               fin={promocion.fin}
-              className={`text-sm ${esAniversario ? "text-[#f6dc8f]" : "text-ember"}`}
+              className={`text-sm ${claro ? "text-[#f6dc8f]" : "text-ember"}`}
             />
           )}
 
@@ -173,7 +180,7 @@ export default function PopupPromocion({
               type="button"
               onClick={cerrar}
               className={`text-sm transition-colors ${
-                esAniversario
+                claro
                   ? "text-[#fff3c4]/70 hover:text-[#fff3c4]"
                   : "text-muted hover:text-foreground"
               }`}

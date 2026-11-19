@@ -24,6 +24,37 @@ export const ESTILOS_PROMOCION: { valor: EstiloPromocion; nombre: string }[] = [
 
 export const LONGITUD_MAXIMA_SELLO = 16;
 
+// Fondos listos para elegir en el admin (cuando la promo no lleva foto).
+// Son todos oscuros/intensos a propósito: el texto del banner es claro.
+export type FondoPromocion = "noche-dorada" | "brasas" | "vino" | "medianoche";
+
+export const FONDOS_PROMOCION: {
+  valor: FondoPromocion;
+  nombre: string;
+  css: string;
+}[] = [
+  {
+    valor: "noche-dorada",
+    nombre: "Noche dorada",
+    css: "radial-gradient(circle at 15% 25%, rgba(233,196,106,0.40), transparent 45%), radial-gradient(circle at 88% 78%, rgba(217,102,46,0.30), transparent 50%), linear-gradient(135deg, #2b1d0e, #4a3216)",
+  },
+  {
+    valor: "brasas",
+    nombre: "Brasas",
+    css: "radial-gradient(circle at 85% 15%, rgba(255,214,150,0.55), transparent 42%), radial-gradient(circle at 10% 90%, rgba(120,30,10,0.55), transparent 50%), linear-gradient(135deg, #b8441a, #e8793a)",
+  },
+  {
+    valor: "vino",
+    nombre: "Vino",
+    css: "radial-gradient(circle at 80% 20%, rgba(233,196,106,0.35), transparent 45%), linear-gradient(135deg, #3d0f1f, #7a2338)",
+  },
+  {
+    valor: "medianoche",
+    nombre: "Medianoche",
+    css: "radial-gradient(circle at 20% 20%, rgba(246,220,143,0.30), transparent 40%), radial-gradient(circle at 80% 85%, rgba(120,150,230,0.25), transparent 50%), linear-gradient(135deg, #0f1a30, #26365a)",
+  },
+];
+
 export type Promocion = {
   id: number;
   titulo: string;
@@ -44,6 +75,9 @@ export type Promocion = {
   // Texto del sello del estilo "aniversario" (ej. "5 años"); null si
   // no lleva.
   sello: string | null;
+  // Fondo listo elegido (solo se usa si la promo no lleva foto); null =
+  // el de siempre según el estilo.
+  fondo: FondoPromocion | null;
   // Porcentaje que se rebaja del precio de los productos mientras la
   // promo esté vigente (null = promo solo informativa, sin descuento).
   descuentoPorcentaje: number | null;
@@ -52,6 +86,16 @@ export type Promocion = {
   productosExcluidos: number[];
   estado: EstadoPromocion;
 };
+
+// El fondo elegido, como estilo en línea — undefined si la promo lleva
+// foto (la foto manda) o no eligió ninguno.
+export function estiloFondo(
+  promocion: Pick<Promocion, "imagenUrl" | "fondo">
+): React.CSSProperties | undefined {
+  if (promocion.imagenUrl || !promocion.fondo) return undefined;
+  const fondo = FONDOS_PROMOCION.find((f) => f.valor === promocion.fondo);
+  return fondo ? { backgroundImage: fondo.css } : undefined;
+}
 
 // Momento exacto en que termina una promo: el final del día `fin`
 // (YYYY-MM-DD) en hora de Colombia (UTC-5, sin horario de verano) —

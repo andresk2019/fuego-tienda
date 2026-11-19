@@ -31,7 +31,8 @@ function asegurarEsquema(): Promise<void> {
          ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS productos_excluidos INTEGER[] NOT NULL DEFAULT '{}';
          ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS en_popup BOOLEAN NOT NULL DEFAULT false;
          ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS estilo TEXT NOT NULL DEFAULT 'normal';
-         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS sello TEXT;`
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS sello TEXT;
+         ALTER TABLE tienda_promociones ADD COLUMN IF NOT EXISTS fondo TEXT;`
       )
       .then(() => undefined);
   }
@@ -48,7 +49,7 @@ const COLUMNAS = `
   id, titulo, texto, imagen_url, enlace,
   to_char(inicio, 'YYYY-MM-DD') AS inicio,
   to_char(fin, 'YYYY-MM-DD') AS fin,
-  activa, en_franja, en_portada, en_popup, estilo, sello,
+  activa, en_franja, en_portada, en_popup, estilo, sello, fondo,
   descuento_porcentaje, productos_excluidos,
   CASE
     WHEN NOT activa THEN 'desactivada'
@@ -71,6 +72,7 @@ function filaAPromocion(r: {
   en_popup: boolean;
   estilo: Promocion['estilo'];
   sello: string | null;
+  fondo: Promocion['fondo'];
   descuento_porcentaje: number | null;
   productos_excluidos: number[];
   estado: Promocion['estado'];
@@ -89,6 +91,7 @@ function filaAPromocion(r: {
     enPopup: r.en_popup,
     estilo: r.estilo,
     sello: r.sello,
+    fondo: r.fondo,
     descuentoPorcentaje: r.descuento_porcentaje,
     productosExcluidos: r.productos_excluidos,
     estado: r.estado,
@@ -127,9 +130,23 @@ export async function obtenerPromocionFranja(): Promise<Promocion | null> {
   return vigentes.find((p) => p.enFranja) ?? null;
 }
 
-export async function obtenerPromocionesPortada(): Promise<Promocion[]> {
+// La promo de aniversario con banners activados REEMPLAZA el bloque del
+// logo en el encabezado de todas las páginas (para que el cliente no
+// tenga que bajar tanto para ver la promo): es la vigente más reciente
+// con estilo aniversario y "Banners" marcado.
+export async function obtenerPromocionEncabezado(): Promise<Promocion | null> {
   const vigentes = await obtenerPromocionesVigentes();
-  return vigentes.filter((p) => p.enPortada);
+  return vigentes.find((p) => p.estilo === 'aniversario' && p.enPortada) ?? null;
+}
+
+// Los banners de la portada, el catálogo y el carrito — sin la promo que
+// ya ocupa el encabezado (se vería repetida).
+export async function obtenerPromocionesPortada(): Promise<Promocion[]> {
+  const [vigentes, encabezado] = await Promise.all([
+    obtenerPromocionesVigentes(),
+    obtenerPromocionEncabezado(),
+  ]);
+  return vigentes.filter((p) => p.enPortada && p.id !== encabezado?.id);
 }
 
 // El pop-up solo muestra UNA promo (la vigente más reciente marcada
@@ -151,6 +168,7 @@ export async function crearPromocion(datos: {
   enPopup: boolean;
   estilo: Promocion['estilo'];
   sello: string | null;
+  fondo: Promocion['fondo'];
   descuentoPorcentaje: number | null;
   productosExcluidos: number[];
 }): Promise<void> {
@@ -158,8 +176,8 @@ export async function crearPromocion(datos: {
   await getPool().query(
     `INSERT INTO tienda_promociones
        (titulo, texto, imagen_url, enlace, inicio, fin, en_franja, en_portada,
-        descuento_porcentaje, productos_excluidos, en_popup, estilo, sello)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        descuento_porcentaje, productos_excluidos, en_popup, estilo, sello, fondo)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
     [
       datos.titulo,
       datos.texto,
@@ -174,6 +192,7 @@ export async function crearPromocion(datos: {
       datos.enPopup,
       datos.estilo,
       datos.sello,
+      datos.fondo,
     ]
   );
 }
@@ -195,6 +214,7 @@ export async function actualizarPromocion(
   enPopup: boolean;
   estilo: Promocion['estilo'];
   sello: string | null;
+  fondo: Promocion['fondo'];
     descuentoPorcentaje: number | null;
     productosExcluidos: number[];
   }
@@ -206,7 +226,7 @@ export async function actualizarPromocion(
        en_franja = $7, en_portada = $8,
        descuento_porcentaje = $9, productos_excluidos = $10,
        imagen_url = CASE WHEN $11::boolean THEN $12::text ELSE imagen_url END,
-       en_popup = $13, estilo = $14, sello = $15
+       en_popup = $13, estilo = $14, sello = $15, fondo = $16
      WHERE id = $1`,
     [
       id,
@@ -224,6 +244,7 @@ export async function actualizarPromocion(
       datos.enPopup,
       datos.estilo,
       datos.sello,
+      datos.fondo,
     ]
   );
 }

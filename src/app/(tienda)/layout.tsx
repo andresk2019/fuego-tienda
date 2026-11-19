@@ -7,6 +7,7 @@ import FranjaPromocion from "@/components/FranjaPromocion";
 import PopupPromocion from "@/components/PopupPromocion";
 import { obtenerNumeroWhatsApp } from "@/lib/admin-db";
 import {
+  obtenerPromocionEncabezado,
   obtenerPromocionFranja,
   obtenerPromocionPopup,
 } from "@/lib/promociones-db";
@@ -30,16 +31,18 @@ export default async function TiendaLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [numeroWhatsApp, promocionFranja, promocionPopup] = await Promise.all([
-    obtenerNumeroWhatsApp(),
-    obtenerPromocionFranja(),
-    obtenerPromocionPopup(),
-  ]);
+  const [numeroWhatsApp, promocionFranja, promocionPopup, promocionEncabezado] =
+    await Promise.all([
+      obtenerNumeroWhatsApp(),
+      obtenerPromocionFranja(),
+      obtenerPromocionPopup(),
+      obtenerPromocionEncabezado(),
+    ]);
 
   return (
     <>
       <FranjaPromocion promocion={promocionFranja} />
-      <SiteHeader />
+      <SiteHeader promocionEncabezado={promocionEncabezado} />
       {children}
       <SiteFooter />
       <CarritoLateral />
