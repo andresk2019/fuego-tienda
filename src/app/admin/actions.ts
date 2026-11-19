@@ -15,6 +15,7 @@ import {
   guardarLogoUrl,
   guardarDestacadoProducto,
   guardarCategoriaProducto,
+  guardarSubcategoriaProducto,
   guardarNumeroWhatsApp,
   guardarConfigEnvio,
   guardarConfigCompra,
@@ -25,6 +26,7 @@ import {
 import { hashearContrasena } from '@/lib/auth';
 import { credencialesValidas } from '@/lib/credenciales';
 import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
+import { SECCIONES, type SubcategoriaSlug } from '@/lib/secciones';
 
 export async function cerrarSesion() {
   await eliminarSesion();
@@ -423,6 +425,48 @@ export async function guardarCategoria(
   revalidatePath('/admin');
   revalidatePath('/');
   revalidatePath('/catalogo');
+  revalidatePath(`/productos/${productoId}`);
+
+  return { ok: true };
+}
+
+export type EstadoSubcategoria = { error?: string; ok?: boolean } | undefined;
+
+// La sección donde aparece el producto en la tienda (Velas, Difusores,
+// Sales, Exfoliantes, Accesorios...). Antes solo se podía asignar
+// editando secciones.ts en el código, y todo producto nuevo caía en
+// "Velas" — con su selector de aroma incluido — hasta el próximo
+// despliegue. Ver guardarSubcategoriaProducto en admin-db.ts.
+export async function guardarSubcategoria(
+  _estado: EstadoSubcategoria,
+  formData: FormData
+): Promise<EstadoSubcategoria> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  const subcategoria = String(formData.get('subcategoria') ?? '');
+
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+  if (
+    !SECCIONES.some((s) => s.subcategorias.some((sub) => sub.slug === subcategoria))
+  ) {
+    return { error: 'Sección inválida.' };
+  }
+
+  try {
+    await guardarSubcategoriaProducto(productoId, subcategoria as SubcategoriaSlug);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/');
+  revalidatePath('/catalogo');
+  revalidatePath('/favoritos');
   revalidatePath(`/productos/${productoId}`);
 
   return { ok: true };
