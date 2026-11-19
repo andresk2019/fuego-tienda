@@ -22,7 +22,7 @@ import { obtenerMetaDeProductos, type MetaProductos } from './admin-db';
 import { obtenerPromocionesVigentes } from './promociones-db';
 import {
   aplicarDescuento,
-  porcentajeDescuentoDe,
+  porcentajeEfectivo,
   type Promocion,
 } from './promociones';
 import { formatearNombreProducto } from './texto';
@@ -71,7 +71,9 @@ function filaAProducto(
   // Un producto sin precio todavía (precio 0) no se rebaja: sigue
   // oculto para el público (ver visibleEnTienda).
   const porcentaje =
-    precioBase > 0 ? porcentajeDescuentoDe(promociones, r.id) : 0;
+    precioBase > 0
+      ? porcentajeEfectivo(meta.descuentosPropios[r.id], promociones, r.id)
+      : 0;
   const stockMinimo = Number(r.stock_minimo);
   // La categoría elegida desde /admin tiene prioridad; si no se ha
   // asignado ninguna, se usa el mapa fijo en código (ver
@@ -134,7 +136,11 @@ export async function obtenerCatalogoFuego(
     opciones.conDescuento === false ? [] : obtenerPromocionesVigentes(),
   ]);
 
-  return resultado.rows.map((r) => filaAProducto(r, meta, promociones));
+  // El panel ve el precio real de Contabilidad Lady: ni el descuento de
+  // las promos ni el propio de cada producto.
+  const metaVista =
+    opciones.conDescuento === false ? { ...meta, descuentosPropios: {} } : meta;
+  return resultado.rows.map((r) => filaAProducto(r, metaVista, promociones));
 }
 
 // Para la página de detalle de un producto. Filtra también por
@@ -236,7 +242,7 @@ export async function obtenerPreciosReales(
 ): Promise<Map<number, number>> {
   if (productoIds.length === 0) return new Map();
 
-  const [{ rows }, promociones] = await Promise.all([
+  const [{ rows }, promociones, meta] = await Promise.all([
     getPool().query(
       `SELECT i.id, i.precio_venta
        FROM inventario i
@@ -246,13 +252,16 @@ export async function obtenerPreciosReales(
       [productoIds]
     ),
     obtenerPromocionesVigentes(),
+    obtenerMetaDeProductos(),
   ]);
 
   return new Map(
     rows.map((r) => {
       const precioBase = Number(r.precio_venta);
       const porcentaje =
-        precioBase > 0 ? porcentajeDescuentoDe(promociones, r.id as number) : 0;
+        precioBase > 0
+          ? porcentajeEfectivo(meta.descuentosPropios[r.id as number], promociones, r.id as number)
+          : 0;
       return [r.id as number, aplicarDescuento(precioBase, porcentaje)];
     })
   );

@@ -41,6 +41,8 @@ function asegurarEsquema(): Promise<void> {
          ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS destacado BOOLEAN NOT NULL DEFAULT false;
          ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS categoria TEXT;
          ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS subcategoria TEXT;
+         ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS descuento_porcentaje INTEGER;
+         ALTER TABLE tienda_producto_meta ADD COLUMN IF NOT EXISTS descuento_hasta DATE;
          CREATE TABLE IF NOT EXISTS tienda_config (
            clave TEXT PRIMARY KEY,
            valor TEXT
@@ -390,7 +392,16 @@ export type MetaProductos = {
   // heredaba el selector de aroma). Igual que las categorías: un valor
   // viejo o corrupto simplemente se ignora.
   subcategorias: Record<number, SubcategoriaSlug>;
+  // Descuento PROPIO de cada producto (puesto desde /admin), solo los que
+  // están vigentes hoy — sin fecha de fin, o con una que no ha pasado
+  // (día calendario de Colombia, fin inclusivo). Manda sobre cualquier
+  // promo de toda la tienda; ver porcentajeEfectivo en promociones.ts.
+  descuentosPropios: Record<number, number>;
 };
+
+// "Hoy" en Colombia (no en UTC, que es donde corre el servidor): un
+// descuento que termina "el 30" no debe apagarse a las 7 pm del 29.
+const HOY_BOGOTA = `(now() AT TIME ZONE 'America/Bogota')::date`;
 
 const SLUGS_CATEGORIA = new Set(CATEGORIAS.map((c) => c.slug));
 const SLUGS_SUBCATEGORIA = new Set(
@@ -404,7 +415,11 @@ const SLUGS_SUBCATEGORIA = new Set(
 export async function obtenerMetaDeProductos(): Promise<MetaProductos> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    'SELECT producto_id, foto_url, descripcion, destacado, categoria, subcategoria FROM tienda_producto_meta'
+    `SELECT producto_id, foto_url, descripcion, destacado, categoria, subcategoria,
+            CASE WHEN descuento_porcentaje IS NOT NULL
+                  AND (descuento_hasta IS NULL OR descuento_hasta >= ${HOY_BOGOTA})
+                 THEN descuento_porcentaje END AS descuento_vigente
+     FROM tienda_producto_meta`
   );
 
   const fotos: Record<number, string> = {};
@@ -412,6 +427,7 @@ export async function obtenerMetaDeProductos(): Promise<MetaProductos> {
   const destacados = new Set<number>();
   const categorias: Record<number, CategoriaSlug> = {};
   const subcategorias: Record<number, SubcategoriaSlug> = {};
+  const descuentosPropios: Record<number, number> = {};
 
   for (const fila of rows) {
     if (fila.foto_url) fotos[fila.producto_id] = fila.foto_url;
@@ -423,9 +439,12 @@ export async function obtenerMetaDeProductos(): Promise<MetaProductos> {
     if (fila.subcategoria && SLUGS_SUBCATEGORIA.has(fila.subcategoria)) {
       subcategorias[fila.producto_id] = fila.subcategoria as SubcategoriaSlug;
     }
+    if (fila.descuento_vigente) {
+      descuentosPropios[fila.producto_id] = Number(fila.descuento_vigente);
+    }
   }
 
-  return { fotos, descripciones, destacados, categorias, subcategorias };
+  return { fotos, descripciones, destacados, categorias, subcategorias, descuentosPropios };
 }
 
 export async function guardarFotoProducto(productoId: number, fotoUrl: string): Promise<void> {
@@ -491,6 +510,52 @@ export async function guardarCategoriaProducto(
      VALUES ($1, $2, now())
      ON CONFLICT (producto_id) DO UPDATE SET categoria = $2, actualizado_en = now()`,
     [productoId, categoria]
+  );
+}
+
+// Para el panel: el descuento propio configurado de cada producto, esté
+// vigente o ya vencido (para poder mostrarlo y cambiarlo).
+export type DescuentoProductoAdmin = {
+  porcentaje: number;
+  hasta: string | null;
+  vigente: boolean;
+};
+
+export async function obtenerDescuentosProductoAdmin(): Promise<
+  Record<number, DescuentoProductoAdmin>
+> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    `SELECT producto_id, descuento_porcentaje,
+            to_char(descuento_hasta, 'YYYY-MM-DD') AS hasta,
+            (descuento_hasta IS NULL OR descuento_hasta >= ${HOY_BOGOTA}) AS vigente
+     FROM tienda_producto_meta
+     WHERE descuento_porcentaje IS NOT NULL`
+  );
+  const resultado: Record<number, DescuentoProductoAdmin> = {};
+  for (const fila of rows) {
+    resultado[fila.producto_id] = {
+      porcentaje: Number(fila.descuento_porcentaje),
+      hasta: fila.hasta,
+      vigente: fila.vigente,
+    };
+  }
+  return resultado;
+}
+
+// porcentaje null = quitar el descuento propio (y su fecha de fin).
+export async function guardarDescuentoProducto(
+  productoId: number,
+  porcentaje: number | null,
+  hasta: string | null
+): Promise<void> {
+  await asegurarEsquema();
+  await getPool().query(
+    `INSERT INTO tienda_producto_meta (producto_id, descuento_porcentaje, descuento_hasta, actualizado_en)
+     VALUES ($1, $2, $3, now())
+     ON CONFLICT (producto_id) DO UPDATE
+       SET descuento_porcentaje = $2, descuento_hasta = $3, actualizado_en = now()`,
+    [productoId, porcentaje, porcentaje === null ? null : hasta]
   );
 }
 

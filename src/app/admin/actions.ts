@@ -16,6 +16,7 @@ import {
   guardarDestacadoProducto,
   guardarCategoriaProducto,
   guardarSubcategoriaProducto,
+  guardarDescuentoProducto,
   guardarNumeroWhatsApp,
   guardarConfigEnvio,
   guardarConfigCompra,
@@ -27,6 +28,7 @@ import { hashearContrasena } from '@/lib/auth';
 import { credencialesValidas } from '@/lib/credenciales';
 import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
 import { SECCIONES, type SubcategoriaSlug } from '@/lib/secciones';
+import { DESCUENTO_MINIMO, DESCUENTO_MAXIMO } from '@/lib/promociones';
 
 export async function cerrarSesion() {
   await eliminarSesion();
@@ -459,6 +461,74 @@ export async function guardarSubcategoria(
 
   try {
     await guardarSubcategoriaProducto(productoId, subcategoria as SubcategoriaSlug);
+  } catch {
+    return { error: 'No se pudo guardar. Intenta de nuevo.' };
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/');
+  revalidatePath('/catalogo');
+  revalidatePath('/favoritos');
+  revalidatePath(`/productos/${productoId}`);
+
+  return { ok: true };
+}
+
+export type EstadoDescuentoProducto = { error?: string; ok?: boolean } | undefined;
+
+// Descuento PROPIO de un producto, independiente de las promos: manda
+// siempre sobre el de una promo de toda la tienda (nunca se suman; ver
+// porcentajeEfectivo en promociones.ts). La fecha de fin es opcional.
+export async function guardarDescuentoDeProducto(
+  _estado: EstadoDescuentoProducto,
+  formData: FormData
+): Promise<EstadoDescuentoProducto> {
+  if (!(await haySesion())) {
+    return { error: 'Tu sesión expiró, vuelve a entrar.' };
+  }
+
+  const productoId = Number(formData.get('productoId'));
+  if (!Number.isInteger(productoId) || productoId <= 0) {
+    return { error: 'Producto inválido.' };
+  }
+
+  let porcentaje: number | null = null;
+  let hasta: string | null = null;
+
+  if (formData.get('quitar') !== '1') {
+    const porcentajeCrudo = String(formData.get('porcentaje') ?? '').trim();
+    if (!porcentajeCrudo) {
+      return { error: 'Escribe el porcentaje de descuento (o toca "Quitar").' };
+    }
+    porcentaje = Number(porcentajeCrudo);
+    if (
+      !Number.isInteger(porcentaje) ||
+      porcentaje < DESCUENTO_MINIMO ||
+      porcentaje > DESCUENTO_MAXIMO
+    ) {
+      return {
+        error: `El descuento debe ser un número entero entre ${DESCUENTO_MINIMO} y ${DESCUENTO_MAXIMO}.`,
+      };
+    }
+
+    const hastaCrudo = String(formData.get('hasta') ?? '').trim();
+    if (hastaCrudo) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(hastaCrudo) || Number.isNaN(Date.parse(hastaCrudo))) {
+        return { error: 'La fecha de fin no es válida.' };
+      }
+      // Hoy en Colombia (el servidor corre en UTC).
+      const hoy = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'America/Bogota',
+      });
+      if (hastaCrudo < hoy) {
+        return { error: 'La fecha de fin ya pasó.' };
+      }
+      hasta = hastaCrudo;
+    }
+  }
+
+  try {
+    await guardarDescuentoProducto(productoId, porcentaje, hasta);
   } catch {
     return { error: 'No se pudo guardar. Intenta de nuevo.' };
   }

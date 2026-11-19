@@ -63,6 +63,21 @@ export function porcentajeDescuentoDe(
   return mayor;
 }
 
+// El descuento PROPIO de un producto (el que se le pone desde su fila
+// en /admin) siempre manda: si lo tiene vigente se usa ese, aunque una
+// promo de toda la tienda ofrezca más (o menos) — nunca se suman ni se
+// compite. Sin descuento propio, aplica el de las promos vigentes (ver
+// porcentajeDescuentoDe). Es la única fórmula: la usan tanto el catálogo
+// como el servidor al registrar el pedido, para que siempre coincidan.
+export function porcentajeEfectivo(
+  descuentoPropio: number | undefined,
+  promociones: Pick<Promocion, "descuentoPorcentaje" | "productosExcluidos">[],
+  productoId: number
+): number {
+  if (descuentoPropio !== undefined && descuentoPropio > 0) return descuentoPropio;
+  return porcentajeDescuentoDe(promociones, productoId);
+}
+
 // Pesos colombianos enteros: se redondea al peso más cercano. Es la
 // única fórmula de precio con descuento — la usan tanto el catálogo
 // como el servidor al registrar el pedido, para que siempre coincidan.
