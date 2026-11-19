@@ -5,8 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import EnlacePromocion from "@/components/EnlacePromocion";
-import CuentaRegresiva from "@/components/CuentaRegresiva";
-import Confeti from "@/components/Confeti";
+import CuentaRegresiva, { CuentaRegresivaCajas } from "@/components/CuentaRegresiva";
+import Brasas from "@/components/Brasas";
+import MarcoAniversario from "@/components/MarcoAniversario";
 import SelloAniversario from "@/components/SelloAniversario";
 import { estiloFondo, type Promocion } from "@/lib/promociones";
 
@@ -18,7 +19,7 @@ const RETRASO_MS = 2500;
 // cerrar la pestaña vuelve a salir) y unos segundos después de entrar,
 // no de golpe. No sale en el carrito ni en la política de datos, para no
 // interrumpir a quien está pagando. En el estilo "aniversario" va
-// oscura y dorada, con confeti y el sello.
+// oscura y dorada, con marco, brasas que suben y la medalla.
 export default function PopupPromocion({
   promocion,
 }: {
@@ -72,11 +73,9 @@ export default function PopupPromocion({
   const claro = esAniversario || conFondo;
   const cerrar = () => setAbierto(false);
   const textoBoton = promocion.enlace ? "Ver promoción" : "Ver el catálogo";
-  const claseBoton = `inline-block rounded-lg px-6 py-3 text-sm font-semibold transition-colors ${
-    esAniversario
-      ? "bg-[#e9c46a] text-[#2b1d0e] hover:bg-[#f6dc8f]"
-      : "bg-ember text-on-ember hover:bg-ember-hover"
-  }`;
+  const claseBoton = esAniversario
+    ? "boton-dorado"
+    : "inline-block rounded-lg bg-ember px-6 py-3 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover";
 
   return (
     <div
@@ -91,13 +90,21 @@ export default function PopupPromocion({
         onClick={(e) => e.stopPropagation()}
         className={`relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl shadow-2xl ${
           esAniversario
-            ? "bg-gradient-to-b from-[#2b1d0e] to-[#4a3216] text-[#fff3c4] ring-2 ring-[#e9c46a]/70"
+            ? "isolate bg-gradient-to-b from-[#1f140a] via-[#34230f] to-[#1f140a] text-[#fff3c4] ring-1 ring-[#e9c46a]/60"
             : conFondo
               ? "text-[#fff8ef]"
               : "bg-surface"
         }`}
       >
-        {esAniversario && <Confeti cantidad={26} encima />}
+        {esAniversario && (
+          <>
+            <div className="aniv-resplandor absolute inset-0" aria-hidden="true" />
+            <Brasas cantidad={20} encima />
+            <div className="absolute inset-0 z-[6]">
+              <MarcoAniversario redondeado />
+            </div>
+          </>
+        )}
 
         <button
           ref={botonCerrarRef}
@@ -131,11 +138,24 @@ export default function PopupPromocion({
               <SelloAniversario texto={promocion.sello} grande />
             </div>
           )}
+          {esAniversario && (
+            <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.3em] text-[#e9c46a] uppercase">
+              <span
+                aria-hidden="true"
+                className="h-px w-6 bg-gradient-to-r from-transparent to-[#e9c46a]"
+              />
+              Edición de aniversario
+              <span
+                aria-hidden="true"
+                className="h-px w-6 bg-gradient-to-l from-transparent to-[#e9c46a]"
+              />
+            </p>
+          )}
           {promocion.descuentoPorcentaje !== null && (
             <span
               className={`rounded-full px-3 py-1 text-sm font-bold ${
                 esAniversario
-                  ? "bg-[#e9c46a] text-[#2b1d0e]"
+                  ? "border border-[#e9c46a]/60 bg-[#e9c46a]/15 text-[#f6dc8f]"
                   : "bg-ember text-on-ember"
               }`}
             >
@@ -155,12 +175,15 @@ export default function PopupPromocion({
               {promocion.texto}
             </p>
           )}
-          {promocion.fin && (
-            <CuentaRegresiva
-              fin={promocion.fin}
-              className={`text-sm ${claro ? "text-[#f6dc8f]" : "text-ember"}`}
-            />
-          )}
+          {promocion.fin &&
+            (esAniversario ? (
+              <CuentaRegresivaCajas fin={promocion.fin} chica />
+            ) : (
+              <CuentaRegresiva
+                fin={promocion.fin}
+                className={`text-sm ${claro ? "text-[#f6dc8f]" : "text-ember"}`}
+              />
+            ))}
 
           <div className="mt-2 flex flex-col items-center gap-2">
             {promocion.enlace ? (

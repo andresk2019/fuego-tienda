@@ -1,7 +1,8 @@
 import Image from "next/image";
 import EnlacePromocion from "@/components/EnlacePromocion";
-import CuentaRegresiva from "@/components/CuentaRegresiva";
-import Confeti from "@/components/Confeti";
+import CuentaRegresiva, { CuentaRegresivaCajas } from "@/components/CuentaRegresiva";
+import Brasas from "@/components/Brasas";
+import MarcoAniversario from "@/components/MarcoAniversario";
 import SelloAniversario from "@/components/SelloAniversario";
 import { estiloFondo, type Promocion } from "@/lib/promociones";
 
@@ -9,8 +10,11 @@ import { estiloFondo, type Promocion } from "@/lib/promociones";
 // velas artesanales") en el encabezado de todas las páginas, mientras
 // esté vigente (ver obtenerPromocionEncabezado en promociones-db.ts y
 // SiteHeader.tsx): así el cliente la ve apenas entra, sin tener que
-// bajar. Ocupa más o menos la misma altura que el logo, así que no
-// empuja el contenido más abajo. Va de lado a lado de la pantalla.
+// bajar. Va de lado a lado de la pantalla.
+//
+// Capas, de atrás hacia adelante: fondo (foto, fondo listo o degradado
+// oscuro) → velo oscuro para que el texto se lea → resplandor cálido →
+// brasas que suben → marco con filetes dorados → contenido.
 export default function BannerEncabezado({
   promocion,
 }: {
@@ -20,62 +24,92 @@ export default function BannerEncabezado({
     <section
       aria-label="Aniversario"
       style={estiloFondo(promocion)}
-      className="relative overflow-hidden border-b border-[#e9c46a]/40 bg-gradient-to-br from-[#2b1d0e] via-[#4a3216] to-[#2b1d0e] text-[#fff3c4]"
+      className="relative isolate overflow-hidden bg-gradient-to-br from-[#1f140a] via-[#34230f] to-[#1f140a] text-[#fff3c4]"
     >
       {/* El nombre de la marca sigue estando para los lectores de
           pantalla y los buscadores, aunque el logo ya no se vea. */}
       <h1 className="sr-only">Fuego — velas artesanales</h1>
 
-      {promocion.imagenUrl && (
+      {promocion.imagenUrl ? (
         <>
-          <Image
-            src={promocion.imagenUrl}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#2b1d0e]/90 via-[#2b1d0e]/55 to-transparent" />
+          <div className="absolute inset-0 overflow-hidden">
+            <Image
+              src={promocion.imagenUrl}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="zoom-lento object-cover opacity-55"
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1b1208]/95 via-[#1b1208]/70 to-[#1b1208]/30" />
         </>
+      ) : (
+        // Sin foto: un velo más suave detrás del texto, porque algunos
+        // fondos listos (ej. "Noche dorada") tienen destellos claros a la
+        // izquierda que le quitarían contraste al título dorado.
+        <div className="absolute inset-0 bg-gradient-to-r from-[#1b1208]/65 via-[#1b1208]/30 to-transparent" />
       )}
 
-      <Confeti />
+      <div className="aniv-resplandor absolute inset-0" aria-hidden="true" />
+      <Brasas cantidad={18} />
+      <MarcoAniversario />
 
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between gap-6 px-6 py-8 sm:py-10">
-        {/* Con sello, el texto deja libre el lado derecho en el celular
-            (el sello va arriba a la derecha y si no tapa el título). */}
-        <div
-          className={`flex flex-col items-start gap-2 sm:gap-3 ${
-            promocion.sello ? "pr-24 sm:pr-0" : ""
-          }`}
-        >
-          <h2 className="texto-dorado font-serif text-3xl sm:text-5xl">
-            {promocion.titulo}
-          </h2>
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between gap-8 px-6 py-7 sm:px-10 sm:py-14">
+        <div className="flex w-full max-w-2xl flex-col items-start gap-3 sm:gap-4">
+          {/* Etiqueta + título. En el celular la medalla va a su lado
+              (no encima): así el banner queda bajito y el título no se
+              cruza con ella. */}
+          <div className="flex w-full items-start justify-between gap-4">
+            <div className="flex flex-col items-start gap-2.5 sm:gap-4">
+              <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.32em] text-[#e9c46a] uppercase sm:text-xs">
+                <span
+                  aria-hidden="true"
+                  className="h-px w-6 bg-gradient-to-r from-transparent to-[#e9c46a] sm:w-12"
+                />
+                Edición de aniversario
+              </p>
+              <h2 className="texto-dorado font-serif text-[1.65rem] leading-[1.15] sm:text-5xl sm:leading-[1.1]">
+                {promocion.titulo}
+              </h2>
+            </div>
+            {promocion.sello && (
+              <div className="shrink-0 sm:hidden">
+                <SelloAniversario texto={promocion.sello} grande />
+              </div>
+            )}
+          </div>
+
           {promocion.texto && (
-            <p className="text-base opacity-90 sm:text-lg">{promocion.texto}</p>
+            <p className="max-w-xl text-sm leading-relaxed text-[#fff3c4]/85 sm:text-lg">
+              {promocion.texto}
+            </p>
           )}
-          <div className="flex flex-wrap items-center gap-3">
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-3 sm:mt-2 sm:gap-x-6 sm:gap-y-4">
             {promocion.fin && (
-              <CuentaRegresiva
-                fin={promocion.fin}
-                className="rounded-full bg-[#e9c46a]/20 px-3 py-1 text-xs text-[#f6dc8f] sm:text-sm"
-              />
+              <>
+                {/* Celular: una sola línea. Escritorio: cajitas. */}
+                <CuentaRegresiva
+                  fin={promocion.fin}
+                  prefijo="Quedan"
+                  className="rounded-full border border-[#e9c46a]/35 bg-black/30 px-2.5 py-1.5 text-[11px] text-[#f6dc8f] sm:hidden"
+                />
+                <div className="hidden sm:block">
+                  <CuentaRegresivaCajas fin={promocion.fin} />
+                </div>
+              </>
             )}
             {promocion.enlace && (
-              <EnlacePromocion
-                enlace={promocion.enlace}
-                className="inline-block rounded-lg bg-[#e9c46a] px-5 py-2.5 text-sm font-semibold text-[#2b1d0e] transition-colors hover:bg-[#f6dc8f]"
-              >
-                Ver promoción
+              <EnlacePromocion enlace={promocion.enlace} className="boton-dorado">
+                Ver promoción <span aria-hidden="true">→</span>
               </EnlacePromocion>
             )}
           </div>
         </div>
 
         {promocion.sello && (
-          <div className="absolute top-4 right-4 sm:static">
+          <div className="hidden sm:mr-6 sm:block">
             <SelloAniversario texto={promocion.sello} grande />
           </div>
         )}
