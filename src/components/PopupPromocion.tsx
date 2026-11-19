@@ -84,7 +84,7 @@ export default function PopupPromocion({
           type="button"
           onClick={cerrar}
           aria-label="Cerrar"
-          className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-lg leading-none text-foreground shadow transition-colors hover:bg-background"
+          className="absolute top-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 text-lg leading-none text-foreground shadow transition-colors hover:bg-background"
         >
           ×
         </button>
@@ -135,7 +135,7 @@ export default function PopupPromocion({
             <button
               type="button"
               onClick={cerrar}
-              className="text-sm text-muted transition-colors hover:text-foreground"
+              className="px-4 py-2.5 text-sm text-muted transition-colors hover:text-foreground"
             >
               Seguir navegando
             </button>

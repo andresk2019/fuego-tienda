@@ -93,7 +93,7 @@ export default async function ProductoPage(
       />
       <Link
         href="/catalogo"
-        className="text-sm text-muted transition-colors hover:text-foreground"
+        className="inline-block py-2 text-sm text-muted transition-colors hover:text-foreground"
       >
         ← Volver al catálogo
       </Link>
@@ -122,7 +122,7 @@ export default async function ProductoPage(
           {esVela && (
             <Link
               href="/cuidado-de-las-velas"
-              className="-mt-2 w-fit text-sm text-muted underline-offset-2 transition-colors hover:text-foreground hover:underline"
+              className="-mt-2 w-fit py-1.5 text-sm text-muted underline-offset-2 transition-colors hover:text-foreground hover:underline"
             >
               🕯️ Cómo cuidar esta vela →
             </Link>

@@ -41,7 +41,7 @@ export default function MenuMovil() {
         type="button"
         onClick={() => setAbierto(true)}
         aria-label="Abrir menú"
-        className="p-1 text-foreground"
+        className="-ml-2.5 flex h-11 w-11 items-center justify-center text-foreground"
       >
         <MenuIcon className="h-6 w-6" />
       </button>
@@ -66,7 +66,7 @@ export default function MenuMovil() {
             type="button"
             onClick={() => setAbierto(false)}
             aria-label="Cerrar menú"
-            className="p-1 text-muted transition-colors hover:text-foreground"
+            className="-mr-2.5 flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-foreground"
           >
             <CerrarIcon className="h-5 w-5" />
           </button>

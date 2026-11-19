@@ -26,13 +26,13 @@ export default function SiteHeader() {
           perdía de vista y había que volver a subir hasta el inicio
           para acceder a cualquiera de los 3 — ahora se queda fija
           arriba todo el tiempo. */}
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background px-6 py-4 md:hidden">
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background px-6 py-2 md:hidden">
         <MenuMovil />
         <Link href="/" className="flex items-center gap-2">
           <AriesIcon className="h-6 w-6 text-ember" />
           <span className="font-serif text-lg text-foreground">Fuego</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="-mr-3 flex items-center">
           <FavoritosIndicador compacto />
           <CarritoIndicador compacto />
         </div>

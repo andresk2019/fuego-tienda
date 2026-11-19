@@ -9,7 +9,7 @@ import CorazonIcon from "@/components/CorazonIcon";
 // marcar como favorito no navegue a la ficha por accidente.
 export default function FavoritoBoton({
   productoId,
-  className = "absolute top-3 right-3 z-10 rounded-full bg-surface/90 p-1.5 text-ember shadow-sm backdrop-blur-sm transition-transform hover:scale-110",
+  className = "absolute top-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-surface/90 text-ember shadow-sm backdrop-blur-sm transition-transform hover:scale-110",
 }: {
   productoId: number;
   className?: string;
@@ -29,7 +29,7 @@ export default function FavoritoBoton({
       aria-pressed={activo}
       className={className}
     >
-      <CorazonIcon llena={activo} className="h-4 w-4" />
+      <CorazonIcon llena={activo} className="h-5 w-5" />
     </button>
   );
 }

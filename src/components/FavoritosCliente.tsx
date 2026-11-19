@@ -54,7 +54,7 @@ export default function FavoritosCliente({
   }
 
   return (
-    <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
       {productosFavoritos.map((producto) => (
         <li key={producto.id}>
           <TarjetaProducto
