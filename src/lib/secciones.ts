@@ -60,6 +60,7 @@ const SUBCATEGORIA_POR_ID: Record<number, SubcategoriaSlug> = {
   34: "sales-relajantes", // sal relajante
   35: "difusores", // difusor
   36: "exfoliantes", // exfoliante
+  59: "exfoliantes", // Exfoliante 250 Ml (caía en "velas" por no estar mapeado)
   39: "accesorios", // Fósforos
 };
 

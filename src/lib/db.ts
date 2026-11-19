@@ -97,7 +97,8 @@ function filaAProducto(
     pocasUnidades: cantidad > 0 && cantidad <= stockMinimo,
     categoria,
     descripcion,
-    subcategoria: subcategoriaDeProducto(r.id),
+    // La sección elegida desde /admin manda sobre el mapa fijo en código.
+    subcategoria: meta.subcategorias[r.id] ?? subcategoriaDeProducto(r.id),
     fotoUrl: meta.fotos[r.id] ?? null,
     destacado: meta.destacados.has(r.id),
   };

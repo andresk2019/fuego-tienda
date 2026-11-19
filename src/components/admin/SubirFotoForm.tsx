@@ -9,8 +9,10 @@ import {
   guardarDescripcion,
   guardarDestacado,
   guardarCategoria,
+  guardarSubcategoria,
 } from '@/app/admin/actions';
 import { CATEGORIAS, type CategoriaSlug } from '@/lib/categorias';
+import { SECCIONES, type SubcategoriaSlug } from '@/lib/secciones';
 import FlameIcon from '@/components/FlameIcon';
 import TarjetaProducto from '@/components/TarjetaProducto';
 import FichaProducto from '@/components/FichaProducto';
@@ -29,6 +31,7 @@ export default function SubirFotoForm({
   nombre,
   precioVenta,
   categoria,
+  subcategoria,
   disponible,
   pocasUnidades,
   personalizable,
@@ -41,6 +44,7 @@ export default function SubirFotoForm({
   nombre: string;
   precioVenta: number;
   categoria: CategoriaSlug;
+  subcategoria: SubcategoriaSlug;
   disponible: boolean;
   pocasUnidades: boolean;
   personalizable: boolean;
@@ -63,6 +67,10 @@ export default function SubirFotoForm({
   );
   const [estadoCategoria, accionCategoria] = useActionState(
     guardarCategoria,
+    undefined
+  );
+  const [estadoSubcategoria, accionSubcategoria] = useActionState(
+    guardarSubcategoria,
     undefined
   );
 
@@ -206,6 +214,8 @@ export default function SubirFotoForm({
             key={categoria}
             name="categoria"
             defaultValue={categoria}
+            title="Categoría por ocasión (Navidad, Día de la Madre...)"
+            aria-label="Categoría por ocasión"
             onChange={(e) => e.currentTarget.form?.requestSubmit()}
             className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
           >
@@ -213,6 +223,32 @@ export default function SubirFotoForm({
               <option key={c.slug} value={c.slug}>
                 {c.nombre}
               </option>
+            ))}
+          </select>
+        </form>
+
+        {/* Sección donde aparece en la tienda — con TODAS las opciones
+            (Velas, Difusores, Sales, Exfoliantes, Accesorios...). Al
+            cambiarla, el producto pasa a la pestaña de su nueva sección. */}
+        <form action={accionSubcategoria} className="contents">
+          <input type="hidden" name="productoId" value={productoId} />
+          <select
+            key={subcategoria}
+            name="subcategoria"
+            defaultValue={subcategoria}
+            aria-label="Sección en la tienda"
+            title="Sección donde aparece en la tienda (Velas, Exfoliantes...)"
+            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
+          >
+            {SECCIONES.map((seccion) => (
+              <optgroup key={seccion.slug} label={seccion.nombre}>
+                {seccion.subcategorias.map((sub) => (
+                  <option key={sub.slug} value={sub.slug}>
+                    {sub.nombre}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </form>
@@ -237,6 +273,9 @@ export default function SubirFotoForm({
       )}
       {estadoDestacado?.error && (
         <p className="text-xs text-danger">{estadoDestacado.error}</p>
+      )}
+      {estadoSubcategoria?.error && (
+        <p className="text-xs text-danger">{estadoSubcategoria.error}</p>
       )}
       {estadoCategoria?.error && (
         <p className="text-xs text-danger">{estadoCategoria.error}</p>

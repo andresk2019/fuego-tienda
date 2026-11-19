@@ -124,6 +124,7 @@ export default function ListaProductosAdmin({
               nombre={producto.nombre}
               precioVenta={producto.precioVenta}
               categoria={producto.categoria}
+              subcategoria={producto.subcategoria}
               disponible={producto.disponible}
               pocasUnidades={producto.pocasUnidades}
               personalizable={producto.personalizable}
