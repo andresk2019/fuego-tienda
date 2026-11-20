@@ -12,3 +12,8 @@ export const ENLACES_NAV = [
   { href: "/quienes-somos", etiqueta: "Quiénes somos" },
   { href: "/cuidado-de-las-velas", etiqueta: "Cuidado de velas" },
 ] as const;
+
+// "¿Cómo va mi pedido?" NO está en esta lista a propósito: no es una
+// página del menú sino una ventana emergente (ver BotonSeguimiento.tsx),
+// y el header y el menú móvil la añaden por su cuenta.
+export const ETIQUETA_SEGUIMIENTO = "¿Cómo va mi pedido?";

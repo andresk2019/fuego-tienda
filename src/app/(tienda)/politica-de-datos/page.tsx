@@ -31,7 +31,7 @@ export default async function PoliticaDeDatosPage() {
             Política de tratamiento de datos personales
           </h1>
           <p className="text-xs text-muted">
-            Última actualización: 14 de septiembre de 2026
+            Última actualización: 19 de noviembre de 2026
           </p>
         </div>
 
@@ -79,6 +79,17 @@ export default async function PoliticaDeDatosPage() {
             productos). No usamos tus datos para enviarte publicidad no
             solicitada, ni los vendemos ni los compartimos con
             terceros.
+          </p>
+          <p className="leading-relaxed text-muted">
+            También usamos tu número de WhatsApp para que puedas
+            consultar el estado de tu pedido en la sección «¿Cómo va mi
+            pedido?»: allí solo se muestra la información de un pedido
+            a quien escribe su número de pedido y el WhatsApp con el que
+            lo hizo, sin necesidad de crear una cuenta. Guardamos además
+            las fechas en que tu pedido cambia de estado (recibido, en
+            preparación, enviado, en camino, entregado) para mostrártelas
+            en esa misma consulta, y podemos escribirte por WhatsApp
+            para avisarte de esos cambios.
           </p>
         </section>
 

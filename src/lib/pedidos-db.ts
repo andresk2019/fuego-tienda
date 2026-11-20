@@ -39,7 +39,33 @@ function asegurarEsquema(): Promise<void> {
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS zona_envio TEXT;
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_departamento TEXT;
-         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;`
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;
+         -- "Confirmado" pasó a llamarse "En preparación" (2026-11-19,
+         -- seguimiento de pedidos). Idempotente: sin filas viejas no hace nada.
+         UPDATE tienda_pedidos SET estado = 'en_preparacion' WHERE estado = 'confirmado';
+         -- Historial: cada vez que un pedido entra a un estado queda una fila
+         -- con su fecha (se muestra al cliente en /seguimiento).
+         CREATE TABLE IF NOT EXISTS tienda_pedidos_historial (
+           id SERIAL PRIMARY KEY,
+           pedido_id INTEGER NOT NULL,
+           estado TEXT NOT NULL,
+           creado_en TIMESTAMPTZ NOT NULL DEFAULT now()
+         );
+         CREATE UNIQUE INDEX IF NOT EXISTS tienda_pedidos_historial_unico
+           ON tienda_pedidos_historial (pedido_id, estado, creado_en);
+         -- Pedidos de ANTES del historial: se reconstruye lo que se sabe
+         -- (recibido al crearse, y el estado actual en su última
+         -- actualización). Idempotente: solo toca pedidos sin historial, y el
+         -- índice único evita duplicados si dos instancias arrancan a la vez.
+         INSERT INTO tienda_pedidos_historial (pedido_id, estado, creado_en)
+           SELECT id, 'pendiente', creado_en FROM tienda_pedidos p
+           WHERE NOT EXISTS (SELECT 1 FROM tienda_pedidos_historial h WHERE h.pedido_id = p.id)
+           ON CONFLICT DO NOTHING;
+         INSERT INTO tienda_pedidos_historial (pedido_id, estado, creado_en)
+           SELECT id, estado, actualizado_en FROM tienda_pedidos p
+           WHERE estado <> 'pendiente'
+             AND NOT EXISTS (SELECT 1 FROM tienda_pedidos_historial h WHERE h.pedido_id = p.id AND h.estado = p.estado)
+           ON CONFLICT DO NOTHING;`
       )
       .then(() => undefined);
   }
@@ -58,10 +84,18 @@ export async function crearPedido(datos: {
   zonaEnvio: ZonaEnvio;
 }): Promise<{ id: number; numero: string }> {
   await asegurarEsquema();
+  // Un solo comando: el pedido y su primera fila de historial se crean
+  // juntos o no se crea ninguno.
   const { rows } = await getPool().query(
-    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING id`,
+    `WITH nuevo AS (
+       INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id
+     ), hist AS (
+       INSERT INTO tienda_pedidos_historial (pedido_id, estado)
+       SELECT id, 'pendiente' FROM nuevo
+     )
+     SELECT id FROM nuevo`,
     [
       datos.clienteNombre,
       datos.clienteTelefono,
@@ -107,13 +141,85 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
   }));
 }
 
+// Lo mínimo que se le muestra al cliente en /seguimiento. A propósito
+// SIN teléfono completo, dirección ni apellido: quien consulta ya
+// demostró conocer el número de pedido y el teléfono, pero no hay por
+// qué mostrar más de lo necesario.
+export type PedidoSeguimiento = {
+  numero: string;
+  primerNombre: string;
+  municipio: string | null;
+  items: ItemPedido[];
+  total: number;
+  costoEnvio: number | null;
+  estado: EstadoPedido;
+  creadoEn: string;
+  actualizadoEn: string;
+  // Fecha (ISO) más reciente en que el pedido entró a cada estado; un
+  // estado que se saltó (ej. de pendiente a en camino) no aparece.
+  historial: Partial<Record<EstadoPedido, string>>;
+};
+
+// Devuelve el pedido SOLO si el teléfono coincide con el del pedido
+// (comparando los últimos 10 dígitos); si el pedido no existe o el
+// teléfono no coincide, devuelve null en ambos casos — así no se puede
+// usar para averiguar qué números de pedido existen.
+export async function buscarPedidoParaSeguimiento(
+  id: number,
+  telefonoNormalizado: string
+): Promise<PedidoSeguimiento | null> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_municipio, items, total, costo_envio, estado, creado_en, actualizado_en
+     FROM tienda_pedidos WHERE id = $1`,
+    [id]
+  );
+  const r = rows[0];
+  if (!r) return null;
+  const telefonoPedido = String(r.cliente_telefono).replace(/\D/g, '').slice(-10);
+  if (telefonoNormalizado.length < 7 || telefonoPedido !== telefonoNormalizado) {
+    return null;
+  }
+  const { rows: filasHistorial } = await getPool().query(
+    `SELECT estado, MAX(creado_en) AS fecha
+     FROM tienda_pedidos_historial WHERE pedido_id = $1 GROUP BY estado`,
+    [id]
+  );
+  const historial: Partial<Record<EstadoPedido, string>> = {};
+  for (const h of filasHistorial) {
+    historial[h.estado as EstadoPedido] = new Date(h.fecha).toISOString();
+  }
+  return {
+    numero: formatearNumeroPedido(r.id),
+    primerNombre: String(r.cliente_nombre).trim().split(/\s+/)[0] ?? '',
+    municipio: r.cliente_municipio ?? null,
+    items: r.items as ItemPedido[],
+    total: Number(r.total),
+    costoEnvio: r.costo_envio !== null ? Number(r.costo_envio) : null,
+    estado: r.estado as EstadoPedido,
+    creadoEn: new Date(r.creado_en).toISOString(),
+    actualizadoEn: new Date(r.actualizado_en).toISOString(),
+    historial,
+  };
+}
+
 export async function actualizarEstadoPedido(
   id: number,
   estado: EstadoPedido
 ): Promise<void> {
   await asegurarEsquema();
+  // Solo deja rastro en el historial si el estado de verdad cambió
+  // (elegir el mismo estado otra vez no añade nada).
   await getPool().query(
-    `UPDATE tienda_pedidos SET estado = $2, actualizado_en = now() WHERE id = $1`,
+    `WITH previo AS (
+       SELECT estado FROM tienda_pedidos WHERE id = $1 FOR UPDATE
+     ), cambio AS (
+       UPDATE tienda_pedidos SET estado = $2, actualizado_en = now()
+       WHERE id = $1 RETURNING id
+     )
+     INSERT INTO tienda_pedidos_historial (pedido_id, estado)
+     SELECT id, $2 FROM cambio
+     WHERE (SELECT estado FROM previo) IS DISTINCT FROM $2`,
     [id, estado]
   );
 }

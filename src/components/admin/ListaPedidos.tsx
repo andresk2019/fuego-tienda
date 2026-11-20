@@ -3,7 +3,13 @@
 import { useActionState, useMemo, useState } from 'react';
 import Desplegable from '@/components/Desplegable';
 import { actualizarEstado } from '@/app/admin/pedidos/actions';
-import { ESTADOS_PEDIDO, ZONAS_ENVIO, type Pedido } from '@/lib/pedidos';
+import {
+  ESTADOS_PEDIDO,
+  ZONAS_ENVIO,
+  enlaceAvisoWhatsApp,
+  type Pedido,
+} from '@/lib/pedidos';
+import { SITE_URL } from '@/lib/site';
 
 const formatoCOP = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -21,14 +27,19 @@ const formatoFecha = new Intl.DateTimeFormat('es-CO', {
 // de un vistazo, sin salirse de la paleta cálida del resto del sitio.
 const ESTILO_ESTADO: Record<Pedido['estado'], string> = {
   pendiente: 'border-gold/40 bg-gold/10 text-gold',
-  confirmado: 'border-ember/40 bg-ember/10 text-ember',
+  en_preparacion: 'border-ember/40 bg-ember/10 text-ember',
   enviado: 'border-ember/40 bg-ember/10 text-ember',
+  en_camino: 'border-ember/40 bg-ember/10 text-ember',
   entregado: 'border-border bg-surface-hover text-muted',
   cancelado: 'border-danger/40 bg-danger/10 text-danger',
 };
 
 function FilaPedido({ pedido }: { pedido: Pedido }) {
   const [estado, accion] = useActionState(actualizarEstado, undefined);
+  const enlaceAviso = enlaceAvisoWhatsApp(
+    pedido,
+    `${SITE_URL}/seguimiento`
+  );
 
   return (
     <li className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
@@ -84,10 +95,20 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
               className={`rounded-full border px-2.5 py-1 text-xs font-medium ${ESTILO_ESTADO[pedido.estado]}`}
             />
           </form>
+          {enlaceAviso && (
+            <a
+              href={enlaceAviso}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-ember transition-colors hover:text-ember-hover"
+            >
+              Avisar por WhatsApp →
+            </a>
+          )}
         </div>
       </div>
 
-      {estado?.error && <p className="text-xs text-danger">{estado.error}</p>}
+      {estado?.error &&<p className="text-xs text-danger">{estado.error}</p>}
 
       <ul className="border-t border-border pt-3 text-sm text-muted">
         {pedido.items.map((item, i) => (
