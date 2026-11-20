@@ -39,7 +39,10 @@ function asegurarEsquema(): Promise<void> {
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS zona_envio TEXT;
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_departamento TEXT;
-         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;`
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;
+         -- "Confirmado" pasó a llamarse "En preparación" (2026-11-19,
+         -- seguimiento de pedidos). Idempotente: sin filas viejas no hace nada.
+         UPDATE tienda_pedidos SET estado = 'en_preparacion' WHERE estado = 'confirmado';`
       )
       .then(() => undefined);
   }
@@ -105,6 +108,55 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
     estado: r.estado as EstadoPedido,
     creadoEn: new Date(r.creado_en).toISOString(),
   }));
+}
+
+// Lo mínimo que se le muestra al cliente en /seguimiento. A propósito
+// SIN teléfono completo, dirección ni apellido: quien consulta ya
+// demostró conocer el número de pedido y el teléfono, pero no hay por
+// qué mostrar más de lo necesario.
+export type PedidoSeguimiento = {
+  numero: string;
+  primerNombre: string;
+  municipio: string | null;
+  items: ItemPedido[];
+  total: number;
+  costoEnvio: number | null;
+  estado: EstadoPedido;
+  creadoEn: string;
+  actualizadoEn: string;
+};
+
+// Devuelve el pedido SOLO si el teléfono coincide con el del pedido
+// (comparando los últimos 10 dígitos); si el pedido no existe o el
+// teléfono no coincide, devuelve null en ambos casos — así no se puede
+// usar para averiguar qué números de pedido existen.
+export async function buscarPedidoParaSeguimiento(
+  id: number,
+  telefonoNormalizado: string
+): Promise<PedidoSeguimiento | null> {
+  await asegurarEsquema();
+  const { rows } = await getPool().query(
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_municipio, items, total, costo_envio, estado, creado_en, actualizado_en
+     FROM tienda_pedidos WHERE id = $1`,
+    [id]
+  );
+  const r = rows[0];
+  if (!r) return null;
+  const telefonoPedido = String(r.cliente_telefono).replace(/\D/g, '').slice(-10);
+  if (telefonoNormalizado.length < 7 || telefonoPedido !== telefonoNormalizado) {
+    return null;
+  }
+  return {
+    numero: formatearNumeroPedido(r.id),
+    primerNombre: String(r.cliente_nombre).trim().split(/\s+/)[0] ?? '',
+    municipio: r.cliente_municipio ?? null,
+    items: r.items as ItemPedido[],
+    total: Number(r.total),
+    costoEnvio: r.costo_envio !== null ? Number(r.costo_envio) : null,
+    estado: r.estado as EstadoPedido,
+    creadoEn: new Date(r.creado_en).toISOString(),
+    actualizadoEn: new Date(r.actualizado_en).toISOString(),
+  };
 }
 
 export async function actualizarEstadoPedido(

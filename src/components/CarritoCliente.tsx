@@ -14,6 +14,7 @@ import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
 import type { ConfigEnvio, ConfigCompra } from "@/lib/admin-db";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import SelectorConBusqueda from "@/components/SelectorConBusqueda";
+import { SITE_URL } from "@/lib/site";
 
 const formatoCOP = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -73,7 +74,11 @@ function construirMensajeWhatsApp(
   // dueño, 2026-09-16) — el municipio/departamento alcanza para saber
   // la zona y la tarifa; la calle y el barrio se coordinan directo por
   // WhatsApp, donde de todas formas hay que confirmar el pedido.
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nEntrega en: ${municipio}, ${departamento}`;
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nEntrega en: ${municipio}, ${departamento}${
+    numero
+      ? `\n\nSigue tu pedido aquí: ${SITE_URL}/seguimiento?pedido=${encodeURIComponent(numero)}`
+      : ""
+  }`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -226,6 +231,14 @@ export default function CarritoCliente({
           Si WhatsApp no se abrió solo, toca el botón: el mensaje ya viene
           escrito.
         </p>
+        {pedidoEnviado.numero && (
+          <Link
+            href={`/seguimiento?pedido=${encodeURIComponent(pedidoEnviado.numero)}`}
+            className="w-full rounded-lg border border-ember px-4 py-3 text-sm font-semibold text-ember transition-colors hover:bg-ember/10"
+          >
+            Ver cómo va mi pedido
+          </Link>
+        )}
         <Link
           href="/catalogo"
           onClick={() => {
