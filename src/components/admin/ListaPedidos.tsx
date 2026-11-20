@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useMemo, useState } from 'react';
+import Desplegable from '@/components/Desplegable';
 import { actualizarEstado } from '@/app/admin/pedidos/actions';
 import {
   ESTADOS_PEDIDO,
@@ -80,24 +81,19 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
           </div>
           <form action={accion} className="contents">
             <input type="hidden" name="pedidoId" value={pedido.id} />
-            <select
-              // `key` fuerza a remontar el <select> cuando el estado
-              // real cambia (ej. tras guardar) — si no, al ser
-              // "no controlado" (defaultValue), React lo deja tal
-              // cual quedó en el DOM y no refleja el nuevo valor
-              // aunque la base de datos sí se haya actualizado bien.
+            <Desplegable
+              // `key` remonta el desplegable cuando el estado real cambia
+              // (ej. tras guardar) — si no, al no ser controlado, quedaría
+              // mostrando lo último que se eligió aunque la base de datos
+              // diga otra cosa.
               key={pedido.estado}
               name="estado"
               defaultValue={pedido.estado}
-              onChange={(e) => e.currentTarget.form?.requestSubmit()}
+              enviarAlElegir
+              ariaLabel="Estado del pedido"
+              opciones={ESTADOS_PEDIDO.map((e) => ({ valor: e.valor, etiqueta: e.etiqueta }))}
               className={`rounded-full border px-2.5 py-1 text-xs font-medium ${ESTILO_ESTADO[pedido.estado]}`}
-            >
-              {ESTADOS_PEDIDO.map((e) => (
-                <option key={e.valor} value={e.valor}>
-                  {e.etiqueta}
-                </option>
-              ))}
-            </select>
+            />
           </form>
           {enlaceAviso && (
             <a

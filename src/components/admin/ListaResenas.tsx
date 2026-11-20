@@ -7,6 +7,7 @@ import {
   borrarResena,
 } from '@/app/admin/resenas/actions';
 import { CALIFICACION_MAXIMA, type Resena } from '@/lib/resenas';
+import Desplegable from '@/components/Desplegable';
 import EstrellaIcon from '@/components/EstrellaIcon';
 import SelectorCalificacion from '@/components/SelectorCalificacion';
 
@@ -49,18 +50,16 @@ function FormularioNuevaResena({
         <span className="font-medium text-foreground">
           Vela relacionada (opcional)
         </span>
-        <select
+        <Desplegable
           name="productoId"
           defaultValue=""
+          ariaLabel="Vela relacionada"
+          opciones={[
+            { valor: "", etiqueta: "General (toda la tienda)" },
+            ...productos.map((p) => ({ valor: String(p.id), etiqueta: p.nombre })),
+          ]}
           className="rounded-lg border border-border bg-background px-3 py-2 text-foreground"
-        >
-          <option value="">General (toda la tienda)</option>
-          {productos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre}
-            </option>
-          ))}
-        </select>
+        />
         <span className="text-xs text-muted">
           Si es sobre una vela puntual, esa vela muestra su propia
           calificación en el catálogo y en su página.
