@@ -21,7 +21,7 @@ import {
 
 let esquemaListo: Promise<void> | undefined;
 
-function asegurarEsquema(): Promise<void> {
+export function asegurarEsquema(): Promise<void> {
   if (!esquemaListo) {
     esquemaListo = getPool()
       .query(
@@ -39,7 +39,9 @@ function asegurarEsquema(): Promise<void> {
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS costo_envio NUMERIC;
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS zona_envio TEXT;
          ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_departamento TEXT;
-         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;`
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cliente_municipio TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS cupon_codigo TEXT;
+         ALTER TABLE tienda_pedidos ADD COLUMN IF NOT EXISTS descuento_cupon NUMERIC;`
       )
       .then(() => undefined);
   }
@@ -56,11 +58,15 @@ export async function crearPedido(datos: {
   total: number;
   costoEnvio: number;
   zonaEnvio: ZonaEnvio;
+  // Cupón usado (código) y cuánto se ahorró el cliente con él — null
+  // si no usó ninguno.
+  cuponCodigo: string | null;
+  descuentoCupon: number | null;
 }): Promise<{ id: number; numero: string }> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO tienda_pedidos (cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio, cupon_codigo, descuento_cupon)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING id`,
     [
       datos.clienteNombre,
@@ -72,6 +78,8 @@ export async function crearPedido(datos: {
       datos.total,
       datos.costoEnvio,
       datos.zonaEnvio,
+      datos.cuponCodigo,
+      datos.descuentoCupon,
     ]
   );
   const id = rows[0].id as number;
@@ -81,7 +89,7 @@ export async function crearPedido(datos: {
 export async function obtenerPedidos(): Promise<Pedido[]> {
   await asegurarEsquema();
   const { rows } = await getPool().query(
-    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio, estado, creado_en
+    `SELECT id, cliente_nombre, cliente_telefono, cliente_direccion, cliente_departamento, cliente_municipio, items, total, costo_envio, zona_envio, cupon_codigo, descuento_cupon, estado, creado_en
      FROM tienda_pedidos
      ORDER BY creado_en DESC`
   );
@@ -102,6 +110,8 @@ export async function obtenerPedidos(): Promise<Pedido[]> {
     // comentario en pedidos.ts.
     costoEnvio: r.costo_envio !== null ? Number(r.costo_envio) : null,
     zonaEnvio: (r.zona_envio as ZonaEnvio | null) ?? null,
+    cuponCodigo: r.cupon_codigo ?? null,
+    descuentoCupon: r.descuento_cupon !== null ? Number(r.descuento_cupon) : null,
     estado: r.estado as EstadoPedido,
     creadoEn: new Date(r.creado_en).toISOString(),
   }));

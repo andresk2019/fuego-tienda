@@ -10,7 +10,11 @@ import type { Promocion } from "@/lib/promociones";
 import { determinarZonaEnvio, ZONAS_ENVIO, type ZonaEnvio } from "@/lib/pedidos";
 import { UBICACIONES_COLOMBIA } from "@/lib/colombia-ubicaciones";
 import type { ProblemaStock } from "@/lib/db";
-import { crearPedidoDesdeCarrito } from "@/app/(tienda)/carrito/actions";
+import {
+  aplicarCupon,
+  crearPedidoDesdeCarrito,
+  type ResultadoCupon,
+} from "@/app/(tienda)/carrito/actions";
 import type { ConfigEnvio, ConfigCompra } from "@/lib/admin-db";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import SelectorConBusqueda from "@/components/SelectorConBusqueda";
@@ -28,6 +32,7 @@ const DEPARTAMENTOS = UBICACIONES_COLOMBIA.map((d) => d.departamento);
 
 type PedidoEnviado = { numero: string | null; link: string; en: number };
 const CLAVE_ULTIMO_PEDIDO = "fuego-ultimo-pedido";
+const CLAVE_CUPON = "fuego-cupon";
 const VIGENCIA_ULTIMO_PEDIDO_MS = 3 * 60 * 60 * 1000;
 
 function olvidarUltimoPedido() {
@@ -50,7 +55,8 @@ function construirMensajeWhatsApp(
   nombreCliente: string,
   departamento: string,
   municipio: string,
-  numero: string | null
+  numero: string | null,
+  cupon: { codigo: string; ahorro: number } | null
 ): string {
   const lineas = items.map((item) => {
     const detalles = detallesItem(item);
@@ -73,7 +79,11 @@ function construirMensajeWhatsApp(
   // dueño, 2026-09-16) — el municipio/departamento alcanza para saber
   // la zona y la tarifa; la calle y el barrio se coordinan directo por
   // WhatsApp, donde de todas formas hay que confirmar el pedido.
-  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nEntrega en: ${municipio}, ${departamento}`;
+  return `${encabezado}\n\n${lineas.join("\n")}\n\nSubtotal: ${formatoCOP.format(subtotal)}${
+    cupon && cupon.ahorro > 0
+      ? `\nCupón ${cupon.codigo} (ya descontado): -${formatoCOP.format(cupon.ahorro)}`
+      : ""
+  }\nEnvío (${etiquetaZona}): ${lineaEnvio}\nTotal: ${formatoCOP.format(subtotal + costoEnvio)}\n\nEntrega en: ${municipio}, ${departamento}`;
 }
 
 // `numeroWhatsApp` llega desde el servidor (ver (tienda)/carrito/
@@ -111,8 +121,97 @@ export default function CarritoCliente({
   // versión compacta, arriba del carrito.
   promociones: Promocion[];
 }) {
-  const { items, actualizarCantidad, quitar, vaciar } = useCarrito();
+  const { items: itemsCarrito, actualizarCantidad, quitar, vaciar } = useCarrito();
+
+  // Cupón de descuento (ver cupones.ts): el servidor calcula el precio
+  // con cupón de cada producto al que aplica; acá solo se muestra. Se
+  // recuerda mientras dure la visita (sessionStorage) y se vuelve a
+  // validar al cambiar los productos del carrito.
+  const [cupon, setCupon] = useState<Extract<ResultadoCupon, { codigo: string }> | null>(null);
+  const [codigoEscrito, setCodigoEscrito] = useState("");
+  const [mensajeCupon, setMensajeCupon] = useState<string | null>(null);
+  const [aplicandoCupon, setAplicandoCupon] = useState(false);
+
+  // Los items con el precio del cupón puesto (solo a los que aplica).
+  const items = useMemo(
+    () =>
+      cupon
+        ? itemsCarrito.map((item) => {
+            const precio = cupon.precios[item.productoId];
+            return precio
+              ? { ...item, precioUnitario: precio.precioUnitario, precioOriginal: precio.precioOriginal }
+              : item;
+          })
+        : itemsCarrito,
+    [itemsCarrito, cupon]
+  );
   const subtotal = totalCarrito(items);
+  const ahorroCupon = totalCarrito(itemsCarrito) - subtotal;
+  const idsClave = useMemo(
+    () => [...new Set(itemsCarrito.map((i) => i.productoId))].sort((a, b) => a - b).join(","),
+    [itemsCarrito]
+  );
+  const codigoCupon = cupon?.codigo ?? null;
+
+  // Al entrar: recupera el cupón que el cliente ya había aplicado. Al
+  // cambiar los productos: lo vuelve a validar (puede que a un producto
+  // nuevo le aplique, o que ya no).
+  useEffect(() => {
+    let cancelado = false;
+    let guardado: string | null = null;
+    try {
+      guardado = codigoCupon ?? sessionStorage.getItem(CLAVE_CUPON);
+    } catch {
+      // sin storage
+    }
+    if (!guardado || idsClave === "") return;
+    aplicarCupon(guardado, idsClave.split(",").map(Number))
+      .then((r) => {
+        if (cancelado) return;
+        if ("error" in r) {
+          setCupon(null);
+          try {
+            sessionStorage.removeItem(CLAVE_CUPON);
+          } catch {}
+          if (codigoCupon) setMensajeCupon(r.error);
+        } else {
+          setCupon(r);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelado = true;
+    };
+  }, [idsClave, codigoCupon]);
+
+  async function manejarAplicarCupon() {
+    if (aplicandoCupon || !codigoEscrito.trim()) return;
+    setAplicandoCupon(true);
+    setMensajeCupon(null);
+    try {
+      const r = await aplicarCupon(codigoEscrito, idsClave.split(",").map(Number));
+      if ("error" in r) {
+        setMensajeCupon(r.error);
+      } else {
+        setCupon(r);
+        setCodigoEscrito("");
+        try {
+          sessionStorage.setItem(CLAVE_CUPON, r.codigo);
+        } catch {}
+      }
+    } catch {
+      setMensajeCupon("No pudimos validar el cupón. Intenta de nuevo.");
+    }
+    setAplicandoCupon(false);
+  }
+
+  function quitarCupon() {
+    setCupon(null);
+    setMensajeCupon(null);
+    try {
+      sessionStorage.removeItem(CLAVE_CUPON);
+    } catch {}
+  }
 
   // Evento estándar de GA4 — entrar al carrito con algo adentro es el
   // paso "empieza a pagar" del embudo (ver producto → agregar al
@@ -306,8 +405,19 @@ export default function CarritoCliente({
         clienteDepartamento: departamento,
         clienteMunicipio: municipio,
         aceptaTratamientoDatos: aceptaPolitica,
-        items,
+        items: itemsCarrito,
+        codigoCupon,
       });
+      if (resultado.cuponInvalido) {
+        // El cupón venció o se desactivó mientras armaba el pedido: se
+        // quita y se avisa, para que no pague un precio distinto al
+        // que vio.
+        setEnviando(false);
+        quitarCupon();
+        setMensajeCupon(resultado.error ?? "El cupón ya no está vigente.");
+        ventanaWhatsApp?.close();
+        return;
+      }
       if (resultado.problemasStock && resultado.problemasStock.length > 0) {
         setEnviando(false);
         setProblemasStock(resultado.problemasStock);
@@ -329,7 +439,8 @@ export default function CarritoCliente({
       nombre,
       departamento,
       municipio,
-      numero
+      numero,
+      cupon && ahorroCupon > 0 ? { codigo: cupon.codigo, ahorro: ahorroCupon } : null
     );
     const linkWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     if (ventanaWhatsApp) {
@@ -361,6 +472,7 @@ export default function CarritoCliente({
     // Primero se vacía el carrito y DESPUÉS se muestra el aviso: el efecto
     // que olvida el aviso cuando hay items no debe verlos a los dos a la vez.
     vaciar();
+    quitarCupon();
     setPedidoEnviado(enviado);
   }
 
@@ -427,11 +539,72 @@ export default function CarritoCliente({
         })}
       </ul>
 
-      <div className="mt-6 flex flex-col gap-1.5 border-t border-border pt-4">
+      <div className="mt-6 flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
+        {cupon ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <p className="text-foreground">
+              <span aria-hidden="true">🏷️ </span>
+              Cupón <span className="font-mono font-semibold">{cupon.codigo}</span>{" "}
+              aplicado: +{cupon.porcentaje}% (máx. {cupon.topeTotal}% en total)
+            </p>
+            <button
+              type="button"
+              onClick={quitarCupon}
+              className="text-xs text-muted transition-colors hover:text-danger"
+            >
+              Quitar
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              manejarAplicarCupon();
+            }}
+            className="flex flex-col gap-2"
+          >
+            <label htmlFor="cupon" className="text-xs font-medium text-foreground">
+              ¿Tienes un cupón?
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="cupon"
+                value={codigoEscrito}
+                onChange={(e) => setCodigoEscrito(e.target.value)}
+                placeholder="Escribe tu cupón"
+                autoComplete="off"
+                autoCapitalize="characters"
+                maxLength={30}
+                className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-base uppercase text-foreground placeholder:normal-case placeholder:text-muted/60 sm:text-sm"
+              />
+              <button
+                type="submit"
+                disabled={aplicandoCupon || !codigoEscrito.trim()}
+                className="rounded-lg border border-ember px-4 py-2 text-sm font-semibold text-ember transition-colors hover:bg-ember/10 disabled:opacity-60"
+              >
+                {aplicandoCupon ? "..." : "Aplicar"}
+              </button>
+            </div>
+          </form>
+        )}
+        {mensajeCupon && (
+          <p role="alert" className="text-xs text-danger">
+            {mensajeCupon}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-col gap-1.5 border-t border-border pt-4">
         <div className="flex items-center justify-between text-sm text-muted">
           <span>Subtotal</span>
-          <span>{formatoCOP.format(subtotal)}</span>
+          <span>{formatoCOP.format(subtotal + ahorroCupon)}</span>
         </div>
+        {ahorroCupon > 0 && cupon && (
+          <div className="flex items-center justify-between text-sm font-medium text-ember">
+            <span>Cupón {cupon.codigo}</span>
+            <span>-{formatoCOP.format(ahorroCupon)}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between text-sm text-muted">
           <span>Envío a domicilio</span>
           <span>

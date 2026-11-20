@@ -81,6 +81,11 @@ export type Pedido = {
   // Igual que costoEnvio: null en pedidos de antes de que existieran
   // las 2 zonas.
   zonaEnvio: ZonaEnvio | null;
+  // Cupón de descuento usado (ya está descontado en los precios de
+  // `items` y en `total`) y cuánto se ahorró el cliente con él; null si
+  // no usó ninguno (o el pedido es de antes de los cupones).
+  cuponCodigo: string | null;
+  descuentoCupon: number | null;
   estado: EstadoPedido;
   creadoEn: string;
 };

@@ -3,9 +3,11 @@
 import {
   obtenerCatalogoFuego,
   validarStockCarrito,
-  obtenerPreciosReales,
+  obtenerPreciosConCupon,
   type ProblemaStock,
 } from '@/lib/db';
+import { obtenerCuponVigente } from '@/lib/cupones-db';
+import { codigoValido, normalizarCodigo } from '@/lib/cupones';
 import { crearPedido } from '@/lib/pedidos-db';
 import { obtenerConfigEnvio } from '@/lib/admin-db';
 import { determinarZonaEnvio, type ItemPedido } from '@/lib/pedidos';
@@ -42,8 +44,60 @@ export async function obtenerDatosVigentesProductos(): Promise<
   );
 }
 
+export type ResultadoCupon =
+  | { error: string }
+  | {
+      codigo: string;
+      porcentaje: number;
+      topeTotal: number;
+      // Precio con el cupón de cada producto del carrito al que SÍ le
+      // aplica (los demás no aparecen: se quedan con su precio actual).
+      precios: Record<number, { precioUnitario: number; precioOriginal: number | null }>;
+    };
+
+const MENSAJE_CUPON_INVALIDO =
+  'Ese cupón no existe o ya no está vigente. Revisa que esté bien escrito.';
+
+// El cliente escribe su código en el carrito: acá se valida (existe,
+// está vigente) y se calcula, con los precios y descuentos REALES de
+// este momento, cuánto queda cada producto. Es solo para mostrar: al
+// registrar el pedido se vuelve a calcular todo (ver
+// crearPedidoDesdeCarrito). Un Server Action es un endpoint público,
+// así que el código se valida antes de tocar la base de datos.
+export async function aplicarCupon(
+  codigoCrudo: string,
+  productoIds: number[]
+): Promise<ResultadoCupon> {
+  const codigo = normalizarCodigo(String(codigoCrudo ?? ''));
+  if (!codigo) return { error: 'Escribe tu cupón.' };
+  if (!codigoValido(codigo)) return { error: MENSAJE_CUPON_INVALIDO };
+  const ids = [...new Set((productoIds ?? []).map(Number))].filter(
+    (id) => Number.isInteger(id) && id > 0
+  ).slice(0, 100);
+
+  const cupon = await obtenerCuponVigente(codigo);
+  if (!cupon) return { error: MENSAJE_CUPON_INVALIDO };
+
+  const detalle = await obtenerPreciosConCupon(ids, cupon);
+  const precios: Record<number, { precioUnitario: number; precioOriginal: number | null }> = {};
+  for (const [id, d] of detalle) {
+    if (d.ahorroCupon > 0) {
+      precios[id] = { precioUnitario: d.precioUnitario, precioOriginal: d.precioOriginal };
+    }
+  }
+  if (ids.length > 0 && Object.keys(precios).length === 0) {
+    return {
+      error: `El cupón ${cupon.codigo} no aplica a los productos de tu carrito: ya tienen el descuento máximo (${cupon.topeTotal}%).`,
+    };
+  }
+  return { codigo: cupon.codigo, porcentaje: cupon.porcentaje, topeTotal: cupon.topeTotal, precios };
+}
+
 export type ResultadoCrearPedido = {
   error?: string;
+  // El cupón aplicado ya no vale (venció, se desactivó…): el carrito
+  // debe quitarlo y avisar, NO seguir a WhatsApp con otro precio.
+  cuponInvalido?: boolean;
   numero?: string;
   problemasStock?: ProblemaStock[];
   // Vienen del cálculo hecho acá (ver más abajo), para que el mensaje
@@ -65,6 +119,8 @@ export async function crearPedidoDesdeCarrito(datos: {
   clienteMunicipio: string;
   aceptaTratamientoDatos: boolean;
   items: ItemPedido[];
+  // Código de cupón que el cliente aplicó en el carrito (opcional).
+  codigoCupon?: string | null;
 }): Promise<ResultadoCrearPedido> {
   const clienteNombre = datos.clienteNombre.trim();
   const clienteTelefono = datos.clienteTelefono.trim();
@@ -113,9 +169,24 @@ export async function crearPedidoDesdeCarrito(datos: {
     productoId: item.productoId,
     cantidad: item.cantidad,
   }));
+  // El cupón se vuelve a validar AQUÍ (nunca se confía en lo que el
+  // navegador diga que aplicó): si ya venció o se desactivó mientras
+  // el cliente armaba el carrito, se le avisa en vez de cobrarle
+  // otro precio sin que se entere.
+  let cupon = null;
+  const codigoCupon = normalizarCodigo(datos.codigoCupon ?? '');
+  if (codigoCupon) {
+    cupon = codigoValido(codigoCupon) ? await obtenerCuponVigente(codigoCupon) : null;
+    if (!cupon) {
+      return {
+        error: `El cupón ${codigoCupon} ya no está vigente, así que el precio cambió. Revisa tu carrito.`,
+        cuponInvalido: true,
+      };
+    }
+  }
   const [problemasStock, preciosReales] = await Promise.all([
     validarStockCarrito(itemsParaValidar),
-    obtenerPreciosReales(itemsParaValidar.map((item) => item.productoId)),
+    obtenerPreciosConCupon(itemsParaValidar.map((item) => item.productoId), cupon),
   ]);
   if (problemasStock.length > 0) {
     return { problemasStock };
@@ -126,8 +197,15 @@ export async function crearPedidoDesdeCarrito(datos: {
   // el carrito abierto, lo registrado y el total siempre coinciden.
   const itemsConPrecioReal = datos.items.map((item) => ({
     ...item,
-    precioUnitario: preciosReales.get(item.productoId) ?? 0,
+    precioUnitario: preciosReales.get(item.productoId)?.precioUnitario ?? 0,
   }));
+  // Cuánto se ahorró el cliente por el cupón en todo el pedido (0 si
+  // el cupón no le aplicó a ningún producto).
+  const descuentoCupon = datos.items.reduce(
+    (suma, item) =>
+      suma + (preciosReales.get(item.productoId)?.ahorroCupon ?? 0) * item.cantidad,
+    0
+  );
   const subtotalReal = itemsConPrecioReal.reduce(
     (suma, item) => suma + item.precioUnitario * item.cantidad,
     0
@@ -164,6 +242,8 @@ export async function crearPedidoDesdeCarrito(datos: {
       total,
       costoEnvio,
       zonaEnvio,
+      cuponCodigo: cupon && descuentoCupon > 0 ? cupon.codigo : null,
+      descuentoCupon: cupon && descuentoCupon > 0 ? descuentoCupon : null,
     });
     return { numero, costoEnvio, total };
   } catch {
