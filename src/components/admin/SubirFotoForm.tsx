@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
+import Desplegable from '@/components/Desplegable';
 import { prepararInputImagen } from '@/lib/preparar-imagen';
 import Image from 'next/image';
 import {
@@ -222,26 +223,20 @@ export default function SubirFotoForm({
 
         <form action={accionCategoria} className="contents">
           <input type="hidden" name="productoId" value={productoId} />
-          <select
-            // `key` fuerza a remontar el <select> cuando `categoria`
-            // cambia tras guardar (mismo motivo que el <select> de
-            // estado en ListaPedidos.tsx): al ser "no controlado"
-            // (defaultValue), sin esto React lo deja tal cual quedó
-            // en el DOM en vez de reflejar el nuevo valor guardado.
+          <Desplegable
+            // `key` remonta el desplegable cuando `categoria` cambia tras
+            // guardar (mismo motivo que el de estado en ListaPedidos.tsx):
+            // al no ser controlado, sin esto quedaría mostrando lo último
+            // que se eligió en vez del valor guardado.
             key={categoria}
             name="categoria"
             defaultValue={categoria}
             title="Categoría por ocasión (Navidad, Día de la Madre...)"
-            aria-label="Categoría por ocasión"
-            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            ariaLabel="Categoría por ocasión"
+            enviarAlElegir
+            opciones={CATEGORIAS.map((c) => ({ valor: c.slug, etiqueta: c.nombre }))}
             className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
-          >
-            {CATEGORIAS.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
+          />
         </form>
 
         {/* Sección donde aparece en la tienda — con TODAS las opciones
@@ -249,25 +244,22 @@ export default function SubirFotoForm({
             cambiarla, el producto pasa a la pestaña de su nueva sección. */}
         <form action={accionSubcategoria} className="contents">
           <input type="hidden" name="productoId" value={productoId} />
-          <select
+          <Desplegable
             key={subcategoria}
             name="subcategoria"
             defaultValue={subcategoria}
-            aria-label="Sección en la tienda"
+            ariaLabel="Sección en la tienda"
             title="Sección donde aparece en la tienda (Velas, Exfoliantes...)"
-            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            enviarAlElegir
+            opciones={SECCIONES.flatMap((seccion) =>
+              seccion.subcategorias.map((sub) => ({
+                valor: sub.slug,
+                etiqueta: sub.nombre,
+                grupo: seccion.nombre,
+              }))
+            )}
             className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
-          >
-            {SECCIONES.map((seccion) => (
-              <optgroup key={seccion.slug} label={seccion.nombre}>
-                {seccion.subcategorias.map((sub) => (
-                  <option key={sub.slug} value={sub.slug}>
-                    {sub.nombre}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          />
         </form>
 
         <button
