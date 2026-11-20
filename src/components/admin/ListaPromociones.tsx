@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useCallback, useEffect, useState } from 'react';
+import Desplegable from '@/components/Desplegable';
 import { prepararInputImagen } from '@/lib/preparar-imagen';
 import Image from 'next/image';
 import {
@@ -113,18 +114,14 @@ function FormularioPromocion({
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-foreground">Estilo</span>
-          <select
+          <Desplegable
             name="estilo"
             value={estilo}
-            onChange={(e) => setEstilo(e.target.value)}
+            onChange={setEstilo}
+            ariaLabel="Estilo"
+            opciones={ESTILOS_PROMOCION.map((e) => ({ valor: e.valor, etiqueta: e.nombre }))}
             className={CLASE_CAMPO}
-          >
-            {ESTILOS_PROMOCION.map((e) => (
-              <option key={e.valor} value={e.valor}>
-                {e.nombre}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         {/* Oculto (no desmontado) fuera del estilo aniversario, para no
             perder lo escrito si se cambia de estilo y se vuelve. El
@@ -217,20 +214,18 @@ function FormularioPromocion({
           <span className="font-medium text-foreground">
             Usar la foto de un producto (opcional)
           </span>
-          <select
+          <Desplegable
             name="imagenProductoId"
             defaultValue=""
+            ariaLabel="Foto de un producto"
+            opciones={[
+              { valor: "", etiqueta: "— Ninguno —" },
+              ...productos
+                .filter((p) => p.conFoto)
+                .map((p) => ({ valor: String(p.id), etiqueta: p.nombre })),
+            ]}
             className={CLASE_CAMPO}
-          >
-            <option value="">— Ninguno —</option>
-            {productos
-              .filter((p) => p.conFoto)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-          </select>
+          />
         </label>
         <label className="flex flex-col gap-1">
           <span className="font-medium text-foreground">
