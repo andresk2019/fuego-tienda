@@ -20,6 +20,14 @@ const formatoFecha = new Intl.DateTimeFormat("es-CO", {
   timeZone: "America/Bogota",
 });
 
+const formatoFechaCorta = new Intl.DateTimeFormat("es-CO", {
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Bogota",
+});
+
 function Recorrido({ pedido }: { pedido: PedidoSeguimiento }) {
   if (pedido.estado === "cancelado") {
     return (
@@ -36,6 +44,7 @@ function Recorrido({ pedido }: { pedido: PedidoSeguimiento }) {
       {PASOS_SEGUIMIENTO.map((paso, i) => {
         const hecho = i < actual;
         const esActual = i === actual;
+        const fecha = pedido.historial[paso.valor];
         return (
           <li
             key={paso.valor}
@@ -73,6 +82,11 @@ function Recorrido({ pedido }: { pedido: PedidoSeguimiento }) {
                   {hecho ? " (completado)" : esActual ? " (paso actual)" : ""}
                 </span>
               </p>
+              {fecha && (hecho || esActual) && (
+                <p className="text-xs text-muted">
+                  {formatoFechaCorta.format(new Date(fecha))}
+                </p>
+              )}
               {esActual && (
                 <p className="text-sm text-muted">{paso.descripcion}</p>
               )}
