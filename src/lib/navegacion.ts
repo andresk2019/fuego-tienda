@@ -11,4 +11,5 @@ export const ENLACES_NAV = [
   { href: "/catalogo", etiqueta: "Catálogo" },
   { href: "/quienes-somos", etiqueta: "Quiénes somos" },
   { href: "/cuidado-de-las-velas", etiqueta: "Cuidado de velas" },
+  { href: "/seguimiento", etiqueta: "¿Cómo va mi pedido?" },
 ] as const;
