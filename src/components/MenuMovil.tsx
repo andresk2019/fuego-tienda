@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ENLACES_NAV } from "@/lib/navegacion";
+import { ENLACES_NAV, ETIQUETA_SEGUIMIENTO } from "@/lib/navegacion";
+import BotonSeguimiento from "@/components/BotonSeguimiento";
 import MenuIcon from "@/components/MenuIcon";
 import CerrarIcon from "@/components/CerrarIcon";
 
@@ -82,6 +83,12 @@ export default function MenuMovil() {
             {enlace.etiqueta}
           </Link>
         ))}
+        <BotonSeguimiento
+          alAbrir={() => setAbierto(false)}
+          className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-muted transition-colors hover:bg-background hover:text-foreground"
+        >
+          {ETIQUETA_SEGUIMIENTO}
+        </BotonSeguimiento>
       </nav>
     </div>
   );
