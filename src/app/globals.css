@@ -152,31 +152,113 @@ body {
 }
 
 /* Estilo "Aniversario" de las promociones (ver estilo en
-   promociones.ts y Confeti.tsx / SelloAniversario.tsx). Todo es CSS
-   puro — sin video ni imágenes extra, así carga al instante en el
-   celular. Quien tiene activada la opción de "reducir movimiento" en
-   su dispositivo no ve ninguna animación (ver el final del bloque). */
-@keyframes caer-confeti {
+   promociones.ts y Brasas.tsx / SelloAniversario.tsx /
+   MarcoAniversario.tsx). Todo es CSS puro — sin video ni imágenes
+   extra, así carga al instante en el celular. Quien tiene activada la
+   opción de "reducir movimiento" en su dispositivo no ve ninguna
+   animación (ver el final del bloque). */
+
+/* Brasas que suben (ver Brasas.tsx). Cada una ocupa el alto completo del
+   contenedor y su punto va pegado abajo, así que `translateY(-105%)` la
+   lleva exactamente de abajo a arriba sin importar cuánto mida el banner. */
+@keyframes subir-brasa {
   0% {
-    transform: translate3d(0, -14%, 0) rotate(0deg);
+    transform: translate3d(0, 0, 0);
     opacity: 0;
   }
-  10% {
-    opacity: 1;
+  12% {
+    opacity: var(--intensidad, 0.9);
+  }
+  70% {
+    opacity: calc(var(--intensidad, 0.9) * 0.55);
   }
   100% {
-    transform: translate3d(var(--deriva, 0px), 115%, 0) rotate(var(--giro, 540deg));
-    opacity: 0.9;
+    transform: translate3d(var(--deriva, 0px), -105%, 0);
+    opacity: 0;
   }
 }
-.confeti-pieza {
+.brasa {
   position: absolute;
   top: 0;
-  display: block;
-  border-radius: 2px;
+  bottom: 0;
+  width: var(--tam, 3px);
   opacity: 0;
   will-change: transform;
-  animation: caer-confeti var(--duracion, 6s) linear var(--retraso, 0s) infinite;
+  animation: subir-brasa var(--duracion, 12s) ease-in var(--retraso, 0s) infinite;
+}
+.brasa::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff3c4 0%, #f6c25f 40%, rgb(217 102 46 / 0) 72%);
+  box-shadow: 0 0 8px 1px rgb(246 194 95 / 0.5);
+}
+
+/* Resplandor cálido sobre el fondo del banner: un foco ámbar a la
+   derecha (detrás de la medalla) y un destello dorado arriba a la
+   izquierda. Va en una capa aparte para que funcione igual con foto,
+   con un fondo listo o con el degradado por defecto. */
+.aniv-resplandor {
+  background:
+    radial-gradient(ellipse 55% 120% at 88% 50%, rgb(217 102 46 / 0.32), transparent 62%),
+    radial-gradient(ellipse 45% 90% at 6% 0%, rgb(233 196 106 / 0.16), transparent 62%);
+}
+
+/* Foto de fondo con un acercamiento casi imperceptible (efecto "Ken
+   Burns"): da vida sin distraer. */
+@keyframes zoom-lento {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+.zoom-lento {
+  animation: zoom-lento 26s ease-in-out infinite alternate;
+}
+
+/* Botón dorado del banner: degradado de oro con filete claro. */
+.boton-dorado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #2b1d0e;
+  background-image: linear-gradient(135deg, #f6dc8f, #e9c46a 45%, #c9a24a);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 243 196 / 0.55),
+    0 8px 20px -8px rgb(233 196 106 / 0.6);
+  transition:
+    filter 0.2s,
+    transform 0.2s;
+}
+.boton-dorado:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+/* En el celular, un poco más compacto para que quepa junto a la cuenta
+   regresiva sin saltar de renglón. */
+@media (max-width: 639px) {
+  .boton-dorado {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+  }
+}
+.boton-dorado-chico {
+  padding: 0.5rem 1rem;
+  letter-spacing: 0.12em;
 }
 
 @keyframes brillo-texto {
@@ -200,36 +282,71 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: brillo-texto 4s linear infinite;
+  /* Un brillo lento que recorre el título; el sombreado va con
+     drop-shadow porque text-shadow se vería a través del texto
+     transparente. */
+  filter: drop-shadow(0 2px 14px rgb(0 0 0 / 0.35));
+  animation: brillo-texto 7s linear infinite;
 }
 
+/* Medalla (ver SelloAniversario.tsx): aparece con un pequeño giro y
+   luego respira con un halo dorado; el destello la cruza de vez en
+   cuando y el lema del anillo da una vuelta cada 60 s. */
 @keyframes sello-aparece {
   0% {
-    transform: scale(0) rotate(-25deg);
+    transform: scale(0.55) rotate(-14deg);
     opacity: 0;
   }
-  60% {
-    transform: scale(1.15) rotate(6deg);
+  65% {
+    transform: scale(1.06) rotate(2deg);
     opacity: 1;
   }
   100% {
-    transform: scale(1) rotate(-6deg);
+    transform: scale(1) rotate(0deg);
     opacity: 1;
   }
 }
 @keyframes sello-pulso {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgb(246 220 143 / 0.55);
+    box-shadow: 0 0 14px 0 rgb(233 196 106 / 0.25);
   }
   50% {
-    box-shadow: 0 0 0 10px rgb(246 220 143 / 0);
+    box-shadow: 0 0 30px 6px rgb(233 196 106 / 0.45);
   }
 }
 .sello-aniversario {
   animation:
-    sello-aparece 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2) both,
-    sello-pulso 2.4s ease-out 1s infinite;
+    sello-aparece 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.1) both,
+    sello-pulso 4.5s ease-in-out 1s infinite;
+}
+@keyframes girar-lento {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.anillo-giratorio {
+  transform-origin: 60px 60px;
+  animation: girar-lento 60s linear infinite;
+}
+@keyframes brillo-medalla {
+  0%,
+  55% {
+    transform: translateX(-130%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(330%) skewX(-20deg);
+  }
+}
+.medalla-brillo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 32%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5), transparent);
+  animation: brillo-medalla 6s ease-in-out 1.5s infinite;
 }
 
 @keyframes barrido-brillo {
@@ -258,7 +375,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .confeti-pieza,
+  .brasa,
+  .medalla-brillo,
   .franja-aniversario::after {
     display: none;
   }
@@ -266,7 +384,9 @@ body {
     animation: none;
     background-position: 50% 50%;
   }
-  .sello-aniversario {
+  .sello-aniversario,
+  .anillo-giratorio,
+  .zoom-lento {
     animation: none;
   }
 }

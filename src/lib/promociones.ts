@@ -13,13 +13,14 @@ export type EstadoPromocion =
   | "vencida"
   | "desactivada";
 
-// Cómo se ve una promo. "aniversario": fondo oscuro con dorado, confeti
-// animado, título con brillo y un sello (ej. "5 años").
+// Cómo se ve una promo. "aniversario": fondo oscuro con marco dorado,
+// brasas que suben, título con brillo, cuenta regresiva en cajitas y una
+// medalla (ej. "5 años").
 export type EstiloPromocion = "normal" | "aniversario";
 
 export const ESTILOS_PROMOCION: { valor: EstiloPromocion; nombre: string }[] = [
   { valor: "normal", nombre: "Normal (color de la marca)" },
-  { valor: "aniversario", nombre: "Aniversario (dorado, con confeti)" },
+  { valor: "aniversario", nombre: "Aniversario (dorado, con brasas)" },
 ];
 
 export const LONGITUD_MAXIMA_SELLO = 16;

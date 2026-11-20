@@ -1,7 +1,8 @@
 import Image from "next/image";
 import EnlacePromocion from "@/components/EnlacePromocion";
-import CuentaRegresiva from "@/components/CuentaRegresiva";
-import Confeti from "@/components/Confeti";
+import CuentaRegresiva, { CuentaRegresivaCajas } from "@/components/CuentaRegresiva";
+import Brasas from "@/components/Brasas";
+import MarcoAniversario from "@/components/MarcoAniversario";
 import SelloAniversario from "@/components/SelloAniversario";
 import { estiloFondo, type Promocion } from "@/lib/promociones";
 
@@ -14,7 +15,7 @@ import { estiloFondo, type Promocion } from "@/lib/promociones";
 //    el catálogo y el carrito, donde un banner grande empujaría los
 //    productos hacia abajo.
 // El estilo "aniversario" cambia el aspecto de ambas: fondo oscuro con
-// dorado, confeti, título con brillo y sello. Sin promos vigentes no se
+// dorado, brasas que suben, título con brillo y medalla. Sin promos vigentes no se
 // renderiza nada.
 export default function BannersPromocion({
   promociones,
@@ -44,13 +45,18 @@ export default function BannersPromocion({
           style={estiloFondo(promocion)}
           className={`relative flex items-center gap-4 overflow-hidden rounded-xl border p-4 ${
             esAniversario
-              ? "border-[#e9c46a]/60 bg-gradient-to-r from-[#2b1d0e] to-[#4a3216] text-[#fff3c4]"
+              ? "border-[#e9c46a]/50 bg-gradient-to-r from-[#1f140a] via-[#34230f] to-[#1f140a] text-[#fff3c4] shadow-md shadow-[#2b1d0e]/15"
               : conFondo
                 ? "border-ember/30 text-[#fff8ef]"
                 : "border-ember/30 bg-gradient-to-r from-ember/15 via-ember/5 to-transparent"
           }`}
         >
-          {esAniversario && <Confeti cantidad={12} />}
+          {esAniversario && (
+            <>
+              <div className="aniv-resplandor absolute inset-0" aria-hidden="true" />
+              <Brasas cantidad={8} />
+            </>
+          )}
           {esAniversario && promocion.sello && (
             <div className="relative shrink-0">
               <SelloAniversario texto={promocion.sello} />
@@ -88,11 +94,11 @@ export default function BannersPromocion({
           {mostrarEnlace && promocion.enlace && (
             <EnlacePromocion
               enlace={promocion.enlace}
-              className={`relative shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              className={
                 esAniversario
-                  ? "bg-[#e9c46a] text-[#2b1d0e] hover:bg-[#f6dc8f]"
-                  : "bg-ember text-on-ember hover:bg-ember-hover"
-              }`}
+                  ? "boton-dorado boton-dorado-chico relative shrink-0"
+                  : "relative shrink-0 rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-on-ember transition-colors hover:bg-ember-hover"
+              }
             >
               Ver
             </EnlacePromocion>
@@ -114,9 +120,9 @@ export default function BannersPromocion({
           <div
             key={promocion.id}
             style={estiloFondo(promocion)}
-            className={`relative flex min-h-40 overflow-hidden rounded-2xl sm:min-h-52 ${
+            className={`relative isolate flex min-h-44 overflow-hidden rounded-2xl sm:min-h-56 ${
               esAniversario
-                ? "bg-gradient-to-br from-[#2b1d0e] via-[#4a3216] to-[#2b1d0e] text-[#fff3c4] ring-1 ring-[#e9c46a]/50"
+                ? "bg-gradient-to-br from-[#1f140a] via-[#34230f] to-[#1f140a] text-[#fff3c4] shadow-xl shadow-[#2b1d0e]/25"
                 : conImagen
                   ? "bg-foreground text-white"
                   : "bg-gradient-to-br from-ember to-ember-hover text-on-ember"
@@ -129,55 +135,79 @@ export default function BannersPromocion({
                   alt=""
                   fill
                   sizes="(max-width: 1024px) 100vw, 1024px"
-                  className={`object-cover ${esAniversario ? "opacity-60" : ""}`}
+                  className={`object-cover ${esAniversario ? "opacity-55" : ""}`}
                 />
                 <div
                   className={`absolute inset-0 bg-gradient-to-r ${
                     esAniversario
-                      ? "from-[#2b1d0e]/90 via-[#2b1d0e]/55 to-transparent"
+                      ? "from-[#1b1208]/95 via-[#1b1208]/70 to-[#1b1208]/30"
                       : "from-black/70 via-black/40 to-transparent"
                   }`}
                 />
               </>
             )}
 
-            {esAniversario && <Confeti />}
+            {esAniversario && (
+              <>
+                <div className="aniv-resplandor absolute inset-0" aria-hidden="true" />
+                <Brasas cantidad={14} />
+                <MarcoAniversario redondeado />
+              </>
+            )}
 
             {/* Con sello, el texto deja libre el lado derecho en el celular
                 (el sello va arriba a la derecha y si no tapa el título). */}
             <div
-              className={`relative z-10 flex max-w-lg flex-col items-start justify-center gap-2 p-6 sm:p-10 ${
+              className={`relative z-10 flex max-w-xl flex-col items-start justify-center gap-2 p-6 sm:gap-3 sm:p-10 ${
                 esAniversario && promocion.sello ? "pr-28 sm:pr-10" : ""
               }`}
             >
+              {esAniversario && (
+                <p className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.3em] text-[#e9c46a] uppercase">
+                  <span
+                    aria-hidden="true"
+                    className="h-px w-8 bg-gradient-to-r from-transparent to-[#e9c46a]"
+                  />
+                  Edición de aniversario
+                </p>
+              )}
               <h2
-                className={`font-serif text-2xl sm:text-3xl ${
+                className={`font-serif text-2xl leading-tight sm:text-3xl ${
                   esAniversario ? "texto-dorado" : ""
                 }`}
               >
                 {promocion.titulo}
               </h2>
               {promocion.texto && (
-                <p className="text-sm opacity-90 sm:text-base">{promocion.texto}</p>
-              )}
-              {promocion.fin && (
-                <CuentaRegresiva
-                  fin={promocion.fin}
-                  className={`rounded-full px-3 py-1 text-xs ${
-                    esAniversario ? "bg-[#e9c46a]/20 text-[#f6dc8f]" : "bg-black/25"
+                <p
+                  className={`text-sm sm:text-base ${
+                    esAniversario ? "text-[#fff3c4]/85" : "opacity-90"
                   }`}
-                />
+                >
+                  {promocion.texto}
+                </p>
               )}
+              {promocion.fin &&
+                (esAniversario ? (
+                  <div className="mt-1">
+                    <CuentaRegresivaCajas fin={promocion.fin} chica />
+                  </div>
+                ) : (
+                  <CuentaRegresiva
+                    fin={promocion.fin}
+                    className="rounded-full bg-black/25 px-3 py-1 text-xs"
+                  />
+                ))}
               {promocion.enlace && (
                 <EnlacePromocion
                   enlace={promocion.enlace}
-                  className={`mt-2 inline-block rounded-lg px-5 py-2.5 text-sm font-semibold transition-colors ${
+                  className={
                     esAniversario
-                      ? "bg-[#e9c46a] text-[#2b1d0e] hover:bg-[#f6dc8f]"
-                      : "bg-background text-ember hover:bg-surface-hover"
-                  }`}
+                      ? "boton-dorado mt-2"
+                      : "mt-2 inline-block rounded-lg bg-background px-5 py-2.5 text-sm font-semibold text-ember transition-colors hover:bg-surface-hover"
+                  }
                 >
-                  Ver promoción
+                  Ver promoción {esAniversario && <span aria-hidden="true">→</span>}
                 </EnlacePromocion>
               )}
             </div>

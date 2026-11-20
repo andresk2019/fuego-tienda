@@ -142,9 +142,9 @@ function FormularioPromocion({
       </div>
       {estilo === 'aniversario' && (
         <p className="-mt-1 text-xs text-muted">
-          Fondo oscuro con dorado, confeti que cae, título con brillo y un
-          sello redondo (ej. &ldquo;5 años&rdquo;) en la franja, los banners
-          y el pop-up. Se ve igual en el celular y no usa video. Con
+          Fondo oscuro con marco dorado, brasas que suben, título con brillo,
+          cuenta regresiva y una medalla (ej. &ldquo;5 años&rdquo;) en la
+          franja, los banners y el pop-up. Se ve igual en el celular y no usa video. Con
           &ldquo;Banners&rdquo; marcado, el banner reemplaza el logo del
           encabezado en todas las páginas, para que el cliente no tenga que
           bajar tanto.
