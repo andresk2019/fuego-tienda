@@ -5,7 +5,8 @@ import FavoritosIndicador from "@/components/FavoritosIndicador";
 import MenuMovil from "@/components/MenuMovil";
 import BannerEncabezado from "@/components/BannerEncabezado";
 import type { Promocion } from "@/lib/promociones";
-import { ENLACES_NAV } from "@/lib/navegacion";
+import { ENLACES_NAV, ETIQUETA_SEGUIMIENTO } from "@/lib/navegacion";
+import BotonSeguimiento from "@/components/BotonSeguimiento";
 
 export default function SiteHeader({
   promocionEncabezado = null,
@@ -84,6 +85,9 @@ export default function SiteHeader({
             {enlace.etiqueta}
           </Link>
         ))}
+        <BotonSeguimiento className="transition-colors hover:text-foreground">
+          {ETIQUETA_SEGUIMIENTO}
+        </BotonSeguimiento>
         {/* Favoritos y carrito van agrupados aparte, con una línea
             divisoria — son acciones sobre la compra, no páginas del
             sitio, así que no deberían mezclarse visualmente con el
