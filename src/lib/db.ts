@@ -25,6 +25,7 @@ import {
   porcentajeEfectivo,
   type Promocion,
 } from './promociones';
+import { puntosExtraCupon, type Cupon } from './cupones';
 import { formatearNombreProducto } from './texto';
 
 // DTO (Data Transfer Object): solo los campos seguros para mostrar en
@@ -240,6 +241,27 @@ export async function validarStockCarrito(
 export async function obtenerPreciosReales(
   productoIds: number[]
 ): Promise<Map<number, number>> {
+  const detalle = await obtenerPreciosConCupon(productoIds, null);
+  return new Map([...detalle].map(([id, d]) => [id, d.precioUnitario]));
+}
+
+export type PrecioConCupon = {
+  // Precio final que se cobra (con el descuento propio/de promo y, si
+  // aplica, el cupón).
+  precioUnitario: number;
+  // Precio normal, solo si hay algún descuento (para mostrarlo tachado).
+  precioOriginal: number | null;
+  // Cuánto se ahorra por unidad SOLO por el cupón (0 si no aplica).
+  ahorroCupon: number;
+};
+
+// Igual que obtenerPreciosReales, pero además aplica un cupón (ver
+// cupones.ts): suma sus puntos al descuento que ya tenga cada producto
+// hasta el tope del cupón. Sin cupón, el resultado es el de siempre.
+export async function obtenerPreciosConCupon(
+  productoIds: number[],
+  cupon: Pick<Cupon, 'porcentaje' | 'topeTotal'> | null
+): Promise<Map<number, PrecioConCupon>> {
   if (productoIds.length === 0) return new Map();
 
   const [{ rows }, promociones, meta] = await Promise.all([
@@ -258,11 +280,21 @@ export async function obtenerPreciosReales(
   return new Map(
     rows.map((r) => {
       const precioBase = Number(r.precio_venta);
-      const porcentaje =
+      const porcentajeActual =
         precioBase > 0
           ? porcentajeEfectivo(meta.descuentosPropios[r.id as number], promociones, r.id as number)
           : 0;
-      return [r.id as number, aplicarDescuento(precioBase, porcentaje)];
+      const extra = precioBase > 0 && cupon ? puntosExtraCupon(porcentajeActual, cupon) : 0;
+      const precioUnitario = aplicarDescuento(precioBase, porcentajeActual + extra);
+      const sinCupon = aplicarDescuento(precioBase, porcentajeActual);
+      return [
+        r.id as number,
+        {
+          precioUnitario,
+          precioOriginal: precioUnitario < precioBase ? precioBase : null,
+          ahorroCupon: sinCupon - precioUnitario,
+        },
+      ];
     })
   );
 }
