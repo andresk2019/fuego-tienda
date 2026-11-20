@@ -67,6 +67,12 @@ function FilaPedido({ pedido }: { pedido: Pedido }) {
             <p className="font-semibold text-foreground">
               {formatoCOP.format(pedido.total)}
             </p>
+            {pedido.cuponCodigo && pedido.descuentoCupon !== null && (
+              <p className="text-xs font-medium text-ember">
+                Cupón {pedido.cuponCodigo}: ahorró{" "}
+                {formatoCOP.format(pedido.descuentoCupon)}
+              </p>
+            )}
             {pedido.costoEnvio !== null && (
               <p className="text-xs text-muted">
                 Incluye envío

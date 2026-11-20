@@ -92,6 +92,12 @@ export default async function AdminPage() {
             Promociones
           </Link>
           <Link
+            href="/admin/cupones"
+            className="text-sm text-muted transition-colors hover:text-foreground"
+          >
+            Cupones
+          </Link>
+          <Link
             href="/admin/aromas"
             className="text-sm text-muted transition-colors hover:text-foreground"
           >
